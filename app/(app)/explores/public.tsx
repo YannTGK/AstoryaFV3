@@ -5,7 +5,6 @@ import {
   Dimensions,
   Text,
   Image,
-  GestureResponderEvent,
   TouchableOpacity,
   SafeAreaView,
   ScrollView,
@@ -15,6 +14,11 @@ import { Renderer } from 'expo-three';
 import * as THREE from 'three';
 import { Raycaster, Vector2 } from 'three';
 import { Video } from 'expo-av';
+
+// Post-processing imports
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
 
 import JoystickHandler from '@/components/joystick/JoystickHandler';
 import { setupControls } from '@/components/three/setupControls';
@@ -38,7 +42,14 @@ export default function PublicScreen() {
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rendererRef = useRef<any>(null);
   const [scene, setScene] = useState<THREE.Scene | null>(null);
-  // We gebruiken nu een boolean voor de overlay en een index voor de geselecteerde media
+  // Bloom settings inclusief exposure – exposure kan je via bijvoorbeeld een slider aanpassen
+  const [bloomSettings, setBloomSettings] = useState({
+    threshold: 0,
+    strength: 3,
+    radius: 1,
+    exposure: 1, // Exposure standaardwaarde
+  });
+  // Overige state voor overlay etc.
   const [selectedContent, setSelectedContent] = useState<boolean>(false);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState<number>(0);
 
@@ -50,16 +61,13 @@ export default function PublicScreen() {
   const defaultCameraPosition = useRef(new THREE.Vector3(0, 0, 10));
   const targetCameraPosition = useRef(new THREE.Vector3(0, 0, 10));
 
-  const handleTouch = (event: GestureResponderEvent['nativeEvent']) => {
+  const handleTouch = (event: any) => {
     if (!scene || !cameraRef.current) return;
-
     const { locationX, locationY } = event;
     touchPosition.x = (locationX / width) * 2 - 1;
     touchPosition.y = -(locationY / height) * 2 + 1;
-
     raycaster.setFromCamera(touchPosition, cameraRef.current);
     const intersects = raycaster.intersectObjects(scene.children, true);
-
     console.log('🎯 Aantal raakpunten:', intersects.length);
     if (intersects.length > 0) {
       let obj = intersects[0].object;
@@ -69,10 +77,8 @@ export default function PublicScreen() {
       const data = obj.userData;
       console.log('🟢 Geraakte ster:', data?.id);
       if (data?.content) {
-        // Toon overlay en start met de eerste media in de array
         setSelectedContent(true);
         setSelectedMediaIndex(0);
-
         const worldPos = obj.getWorldPosition(new THREE.Vector3());
         const offset = new THREE.Vector3(0, 0, 10);
         targetCameraPosition.current.copy(worldPos.clone().add(offset));
@@ -85,6 +91,10 @@ export default function PublicScreen() {
     const renderer = new Renderer({ gl });
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
     renderer.setClearColor(0x000000);
+    // Stel tone mapping en exposure in
+    renderer.toneMapping = THREE.ReinhardToneMapping;
+    renderer.toneMappingExposure = bloomSettings.exposure;
+    rendererRef.current = renderer;
 
     const newScene = new THREE.Scene();
     newScene.background = new THREE.Color('black');
@@ -98,11 +108,25 @@ export default function PublicScreen() {
     );
     camera.position.z = cameraPosition.current.z;
     cameraRef.current = camera;
-    rendererRef.current = renderer;
+
+    // Setup EffectComposer voor bloom
+    const composer = new EffectComposer(renderer);
+    composer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
+    const renderPass = new RenderPass(newScene, camera);
+    composer.addPass(renderPass);
+
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(gl.drawingBufferWidth, gl.drawingBufferHeight),
+      bloomSettings.strength,  // strength
+      bloomSettings.radius,    // radius
+      bloomSettings.threshold  // threshold
+    );
+    composer.addPass(bloomPass);
 
     const render = () => {
       requestAnimationFrame(render);
-
+      
+      // Update camera positie als deze vergrendeld is
       if (isCameraLocked.current) {
         camera.position.lerp(targetCameraPosition.current, 0.05);
       } else {
@@ -112,11 +136,18 @@ export default function PublicScreen() {
           cameraPosition.current.z
         );
       }
-
       camera.rotation.x = cameraRotation.current.x;
       camera.rotation.y = cameraRotation.current.y;
 
-      renderer.render(newScene, camera);
+      // Update bloom pass waarden
+      bloomPass.threshold = bloomSettings.threshold;
+      bloomPass.strength = bloomSettings.strength;
+      bloomPass.radius = bloomSettings.radius;
+      
+      // Update de exposure via de renderer
+      renderer.toneMappingExposure = bloomSettings.exposure;
+
+      composer.render();
       gl.endFrameEXP();
     };
 
@@ -124,7 +155,7 @@ export default function PublicScreen() {
   };
 
   const handleBack = () => {
-    targetCameraPosition.current.copy(defaultCameraPosition.current);
+    targetCameraPosition.current.copy(new THREE.Vector3(0, 0, 10));
     isCameraLocked.current = false;
     setSelectedContent(false);
     setSelectedMediaIndex(0);
@@ -153,7 +184,6 @@ export default function PublicScreen() {
       </View>
       <JoystickHandler cameraPosition={cameraPosition} cameraRotation={cameraRotation} />
       {scene && <StarsManager scene={scene} />}
-
       {selectedContent && (
         <SafeAreaView style={styles.overlayHolder}>
           <View style={styles.section1}>
@@ -164,6 +194,21 @@ export default function PublicScreen() {
                 style={styles.closeButton}
               />
             </TouchableOpacity>
+          </View>
+
+          {/* Slider voor exposure aanpassing */}
+          <View style={styles.sliderContainer}>
+            <Text style={styles.sliderLabel}>Exposure</Text>
+            <Slider
+              style={{ width: 200, height: 40 }}
+              minimumValue={0}
+              maximumValue={2}
+              step={0.01}
+              value={bloomSettings.exposure}
+              onValueChange={(value) =>
+                setBloomSettings((prev) => ({ ...prev, exposure: value }))
+              }
+            />
           </View>
 
           <View style={styles.mainMediaContainer}>
@@ -183,7 +228,6 @@ export default function PublicScreen() {
               />
             )}
           </View>
-
           <View style={styles.arrowHolder}>
             <TouchableOpacity onPress={handlePrevMedia}>
               <Image source={require('@/assets/images/icons/arrow-left.png')} />
@@ -192,7 +236,6 @@ export default function PublicScreen() {
               <Image source={require('@/assets/images/icons/arrow-right.png')} />
             </TouchableOpacity>
           </View>
-
           <View style={styles.section3}>
             <ScrollView
               horizontal
@@ -204,8 +247,6 @@ export default function PublicScreen() {
                   {media.type === 'image' ? (
                     <Image style={styles.preview} source={media.source} />
                   ) : (
-                    // We gebruiken hier een Video component als preview;
-                    // als alternatief kun je ook een poster/thumbnail gebruiken.
                     <Video
                       style={styles.preview}
                       source={media.source}
@@ -269,9 +310,7 @@ const styles = StyleSheet.create({
     width: '60%',
     marginVertical: 16,
   },
-  section3: {
-    width: '100%',
-  },
+  section3: { width: '100%' },
   overlayTitle: {
     color: '#fff',
     fontFamily: 'Alice-Regular',
@@ -292,5 +331,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 2,
     borderColor: '#fff',
+  },
+  sliderContainer: {
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+  sliderLabel: {
+    color: '#fff',
+    fontSize: 16,
+    marginBottom: 4,
   },
 });

@@ -21,7 +21,7 @@ export default class Star extends THREE.Object3D {
       const loader = new ThreeGLTFLoader();
 
       const glbUrl =
-        'https://s3.eu-central-1.wasabisys.com/glb-models/star.glb?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=J4UEISZ6A2HPBYAJL97A%2F20250327%2Feu-central-1%2Fs3%2Faws4_request&X-Amz-Date=20250327T130026Z&X-Amz-Expires=14400&X-Amz-Signature=e30860792218f00870f3d6f7bfc7df952393272a4bc51ec33982a8edb79435e0&X-Amz-SignedHeaders=host&x-id=GetObject';
+        'https://cdn.jsdelivr.net/gh/YannTGK/GlbFIle@main/star.glb';
 
       loader.load(
         glbUrl,
@@ -70,4 +70,3 @@ export default class Star extends THREE.Object3D {
     }
   }
 }
-
