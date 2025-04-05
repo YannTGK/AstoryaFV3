@@ -199,16 +199,7 @@ export default function PublicScreen() {
           {/* Slider voor exposure aanpassing */}
           <View style={styles.sliderContainer}>
             <Text style={styles.sliderLabel}>Exposure</Text>
-            <Slider
-              style={{ width: 200, height: 40 }}
-              minimumValue={0}
-              maximumValue={2}
-              step={0.01}
-              value={bloomSettings.exposure}
-              onValueChange={(value) =>
-                setBloomSettings((prev) => ({ ...prev, exposure: value }))
-              }
-            />
+    
           </View>
 
           <View style={styles.mainMediaContainer}>

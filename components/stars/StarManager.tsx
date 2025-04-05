@@ -35,7 +35,7 @@ export default function StarsManager({ scene }: Props) {
 
       const hue = seededRandom(uniqueSeed * 37);
       const color = new THREE.Color();
-      color.setHSL(hue, 0.7, 0.5);
+      color.setHSL(hue, 0.2, 0.5);
       star.userData.color = color;
 
       star.userData.content = [
