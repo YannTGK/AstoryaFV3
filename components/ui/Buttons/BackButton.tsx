@@ -15,7 +15,7 @@ export default function BackButton({ containerStyle, imageStyle }: Props) {
     <TouchableOpacity onPress={() => router.back()} style={containerStyle}>
       <Image
         style={[styles.defaultImage, imageStyle]}
-        source={require("@/assets/images/icons/back.png")}
+        source={require("@/assets/images/icons/back.svg")}
       />
     </TouchableOpacity>
   );
