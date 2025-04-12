@@ -6,6 +6,10 @@ import Svg, { Path } from "react-native-svg";
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
 import * as THREE from "three";
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
 
 const { width, height } = Dimensions.get("window");
 
@@ -16,43 +20,77 @@ export default function MyStarScreen() {
   const createScene = async (gl: any) => {
     const renderer = new Renderer({ gl });
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
-    renderer.setClearColor(0x000000);
+    renderer.setClearColor(0x000000, 0); // transparant
 
     const scene = new THREE.Scene();
+
     const camera = new THREE.PerspectiveCamera(
       75,
       gl.drawingBufferWidth / gl.drawingBufferHeight,
       0.1,
       1000
     );
-    camera.position.z = 4;
+    camera.position.z = 10;
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
-    scene.add(ambientLight);
+    const light = new THREE.AmbientLight(0xffffff, 1.5);
+    scene.add(light);
 
-    const geometry = new THREE.DodecahedronGeometry(1.2, 0);
-    const material = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      emissive: 0xffffff,
-      emissiveIntensity: 1,
-      flatShading: true,
-    });
-    const star = new THREE.Mesh(geometry, material);
-    scene.add(star);
+    const loader = new GLTFLoader();
+    loader.load(
+      'https://cdn.jsdelivr.net/gh/YannTGK/GlbFIle@main/star.glb',
+      (gltf) => {
+        const star = gltf.scene;
+        star.scale.set(5, 5, 5);
+        star.position.set(0, 0, 0);
 
-    const animate = () => {
-      requestAnimationFrame(animate);
-      star.rotation.y += 0.01;
-      star.rotation.x += 0.005;
-      renderer.render(scene, camera);
-      gl.endFrameEXP();
-    };
+        star.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            const mesh = child as THREE.Mesh;
+            if (Array.isArray(mesh.material)) {
+              mesh.material.forEach((m) => {
+                m.color.set(0xffffff);
+                m.emissive?.set(0xffffff);
+              });
+            } else {
+              mesh.material.color.set(0xffffff);
+              mesh.material.emissive?.set(0xffffff);
+              mesh.material.emissiveIntensity = 0.5; // zachtere glow
+            }
+          }
+        });
 
-    animate();
+        scene.add(star);
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+        composer.addPass(
+          new UnrealBloomPass(
+            new THREE.Vector2(gl.drawingBufferWidth, gl.drawingBufferHeight),
+            1.2, // intensiteit
+            0.6, // radius
+            0 // threshold
+          )
+        );
+
+        const animate = () => {
+          requestAnimationFrame(animate);
+          star.rotation.y += 0.005;
+          star.rotation.x += 0.003;
+          composer.render();
+          gl.endFrameEXP();
+        };
+
+        animate();
+      },
+      undefined,
+      (error) => {
+        console.error("❌ Error loading star.glb:", error);
+      }
+    );
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#000" }}>
+    <View style={{ flex: 1 }}>
       {/* Gradient background */}
       <View style={StyleSheet.absoluteFill}>
         <LinearGradient
@@ -95,13 +133,11 @@ export default function MyStarScreen() {
             },
           ]}
         >
-          <Text
-            style={{
-              color: isPrivate ? "#11152A" : "#FFFFFF",
-              fontFamily: "Alice-Regular",
-              fontSize: 16,
-            }}
-          >
+          <Text style={{
+            color: isPrivate ? "#11152A" : "#FFFFFF",
+            fontFamily: "Alice-Regular",
+            fontSize: 16,
+          }}>
             Private
           </Text>
         </Pressable>
@@ -116,13 +152,11 @@ export default function MyStarScreen() {
             },
           ]}
         >
-          <Text
-            style={{
-              color: !isPrivate ? "#11152A" : "#FFFFFF",
-              fontFamily: "Alice-Regular",
-              fontSize: 16,
-            }}
-          >
+          <Text style={{
+            color: !isPrivate ? "#11152A" : "#FFFFFF",
+            fontFamily: "Alice-Regular",
+            fontSize: 16,
+          }}>
             Public
           </Text>
         </Pressable>
@@ -139,7 +173,7 @@ export default function MyStarScreen() {
       {/* Naam */}
       <Text style={styles.name}>Maria De Sadeleer</Text>
 
-      {/* Customize knop (volledige breedte) */}
+      {/* Customize knop */}
       <TouchableOpacity style={styles.button} onPress={() => console.log("Customize star")}>
         <Text style={styles.buttonText}>Customize star</Text>
       </TouchableOpacity>
@@ -165,16 +199,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 26,
   },
   starWrapper: {
-    height: 240,
-    width: 240,
+    height: 300,
+    width: 300,
     alignSelf: "center",
     marginTop: 60,
-    borderRadius: 120,
+    borderRadius: 150,
     overflow: "hidden",
     backgroundColor: "transparent",
   },
   glView: {
     flex: 1,
+    backgroundColor: "transparent",
   },
   name: {
     fontSize: 18,
