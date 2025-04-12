@@ -34,7 +34,7 @@ export default function AppLayout() {
                   focused
                     ? require("@/assets/images/icons/explore-active.png")
                     : require("@/assets/images/icons/explore.png")
-                }np
+                }
                 style={styles.icon}
               />
             ),
