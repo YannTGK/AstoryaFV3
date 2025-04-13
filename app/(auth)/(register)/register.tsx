@@ -43,8 +43,17 @@ export default function RegisterScreen(): JSX.Element {
 
   const nextRegister = (): void => {
     if (!validateFields()) return;
-
-    setUserInfo({ firstName, lastName, email, phoneNumber, dob });
+  
+    // Zet email naar lowercase vóórdat je het in de store zet
+    setUserInfo({
+      firstName,
+      lastName,
+      username: username.trim().toLowerCase(),
+      email: email.toLowerCase(),
+      phoneNumber,
+      dob
+    });
+  
     router.push("/(auth)/(register)/setPassword");
   };
 
