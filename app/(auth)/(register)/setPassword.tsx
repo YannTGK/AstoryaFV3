@@ -19,7 +19,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function RegisterPasswordScreen(): JSX.Element {
   const router = useRouter();
-  const { firstName, lastName, email, phoneNumber, dob, reset } = useRegisterStore();
+  const { firstName, lastName, username, email, phoneNumber, dob, reset } = useRegisterStore();
   const { setUser } = useAuthStore(); // ✅ Gebruik useAuthStore
 
   const [passwordSet, setPassword] = useState("");
@@ -69,6 +69,7 @@ export default function RegisterPasswordScreen(): JSX.Element {
       const response = await api.post("/auth/register", {
         firstName,
         lastName,
+        username: username.trim().toLowerCase(),
         email,
         phoneNumber,
         dob: dobISO,

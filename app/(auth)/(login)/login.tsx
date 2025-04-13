@@ -37,8 +37,8 @@ export default function LoginScreen(): JSX.Element {
 
     try {
       const response = await api.post("/auth/login", {
-        email,
-        password,
+        email: email.toLowerCase(),
+        password
       });
 
       const { token } = response.data;
