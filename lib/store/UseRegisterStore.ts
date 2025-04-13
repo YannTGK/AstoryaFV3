@@ -3,6 +3,7 @@ import { create } from "zustand";
 type RegisterState = {
   firstName: string;
   lastName: string;
+  username: string;  // Nieuw toegevoegd
   email: string;
   phoneNumber: string;
   dob: string;
@@ -13,17 +14,20 @@ type RegisterState = {
 const useRegisterStore = create<RegisterState>((set) => ({
   firstName: "",
   lastName: "",
+  username: "",        // Initieel lege username
   email: "",
   phoneNumber: "",
   dob: "",
   setUserInfo: (info) => set(info),
-  reset: () => set({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phoneNumber: "",
-    dob: ""
-  })
+  reset: () =>
+    set({
+      firstName: "",
+      lastName: "",
+      username: "",    // Ook resetten username naar lege string
+      email: "",
+      phoneNumber: "",
+      dob: "",
+    }),
 }));
 
 export default useRegisterStore;
