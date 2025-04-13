@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 type User = {
   _id: string;
+  username: string;  // Nieuw toegevoegd
   email: string;
   firstName: string;
   lastName: string;

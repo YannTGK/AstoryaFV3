@@ -76,9 +76,9 @@ const styles = StyleSheet.create({
   joystickContainer: {
     position: "absolute",
     bottom: 130,
-    right: 30, 
+    right: 15, 
     width: 128, 
-    height: 128, 
+    height: 154, 
   },
   joystickBase: {
     width: 128, 

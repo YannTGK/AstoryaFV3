@@ -6,6 +6,7 @@ type User = {
   _id: string;
   firstName: string;
   lastName: string;
+  username: string;  // <-- Toegevoegd
   email: string;
   phoneNumber: string;
   dob: string;

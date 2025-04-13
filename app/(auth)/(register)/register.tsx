@@ -12,6 +12,7 @@ export default function RegisterScreen(): JSX.Element {
 
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
+  const [username, setUsername] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [phoneNumber, setPhoneNumber] = useState<string>("");
   const [dob, setDob] = useState<string>("");
@@ -19,6 +20,7 @@ export default function RegisterScreen(): JSX.Element {
   const [errors, setErrors] = useState({
     firstName: "",
     lastName: "",
+    username: "", 
     email: "",
     phoneNumber: "",
     dob: "",
@@ -30,6 +32,7 @@ export default function RegisterScreen(): JSX.Element {
     const newErrors = {
       firstName: firstName.trim() ? "" : "Please enter a valid first name",
       lastName: lastName.trim() ? "" : "Please enter a valid last name",
+      username: username.trim() ? "" : "Please enter a valid username", // <-- Valideer
       email: /^\S+@\S+\.\S+$/.test(email) ? "" : "Enter a valid email",
       phoneNumber: /^\+?[0-9\s]{8,15}$/.test(phoneNumber) ? "" : "Enter a valid phone number",
       dob: /^\d{2}\/\d{2}\/\d{4}$/.test(dob) ? "" : "Enter date as DD/MM/YYYY"
@@ -78,7 +81,18 @@ export default function RegisterScreen(): JSX.Element {
             />
             {errors.lastName ? <Span color="#FF7466">{errors.lastName}</Span> : null}
           </View>
-
+          <View>
+            <InputField
+              label="Username"
+              placeholder="Enter your username"
+              value={username}
+              onChangeText={(text) => {
+                setUsername(text);
+                setErrors(prev => ({ ...prev, username: "" }));
+              }}
+            />
+            {errors.username ? <Span color="#FF7466">{errors.username}</Span> : null}
+          </View>
           <View>
             <InputField
               label="Email"
