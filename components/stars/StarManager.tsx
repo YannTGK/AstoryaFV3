@@ -16,7 +16,7 @@ export default function StarsManager({ scene }: Props) {
   const seed = 42;
 
   useEffect(() => {
-    const numStars = 1000;
+    const numStars = 30;
     const sizeRange = [2.5, 3.5];
     const positionRange = 500;
 

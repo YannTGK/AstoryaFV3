@@ -88,18 +88,19 @@ export default function PublicScreen() {
   };
 
   const createScene = async (gl: any) => {
-    const renderer = new Renderer({ gl });
+    const renderer = new Renderer({ gl, preserveDrawingBuffer: true }); // ✅
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
-    renderer.setClearColor(0x000000);
-    // Stel tone mapping en exposure in
+    renderer.setClearColor(0x000000, 0); // ✅ transparant
+  
+    // ✅ Tone mapping & exposure
     renderer.toneMapping = THREE.ReinhardToneMapping;
     renderer.toneMappingExposure = bloomSettings.exposure;
     rendererRef.current = renderer;
-
+  
     const newScene = new THREE.Scene();
-    newScene.background = new THREE.Color('black');
+    newScene.background = null; // ✅ geen zwart, laat achterliggende achtergrond door
     setScene(newScene);
-
+  
     const camera = new THREE.PerspectiveCamera(
       75,
       gl.drawingBufferWidth / gl.drawingBufferHeight,
@@ -108,25 +109,23 @@ export default function PublicScreen() {
     );
     camera.position.z = cameraPosition.current.z;
     cameraRef.current = camera;
-
-    // Setup EffectComposer voor bloom
+  
     const composer = new EffectComposer(renderer);
     composer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
     const renderPass = new RenderPass(newScene, camera);
     composer.addPass(renderPass);
-
+  
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(gl.drawingBufferWidth, gl.drawingBufferHeight),
-      bloomSettings.strength,  // strength
-      bloomSettings.radius,    // radius
-      bloomSettings.threshold  // threshold
+      bloomSettings.strength,
+      bloomSettings.radius,
+      bloomSettings.threshold
     );
     composer.addPass(bloomPass);
-
+  
     const render = () => {
       requestAnimationFrame(render);
-      
-      // Update camera positie als deze vergrendeld is
+  
       if (isCameraLocked.current) {
         camera.position.lerp(targetCameraPosition.current, 0.05);
       } else {
@@ -138,21 +137,19 @@ export default function PublicScreen() {
       }
       camera.rotation.x = cameraRotation.current.x;
       camera.rotation.y = cameraRotation.current.y;
-
-      // Update bloom pass waarden
+  
       bloomPass.threshold = bloomSettings.threshold;
       bloomPass.strength = bloomSettings.strength;
       bloomPass.radius = bloomSettings.radius;
-      
-      // Update de exposure via de renderer
       renderer.toneMappingExposure = bloomSettings.exposure;
-
+  
       composer.render();
       gl.endFrameEXP();
     };
-
+  
     render();
   };
+  
 
   const handleBack = () => {
     targetCameraPosition.current.copy(new THREE.Vector3(0, 0, 10));
