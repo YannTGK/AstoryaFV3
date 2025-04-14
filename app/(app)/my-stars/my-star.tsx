@@ -18,9 +18,10 @@ export default function MyStarScreen() {
   const [isPrivate, setIsPrivate] = useState(true);
 
   const createScene = async (gl: any) => {
-    const renderer = new Renderer({ gl, preserveDrawingBuffer: true });
+    const renderer = new Renderer({ gl });
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
-    renderer.setClearColor(0x000000, 0); // transparant zwart (niet zichtbaar i.c.m. gradient)
+    renderer.setClearColor(0x000000, 0); // transparant zwart
+    renderer.autoClear = true;
 
     const scene = new THREE.Scene();
     scene.background = null;
@@ -31,7 +32,7 @@ export default function MyStarScreen() {
       0.1,
       1000
     );
-    camera.position.z = 7; // iets dichterbij
+    camera.position.z = 7;
 
     const light = new THREE.AmbientLight(0xffffff, 1.5);
     scene.add(light);
@@ -43,23 +44,14 @@ export default function MyStarScreen() {
         const star = gltf.scene;
         star.scale.set(3.2, 3.2, 3.2);
         star.position.set(0, 0, 0);
-
-        // Draai rechtop (bovenste punt naar boven)
         star.rotation.x = -Math.PI / 2;
 
         star.traverse((child) => {
-          if ((child as THREE.Mesh).isMesh) {
-            const mesh = child as THREE.Mesh;
-            if (Array.isArray(mesh.material)) {
-              mesh.material.forEach((m) => {
-                m.color?.set(0xffffff);
-                m.emissive?.set(0xffffff);
-              });
-            } else {
-              mesh.material.color?.set(0xffffff);
-              mesh.material.emissive?.set(0xffffff);
-              mesh.material.emissiveIntensity = 0.5;
-            }
+          if (child instanceof THREE.Mesh && child.material) {
+            const material = child.material as THREE.MeshStandardMaterial;
+            if (material.color) material.color.set(0xffffff);
+            if (material.emissive) material.emissive.set(0xffffff);
+            if ('emissiveIntensity' in material) material.emissiveIntensity = 0.5;
           }
         });
 
@@ -78,7 +70,7 @@ export default function MyStarScreen() {
 
         const animate = () => {
           requestAnimationFrame(animate);
-          star.rotation.z += 0.005; // draai alleen rond Z-as
+          star.rotation.z += 0.005;
           composer.render();
           gl.endFrameEXP();
         };
@@ -104,9 +96,17 @@ export default function MyStarScreen() {
         />
       </View>
 
+      {/* GLView absoluut erbovenop zodat gradient zichtbaar blijft */}
+      <View style={styles.canvasWrapper}>
+        <GLView
+          style={styles.glView}
+          onContextCreate={createScene}
+        />
+      </View>
+
       {/* Back button */}
       <TouchableOpacity
-        style={{ position: "absolute", top: 50, left: 20, zIndex: 10, padding: 10 }}
+        style={{ position: "absolute", top: 40, left: 20, zIndex: 10, padding: 10 }}
         onPress={() => router.back()}
       >
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
@@ -165,14 +165,6 @@ export default function MyStarScreen() {
         </Pressable>
       </View>
 
-      {/* 3D ster */}
-      <View style={styles.starWrapper}>
-        <GLView
-          style={styles.glView}
-          onContextCreate={createScene}
-        />
-      </View>
-
       {/* Customize knop */}
       <View style={styles.fixedButtonWrapper}>
         <TouchableOpacity style={styles.button} onPress={() => console.log("Customize star")}>
@@ -186,7 +178,7 @@ export default function MyStarScreen() {
 const styles = StyleSheet.create({
   title: {
     color: "white",
-    fontSize: 22,
+    fontSize: 18,
     textAlign: "center",
     marginTop: 50,
     fontFamily: "Alice-Regular",
@@ -199,16 +191,22 @@ const styles = StyleSheet.create({
   toggleButton: {
     paddingVertical: 10,
     paddingHorizontal: 26,
+    marginTop: 20,
   },
-  starWrapper: {
+  canvasWrapper: {
+    position: "absolute",
+    top: 160,
+    left: 0,
+    right: 0,
     height: 300,
-    width: 300,
-    alignSelf: "center",
-    marginTop: 60,
-    backgroundColor: "transparent",
+    zIndex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 40,
   },
   glView: {
-    flex: 1,
+    height: 300,
+    width: 300,
     backgroundColor: "transparent",
   },
   fixedButtonWrapper: {
@@ -216,6 +214,7 @@ const styles = StyleSheet.create({
     bottom: 110,
     left: 20,
     right: 20,
+    zIndex: 2,
   },
   button: {
     backgroundColor: "#FEEDB6",
