@@ -6,10 +6,10 @@ import Svg, { Path } from "react-native-svg";
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
 import * as THREE from "three";
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
 
 const { width, height } = Dimensions.get("window");
 
@@ -18,11 +18,12 @@ export default function MyStarScreen() {
   const [isPrivate, setIsPrivate] = useState(true);
 
   const createScene = async (gl: any) => {
-    const renderer = new Renderer({ gl });
+    const renderer = new Renderer({ gl, preserveDrawingBuffer: true });
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
-    renderer.setClearColor(0x000000, 0); // transparant
+    renderer.setClearColor(0x000000, 0); // transparant zwart (niet zichtbaar i.c.m. gradient)
 
     const scene = new THREE.Scene();
+    scene.background = null;
 
     const camera = new THREE.PerspectiveCamera(
       75,
@@ -30,31 +31,34 @@ export default function MyStarScreen() {
       0.1,
       1000
     );
-    camera.position.z = 10;
+    camera.position.z = 7; // iets dichterbij
 
     const light = new THREE.AmbientLight(0xffffff, 1.5);
     scene.add(light);
 
     const loader = new GLTFLoader();
     loader.load(
-      'https://cdn.jsdelivr.net/gh/YannTGK/GlbFIle@main/star.glb',
+      "https://cdn.jsdelivr.net/gh/YannTGK/GlbFIle@main/star.glb",
       (gltf) => {
         const star = gltf.scene;
-        star.scale.set(5, 5, 5);
+        star.scale.set(3.2, 3.2, 3.2);
         star.position.set(0, 0, 0);
+
+        // Draai rechtop (bovenste punt naar boven)
+        star.rotation.x = -Math.PI / 2;
 
         star.traverse((child) => {
           if ((child as THREE.Mesh).isMesh) {
             const mesh = child as THREE.Mesh;
             if (Array.isArray(mesh.material)) {
               mesh.material.forEach((m) => {
-                m.color.set(0xffffff);
+                m.color?.set(0xffffff);
                 m.emissive?.set(0xffffff);
               });
             } else {
-              mesh.material.color.set(0xffffff);
+              mesh.material.color?.set(0xffffff);
               mesh.material.emissive?.set(0xffffff);
-              mesh.material.emissiveIntensity = 0.5; // zachtere glow
+              mesh.material.emissiveIntensity = 0.5;
             }
           }
         });
@@ -66,16 +70,15 @@ export default function MyStarScreen() {
         composer.addPass(
           new UnrealBloomPass(
             new THREE.Vector2(gl.drawingBufferWidth, gl.drawingBufferHeight),
-            1.2, // intensiteit
-            0.6, // radius
-            0 // threshold
+            0.9,
+            0.3,
+            0
           )
         );
 
         const animate = () => {
           requestAnimationFrame(animate);
-          star.rotation.y += 0.005;
-          star.rotation.x += 0.003;
+          star.rotation.z += 0.005; // draai alleen rond Z-as
           composer.render();
           gl.endFrameEXP();
         };
@@ -170,13 +173,12 @@ export default function MyStarScreen() {
         />
       </View>
 
-      {/* Naam */}
-      <Text style={styles.name}>Maria De Sadeleer</Text>
-
       {/* Customize knop */}
-      <TouchableOpacity style={styles.button} onPress={() => console.log("Customize star")}>
-        <Text style={styles.buttonText}>Customize star</Text>
-      </TouchableOpacity>
+      <View style={styles.fixedButtonWrapper}>
+        <TouchableOpacity style={styles.button} onPress={() => console.log("Customize star")}>
+          <Text style={styles.buttonText}>Customize star</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -203,29 +205,23 @@ const styles = StyleSheet.create({
     width: 300,
     alignSelf: "center",
     marginTop: 60,
-    borderRadius: 150,
-    overflow: "hidden",
     backgroundColor: "transparent",
   },
   glView: {
     flex: 1,
     backgroundColor: "transparent",
   },
-  name: {
-    fontSize: 18,
-    textAlign: "center",
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-    marginTop: 24,
-    marginBottom: 40,
+  fixedButtonWrapper: {
+    position: "absolute",
+    bottom: 110,
+    left: 20,
+    right: 20,
   },
   button: {
     backgroundColor: "#FEEDB6",
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 12,
-    marginHorizontal: 32,
-    marginBottom: 30,
     shadowColor: "#FEEDB6",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.8,
