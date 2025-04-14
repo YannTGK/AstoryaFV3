@@ -175,9 +175,9 @@ export default function MyStarScreen() {
         style={styles.button}
         onPress={() => {
           if (isPrivate) {
-            router.push("/(app)/my-stars/private-my-star");
+            router.push("/(app)/my-stars/private-star/private-my-star");
           } else {
-            router.push("/(app)/my-stars/public-my-star");
+            router.push("/(app)/my-stars/public-star/public-my-star");
           }
         }}
       >

@@ -14,15 +14,16 @@ import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPa
 const { width } = Dimensions.get("window");
 
 const starOptions = [
-    { name: "PEACE", color: 0xffffff, emissive: 0xffffff },         // wit
-    { name: "HOPE", color: 0xffffff, emissive: 0xffea8c },          // geel
-    { name: "SUCCESS", color: 0xffffff, emissive: 0xff8c8c },       // rood
-    { name: "WEALTH", color: 0xffffff, emissive: 0xffb181 },        // oranje 
-    { name: "HEALTH", color: 0xffffff, emissive: 0xb6fdb9 },        // groen
-    { name: "OPPORTUNITY", color: 0xffffff, emissive: 0x9ebdff },   // blauw
-    { name: "INSPIRATION", color: 0xffffff, emissive: 0xbfa2ff },   // paars
-    { name: "REMEMBRANCE", color: 0xffffff, emissive: 0xffacf2 },   // roze
-  ];
+    { name: "PEACE", color: 0xffffff, emissive: 0xffffff },
+    { name: "HOPE", color: 0xffffff, emissive: 0xffedaa },         // zacht geel
+    { name: "SUCCESS", color: 0xffffff, emissive: 0xffb3b3 },      // pastel rood
+    { name: "WEALTH", color: 0xffffff, emissive: 0xffc9aa },       // pastel oranje
+    { name: "HEALTH", color: 0xffffff, emissive: 0xd8ffd8 },       // pastel groen
+    { name: "OPPORTUNITY", color: 0xffffff, emissive: 0xaacfff },  // pastel blauw 
+    { name: "INSPIRATION", color: 0xffffff, emissive: 0xe3d1ff },  // pastel paars
+    { name: "REMEMBRANCE", color: 0xffffff, emissive: 0xffc1e6 },  // pastel roze
+  ]; 
+  
 
 export default function PrivateMyStar() {
   const router = useRouter();
