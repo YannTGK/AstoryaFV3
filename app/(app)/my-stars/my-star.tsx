@@ -37,6 +37,10 @@ export default function MyStarScreen() {
     const light = new THREE.AmbientLight(0xffffff, 1.5);
     scene.add(light);
 
+    const emissiveColor = 0xffffff;
+    const emissiveIntensity = 1.5; // sterkere gloed
+
+
     const loader = new GLTFLoader();
     loader.load(
       "https://cdn.jsdelivr.net/gh/YannTGK/GlbFIle@main/star.glb",
@@ -49,10 +53,10 @@ export default function MyStarScreen() {
         star.traverse((child) => {
           if (child instanceof THREE.Mesh && child.material) {
             const material = child.material as THREE.MeshStandardMaterial;
-            if (material.color) material.color.set(0xffffff);
-            if (material.emissive) material.emissive.set(0xffffff);
-            if ('emissiveIntensity' in material) material.emissiveIntensity = 0.5;
-          }
+            material.color?.setHex(0xffffff); // ster blijft wit
+            material.emissive?.setHex(emissiveColor); // gloedkleur instellen
+            material.emissiveIntensity = emissiveIntensity; // sterke glow
+          }          
         });
 
         scene.add(star);

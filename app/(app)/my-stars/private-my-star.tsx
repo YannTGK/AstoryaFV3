@@ -5,6 +5,7 @@ import Svg, { Path } from "react-native-svg";
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
 import * as THREE from "three";
+import { useState } from "react";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
@@ -12,8 +13,20 @@ import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPa
 
 const { width } = Dimensions.get("window");
 
+const starOptions = [
+    { name: "PEACE", color: 0xffffff, emissive: 0xffffff },         // wit
+    { name: "HOPE", color: 0xffffff, emissive: 0xffea8c },          // geel
+    { name: "SUCCESS", color: 0xffffff, emissive: 0xff8c8c },       // rood
+    { name: "WEALTH", color: 0xffffff, emissive: 0xffb181 },        // oranje 
+    { name: "HEALTH", color: 0xffffff, emissive: 0xb6fdb9 },        // groen
+    { name: "OPPORTUNITY", color: 0xffffff, emissive: 0x9ebdff },   // blauw
+    { name: "INSPIRATION", color: 0xffffff, emissive: 0xbfa2ff },   // paars
+    { name: "REMEMBRANCE", color: 0xffffff, emissive: 0xffacf2 },   // roze
+  ];
+
 export default function PrivateMyStar() {
   const router = useRouter();
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const createScene = async (gl: any) => {
     const renderer = new Renderer({ gl });
@@ -39,17 +52,19 @@ export default function PrivateMyStar() {
         star.position.set(0, 0, 0);
         star.rotation.x = -Math.PI / 2;
 
-        star.traverse((child) => {
-          if (child instanceof THREE.Mesh && child.material) {
-            const material = child.material as THREE.MeshStandardMaterial;
-            material.color?.set(0xffffff);
-            material.emissive?.set(0xffffff);
-            if ('emissiveIntensity' in material) {
-              material.emissiveIntensity = 0.5;
+        const applyMaterial = () => {
+          star.traverse((child) => {
+            if (child instanceof THREE.Mesh && child.material) {
+              const material = child.material as THREE.MeshStandardMaterial;
+              const { color, emissive } = starOptions[currentIndex];
+              material.color.setHex(0xffffff); // ster blijft wit
+              material.emissive.setHex(emissive); 
+              material.emissiveIntensity = 1.5;
             }
-          }
-        });
+          });
+        };
 
+        applyMaterial();
         scene.add(star);
 
         const composer = new EffectComposer(renderer);
@@ -71,13 +86,12 @@ export default function PrivateMyStar() {
         };
 
         animate();
-      },
-      undefined,
-      (error) => {
-        console.error("❌ Error loading star.glb:", error);
       }
     );
   };
+
+  const nextStar = () => setCurrentIndex((prev) => (prev + 1) % starOptions.length);
+  const prevStar = () => setCurrentIndex((prev) => (prev - 1 + starOptions.length) % starOptions.length);
 
   return (
     <View style={{ flex: 1 }}>
@@ -89,56 +103,33 @@ export default function PrivateMyStar() {
       />
 
       {/* Back button */}
-      <TouchableOpacity
-        style={{ position: "absolute", top: 50, left: 20, zIndex: 10 }}
-        onPress={() => router.back()}
-      >
+      <TouchableOpacity style={{ position: "absolute", top: 50, left: 20, zIndex: 10 }} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M15 18l-6-6 6-6"
-            stroke="#FEEDB6"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
       </TouchableOpacity>
 
       <Text style={styles.title}>My personal star</Text>
-      <Text style={styles.subtitle}>
-        Choose the color of your star that will hold your last wish to your loved ones.
-      </Text>
+      <Text style={styles.subtitle}>Choose the color of your star that will hold your last wish to your loved ones.</Text>
 
       {/* 3D ster */}
       <View style={styles.canvasWrapper}>
-        <GLView style={styles.glView} onContextCreate={createScene} />
+        <GLView key={currentIndex} style={styles.glView} onContextCreate={createScene} />
       </View>
 
       {/* Naam met pijltjes */}
       <View style={styles.nameRow}>
-        <TouchableOpacity style={styles.arrowSide}>
+        <TouchableOpacity style={styles.arrowSide} onPress={prevStar}>
           <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M15 18l-6-6 6-6"
-              stroke="#FEEDB6"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
           </Svg>
         </TouchableOpacity>
 
-        <Text style={styles.starName}>PEACE</Text>
+        <Text style={styles.starName}>{starOptions[currentIndex].name}</Text>
 
-        <TouchableOpacity style={styles.arrowSide}>
+        <TouchableOpacity style={styles.arrowSide} onPress={nextStar}>
           <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="M9 6l6 6-6 6"
-              stroke="#FEEDB6"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            <Path d="M9 6l6 6-6 6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
           </Svg>
         </TouchableOpacity>
       </View>
@@ -221,5 +212,3 @@ const styles = StyleSheet.create({
     color: "#000",
   },
 });
-
-
