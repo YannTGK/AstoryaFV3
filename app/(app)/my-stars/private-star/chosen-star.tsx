@@ -109,7 +109,10 @@ export default function ChosenStarScreen() {
 
       {/* Add content knop */}
       <View style={styles.fixedButtonWrapper}>
-        <TouchableOpacity style={styles.button} onPress={() => console.log("Add content")}>
+        <TouchableOpacity style={styles.button} onPress={() => router.push({
+        pathname: "/(app)/my-stars/private-star/my-star-private2",
+        params: { name, emissive },
+      })}>
           <Text style={styles.buttonText}>Add content</Text>
         </TouchableOpacity>
       </View>
