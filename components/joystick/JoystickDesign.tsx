@@ -2,10 +2,14 @@ import React, { useRef, useEffect } from "react";
 import { StyleSheet, View, Animated, PanResponder } from "react-native";
 import StarJoystickIcon from "@/assets/images/svg-icons/star-joystick.svg";
 
-export default function Joystick({ onMove }) {
-  const pan = useRef(new Animated.ValueXY()).current;
-  const lastDirection = useRef({ x: 0, y: 0 });
-  const isActive = useRef(false);
+type JoystickProps = {
+  onMove?: (x: number, y: number) => void;
+};
+
+export default function Joystick({ onMove }: JoystickProps) {
+const pan = useRef(new Animated.ValueXY()).current;
+const lastDirection = useRef({ x: 0, y: 0 });
+const isActive = useRef(false);
 
   const panResponder = useRef(
     PanResponder.create({
