@@ -93,13 +93,13 @@ export default function MyStarPrivate2() {
   };
 
   const icons = [
-    { label: "Photo's", icon: <PhotosIcon width={40} height={40} /> },
-    { label: "Video’s", icon: <VideosIcon width={40} height={40} /> },
-    { label: "Audio’s", icon: <AudiosIcon width={40} height={40} /> },
-    { label: "Messages", icon: <MessagesIcon width={40} height={40} /> },
-    { label: "Documents", icon: <DocumentsIcon width={40} height={40} /> },
-    { label: "Book of Life", icon: <BookOfLifeIcon width={40} height={40} /> },
-    { label: "3D VR Space", icon: <VRSpaceIcon width={40} height={40} /> },
+    { label: "Photo's", icon: <PhotosIcon width={60} height={60} /> },
+    { label: "Video’s", icon: <VideosIcon width={60} height={60} /> },
+    { label: "Audio’s", icon: <AudiosIcon width={60} height={60} /> },
+    { label: "Messages", icon: <MessagesIcon width={60} height={60} /> },
+    { label: "Documents", icon: <DocumentsIcon width={60} height={60} /> },
+    { label: "Book of Life", icon: <BookOfLifeIcon width={60} height={60} /> },
+    { label: "3D VR Space", icon: <VRSpaceIcon width={60} height={60} /> },
   ];
 
   return (
@@ -160,7 +160,7 @@ export default function MyStarPrivate2() {
 const styles = StyleSheet.create({
   backBtn: {
     position: "absolute",
-    top: 40,
+    top: 50,
     left: 20,
     zIndex: 10,
   },
@@ -199,9 +199,9 @@ const styles = StyleSheet.create({
   },
   nameOverlay: {
     position: "absolute",
-    top: "45%",
+    bottom: "4%",
     alignSelf: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    /*backgroundColor: "rgba(255, 255, 255, 0.9)",*/
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 6,
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   nameText: {
     fontSize: 16,
     fontFamily: "Alice-Regular",
-    color: "#000",
+    color: "#fff",
     textAlign: "center",
   },
   scrollRow: {
