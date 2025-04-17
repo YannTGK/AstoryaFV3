@@ -38,7 +38,7 @@ export default class Star extends THREE.Object3D {
                     const matTyped = mat.clone() as THREE.MeshStandardMaterial;
                     matTyped.color.copy(this.userData.color);
                     matTyped.emissive?.copy(this.userData.color);
-                    matTyped.emissiveIntensity = 3.0;
+                    matTyped.emissiveIntensity = 1.5;
                     matTyped.needsUpdate = true;
                     return matTyped;
                   })
@@ -46,7 +46,7 @@ export default class Star extends THREE.Object3D {
                     const m = mesh.material.clone() as THREE.MeshStandardMaterial;
                     m.color.copy(this.userData.color);
                     m.emissive?.copy(this.userData.color);
-                    m.emissiveIntensity = 3.0;
+                    m.emissiveIntensity = 1.5;
                     m.needsUpdate = true;
                     return m;
                   })();
