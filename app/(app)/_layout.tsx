@@ -25,7 +25,7 @@ export default function AppLayout() {
   const [activeTab, setActiveTab] = useState("public");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const handleTabPress = (tab: string) => {
+  const handleTabPress = (tab: "public" | "private" | "search") => {
     setActiveTab(tab);
     router.replace(`/explores/${tab}`);
   };
