@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   tabIcon: {
     width: 28,
     height: 28,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   exploreMenu: {
     position: "absolute",
