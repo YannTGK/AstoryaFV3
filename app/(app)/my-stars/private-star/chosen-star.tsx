@@ -133,11 +133,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   canvasWrapper: {
-    alignItems: "center",
-    justifyContent: "center",
+    alignSelf: "center",
     marginTop: 40,
-    height: 300,
-    zIndex: 1,
+    borderRadius: 20,
+    overflow: "hidden",
+    backgroundColor: "transparent",
   },
   glView: {
     width: 300,
