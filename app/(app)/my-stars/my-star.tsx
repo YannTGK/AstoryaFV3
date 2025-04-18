@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, Pressable, StyleSheet, Dimensions } from "react-native";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import { GLView } from "expo-gl";
@@ -16,13 +16,75 @@ const { width, height } = Dimensions.get("window");
 
 export default function MyStarScreen() {
   const router = useRouter();
-  const [isPrivate, setIsPrivate] = useState(true);
   const {
     hasCompletedPrivate,
     hasCompletedPublic,
     privateFlowData,
     publicFlowData,
+    toggleStatus,
+    setToggleStatus,
   } = useFlowStore();
+
+  const [isPrivate, setIsPrivate] = useState(toggleStatus === "private");
+
+  useEffect(() => {
+    setIsPrivate(toggleStatus === "private");
+  }, [toggleStatus]);
+
+  const handleToggle = (status: "private" | "public") => {
+    setIsPrivate(status === "private");
+    setToggleStatus(status);
+
+    if (status === "private") {
+      if (hasCompletedPrivate && privateFlowData?.emissive) {
+        router.push({
+          pathname: "/(app)/my-stars/private-star/my-star-private2",
+          params: {
+            name: privateFlowData.name,
+            emissive: privateFlowData.emissive,
+          },
+        });
+      }
+    } else {
+      if (hasCompletedPublic && publicFlowData?.emissive) {
+        router.push({
+          pathname: "/(app)/my-stars/public-star/my-star-public2",
+          params: {
+            name: publicFlowData.name,
+            emissive: publicFlowData.emissive,
+          },
+        });
+      }
+    }
+  };
+
+  const handleCustomize = () => {
+    if (isPrivate) {
+      if (hasCompletedPrivate && privateFlowData?.emissive) {
+        router.push({
+          pathname: "/(app)/my-stars/private-star/my-star-private2",
+          params: {
+            name: privateFlowData.name,
+            emissive: privateFlowData.emissive,
+          },
+        });
+      } else {
+        router.push("/(app)/my-stars/private-star/private-my-star");
+      }
+    } else {
+      if (hasCompletedPublic && publicFlowData?.emissive) {
+        router.push({
+          pathname: "/(app)/my-stars/public-star/my-star-public2",
+          params: {
+            name: publicFlowData.name,
+            emissive: publicFlowData.emissive,
+          },
+        });
+      } else {
+        router.push("/(app)/my-stars/public-star/public-my-star");
+      }
+    }
+  };
 
   const createScene = async (gl: any) => {
     const renderer = new Renderer({ gl });
@@ -91,34 +153,6 @@ export default function MyStarScreen() {
     );
   };
 
-  const handleCustomize = () => {
-    if (isPrivate) {
-      if (hasCompletedPrivate && privateFlowData?.emissive) {
-        router.push({
-          pathname: "/(app)/my-stars/private-star/my-star-private2",
-          params: {
-            name: privateFlowData.name,
-            emissive: privateFlowData.emissive,
-          },
-        });
-      } else {
-        router.push("/(app)/my-stars/private-star/private-my-star");
-      }
-    } else {
-      if (hasCompletedPublic && publicFlowData?.emissive) {
-        router.push({
-          pathname: "/(app)/my-stars/public-star/my-star-public2",
-          params: {
-            name: publicFlowData.name,
-            emissive: publicFlowData.emissive,
-          },
-        });
-      } else {
-        router.push("/(app)/my-stars/public-star/public-my-star");
-      }
-    }
-  };
-
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
@@ -138,7 +172,7 @@ export default function MyStarScreen() {
 
       <View style={styles.toggleContainer}>
         <Pressable
-          onPress={() => setIsPrivate(true)}
+          onPress={() => handleToggle("private")}
           style={[
             styles.toggleButton,
             { backgroundColor: isPrivate ? "#FEEDB6" : "#11152A", borderTopLeftRadius: 12, borderBottomLeftRadius: 12 },
@@ -147,7 +181,7 @@ export default function MyStarScreen() {
           <Text style={[styles.toggleText, { color: isPrivate ? "#11152A" : "#fff" }]}>Private</Text>
         </Pressable>
         <Pressable
-          onPress={() => setIsPrivate(false)}
+          onPress={() => handleToggle("public")}
           style={[
             styles.toggleButton,
             { backgroundColor: !isPrivate ? "#FEEDB6" : "#11152A", borderTopRightRadius: 12, borderBottomRightRadius: 12 },

@@ -16,7 +16,7 @@ const { width } = Dimensions.get("window");
 
 export default function MyStarPublic2() {
   const router = useRouter();
-  const { name, emissive } = useLocalSearchParams();
+  const { name, emissive } = useLocalSearchParams(); // ✅ ontvangen via navigatie
   const [isPrivate, setIsPrivate] = useState(false);
 
   const {
@@ -26,6 +26,7 @@ export default function MyStarPublic2() {
     setCompletedPublic,
   } = useFlowStore();
 
+  // ✅ Bij openen dit scherm: flow opslaan
   useEffect(() => {
     if (typeof name === "string" && typeof emissive === "string") {
       setCompletedPublic({ name, emissive });
@@ -37,18 +38,19 @@ export default function MyStarPublic2() {
   const handleToggleToPrivate = () => {
     setIsPrivate(true);
 
-    if (!hasCompletedPrivate || !privateFlowData?.emissive || !privateFlowData.name) {
-      router.push({
-        pathname: "/(app)/my-stars/my-star",
-        params: { toggle: "private" },
-      });
-    } else {
+    if (hasCompletedPrivate && privateFlowData?.emissive && privateFlowData.name) {
       router.push({
         pathname: "/(app)/my-stars/private-star/my-star-private2",
         params: {
           name: privateFlowData.name,
           emissive: privateFlowData.emissive,
         },
+      });
+    } else {
+      // ⛔ private flow nog niet gedaan → terug naar beginscherm met toggle op private
+      router.push({
+        pathname: "/(app)/my-stars/my-star",
+        params: { toggle: "private" },
       });
     }
   };
@@ -62,12 +64,7 @@ export default function MyStarPublic2() {
     const scene = new THREE.Scene();
     scene.background = null;
 
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      gl.drawingBufferWidth / gl.drawingBufferHeight,
-      0.1,
-      1000
-    );
+    const camera = new THREE.PerspectiveCamera(75, gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 1000);
     camera.position.z = 7;
 
     const light = new THREE.AmbientLight(0xffffff, 1.5);
@@ -130,6 +127,7 @@ export default function MyStarPublic2() {
         end={{ x: 0.5, y: 1 }}
       />
 
+      {/* Back button */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
           <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
@@ -138,6 +136,7 @@ export default function MyStarPublic2() {
 
       <Text style={styles.title}>My personal star</Text>
 
+      {/* Toggle */}
       <View style={styles.toggleContainer}>
         <Pressable
           onPress={handleToggleToPrivate}
@@ -167,6 +166,7 @@ export default function MyStarPublic2() {
         </Pressable>
       </View>
 
+      {/* 3D STAR */}
       <View style={styles.canvasWrapper}>
         <GLView style={styles.glView} onContextCreate={createScene} />
         <View style={styles.nameOverlay}>
@@ -174,6 +174,7 @@ export default function MyStarPublic2() {
         </View>
       </View>
 
+      {/* Button */}
       <View style={styles.fixedButtonWrapper}>
         <TouchableOpacity style={styles.button}>
           <Text style={styles.buttonText}>Add 3D/VR - space</Text>

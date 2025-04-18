@@ -30,13 +30,37 @@ export default function MyStarPrivate2() {
   const { user } = useAuthStore();
   const [isPrivate, setIsPrivate] = useState(true);
 
-  const { hasCompletedPublic, publicFlowData, setCompletedPrivate } = useFlowStore();
+  const {
+    hasCompletedPublic,
+    publicFlowData,
+    setCompletedPrivate,
+  } = useFlowStore();
 
   useEffect(() => {
     if (typeof name === "string" && typeof emissive === "string") {
       setCompletedPrivate({ name, emissive });
     }
   }, [name, emissive]);
+
+  const handleToggleToPublic = () => {
+    setIsPrivate(false);
+
+    if (hasCompletedPublic && publicFlowData?.name && publicFlowData.emissive) {
+      router.push({
+        pathname: "/(app)/my-stars/public-star/my-star-public2",
+        params: {
+          name: publicFlowData.name,
+          emissive: publicFlowData.emissive,
+        },
+      });
+    } else {
+      // ⛔ public flow nog niet gedaan → terug naar beginscherm met toggle op public
+      router.push({
+        pathname: "/(app)/my-stars/my-star",
+        params: { toggle: "public" },
+      });
+    }
+  };
 
   const createScene = async (gl: any) => {
     const renderer = new Renderer({ gl });
@@ -111,25 +135,6 @@ export default function MyStarPrivate2() {
     { label: "3D VR Space", icon: <VRSpaceIcon width={60} height={60} /> },
   ];
 
-  const handleToggleToPublic = () => {
-    setIsPrivate(false);
-  
-    if (!hasCompletedPublic || !publicFlowData?.emissive) {
-      router.push({
-        pathname: "/(app)/my-stars/my-star",
-        params: { toggle: "public" }, // toggle state doorgeven
-      });
-    } else {
-      router.push({
-        pathname: "/(app)/my-stars/public-star/my-star-public2",
-        params: {
-          name: publicFlowData.name,
-          emissive: publicFlowData.emissive,
-        },
-      });
-    }
-  };
-
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
@@ -152,13 +157,19 @@ export default function MyStarPrivate2() {
       <View style={styles.toggleContainer}>
         <Pressable
           onPress={() => setIsPrivate(true)}
-          style={[styles.toggleButton, { backgroundColor: isPrivate ? "#FEEDB6" : "#11152A", borderTopLeftRadius: 12, borderBottomLeftRadius: 12 }]}
+          style={[
+            styles.toggleButton,
+            { backgroundColor: isPrivate ? "#FEEDB6" : "#11152A", borderTopLeftRadius: 12, borderBottomLeftRadius: 12 },
+          ]}
         >
           <Text style={[styles.toggleText, { color: isPrivate ? "#11152A" : "#fff" }]}>Private</Text>
         </Pressable>
         <Pressable
           onPress={handleToggleToPublic}
-          style={[styles.toggleButton, { backgroundColor: !isPrivate ? "#FEEDB6" : "#11152A", borderTopRightRadius: 12, borderBottomRightRadius: 12 }]}
+          style={[
+            styles.toggleButton,
+            { backgroundColor: !isPrivate ? "#FEEDB6" : "#11152A", borderTopRightRadius: 12, borderBottomRightRadius: 12 },
+          ]}
         >
           <Text style={[styles.toggleText, { color: !isPrivate ? "#11152A" : "#fff" }]}>Public</Text>
         </Pressable>
@@ -172,7 +183,7 @@ export default function MyStarPrivate2() {
         </View>
       </View>
 
-      {/* Iconen horizontaal */}
+      {/* Iconen */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollRow} contentContainerStyle={{ paddingHorizontal: 20 }}>
         {icons.map((item, index) => (
           <View key={index} style={styles.iconItem}>
