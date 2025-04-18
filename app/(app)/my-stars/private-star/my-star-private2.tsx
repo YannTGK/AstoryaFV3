@@ -113,9 +113,12 @@ export default function MyStarPrivate2() {
 
   const handleToggleToPublic = () => {
     setIsPrivate(false);
-
+  
     if (!hasCompletedPublic || !publicFlowData?.emissive) {
-      router.push("/(app)/my-stars/my-star");
+      router.push({
+        pathname: "/(app)/my-stars/my-star",
+        params: { toggle: "public" }, // toggle state doorgeven
+      });
     } else {
       router.push({
         pathname: "/(app)/my-stars/public-star/my-star-public2",

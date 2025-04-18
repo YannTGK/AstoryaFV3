@@ -16,17 +16,16 @@ const { width } = Dimensions.get("window");
 
 export default function MyStarPublic2() {
   const router = useRouter();
-  const { name, emissive } = useLocalSearchParams(); // ontvangen via navigatie
+  const { name, emissive } = useLocalSearchParams();
   const [isPrivate, setIsPrivate] = useState(false);
 
   const {
     hasCompletedPrivate,
-    publicFlowData,
     privateFlowData,
+    publicFlowData,
     setCompletedPublic,
   } = useFlowStore();
 
-  // ✅ Opslaan bij mount
   useEffect(() => {
     if (typeof name === "string" && typeof emissive === "string") {
       setCompletedPublic({ name, emissive });
@@ -38,7 +37,12 @@ export default function MyStarPublic2() {
   const handleToggleToPrivate = () => {
     setIsPrivate(true);
 
-    if (hasCompletedPrivate && privateFlowData?.emissive && privateFlowData.name) {
+    if (!hasCompletedPrivate || !privateFlowData?.emissive || !privateFlowData.name) {
+      router.push({
+        pathname: "/(app)/my-stars/my-star",
+        params: { toggle: "private" },
+      });
+    } else {
       router.push({
         pathname: "/(app)/my-stars/private-star/my-star-private2",
         params: {
@@ -46,8 +50,6 @@ export default function MyStarPublic2() {
           emissive: privateFlowData.emissive,
         },
       });
-    } else {
-      router.push("/(app)/my-stars/private-star/private-my-star");
     }
   };
 
@@ -60,7 +62,12 @@ export default function MyStarPublic2() {
     const scene = new THREE.Scene();
     scene.background = null;
 
-    const camera = new THREE.PerspectiveCamera(75, gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      gl.drawingBufferWidth / gl.drawingBufferHeight,
+      0.1,
+      1000
+    );
     camera.position.z = 7;
 
     const light = new THREE.AmbientLight(0xffffff, 1.5);
