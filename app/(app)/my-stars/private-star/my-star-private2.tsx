@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   scrollRow: {
-    marginTop: 30,
+    marginTop: 40,
   },
   iconItem: {
     alignItems: "center",
