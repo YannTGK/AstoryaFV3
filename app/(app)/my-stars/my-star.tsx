@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, Pressable, StyleSheet, Dimensions } from "react-native";
+import { View, Text, TouchableOpacity, Pressable, StyleSheet, Dimensions, Modal } from "react-native";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
@@ -11,6 +11,7 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
 import useFlowStore from "@/lib/store/useFlowStore";
+import UpgradePopup from "@/components/pop-ups/UpgradePopup";
 
 const { width, height } = Dimensions.get("window");
 
@@ -26,6 +27,8 @@ export default function MyStarScreen() {
   } = useFlowStore();
 
   const [isPrivate, setIsPrivate] = useState(toggleStatus === "private");
+  const [showPopup, setShowPopup] = useState(true);
+  const [currentPopup, setCurrentPopup] = useState<"basic" | "premium">("premium");
 
   useEffect(() => {
     setIsPrivate(toggleStatus === "private");
@@ -162,44 +165,67 @@ export default function MyStarScreen() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-        </Svg>
-      </TouchableOpacity>
+      {/* 👇 Upgrade popup overlay */}
+      {showPopup && (
+        <UpgradePopup
+          type={currentPopup}
+          onClose={() => setShowPopup(false)}
+          onSwitch={() =>
+            setCurrentPopup((prev) => (prev === "premium" ? "basic" : "premium"))
+          }
+        />
+      )}
 
-      <Text style={styles.title}>My personal star</Text>
+      {!showPopup && (
+        <>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+              <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            </Svg>
+          </TouchableOpacity>
 
-      <View style={styles.toggleContainer}>
-        <Pressable
-          onPress={() => handleToggle("private")}
-          style={[
-            styles.toggleButton,
-            { backgroundColor: isPrivate ? "#FEEDB6" : "#11152A", borderTopLeftRadius: 12, borderBottomLeftRadius: 12 },
-          ]}
-        >
-          <Text style={[styles.toggleText, { color: isPrivate ? "#11152A" : "#fff" }]}>Private</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => handleToggle("public")}
-          style={[
-            styles.toggleButton,
-            { backgroundColor: !isPrivate ? "#FEEDB6" : "#11152A", borderTopRightRadius: 12, borderBottomRightRadius: 12 },
-          ]}
-        >
-          <Text style={[styles.toggleText, { color: !isPrivate ? "#11152A" : "#fff" }]}>Public</Text>
-        </Pressable>
-      </View>
+          <Text style={styles.title}>My personal star</Text>
 
-      <View style={styles.canvasWrapper}>
-        <GLView style={styles.glView} onContextCreate={createScene} />
-      </View>
+          <View style={styles.toggleContainer}>
+            <Pressable
+              onPress={() => handleToggle("private")}
+              style={[
+                styles.toggleButton,
+                {
+                  backgroundColor: isPrivate ? "#FEEDB6" : "#11152A",
+                  borderTopLeftRadius: 12,
+                  borderBottomLeftRadius: 12,
+                },
+              ]}
+            >
+              <Text style={[styles.toggleText, { color: isPrivate ? "#11152A" : "#fff" }]}>Private</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => handleToggle("public")}
+              style={[
+                styles.toggleButton,
+                {
+                  backgroundColor: !isPrivate ? "#FEEDB6" : "#11152A",
+                  borderTopRightRadius: 12,
+                  borderBottomRightRadius: 12,
+                },
+              ]}
+            >
+              <Text style={[styles.toggleText, { color: !isPrivate ? "#11152A" : "#fff" }]}>Public</Text>
+            </Pressable>
+          </View>
 
-      <View style={styles.fixedButtonWrapper}>
-        <TouchableOpacity style={styles.button} onPress={handleCustomize}>
-          <Text style={styles.buttonText}>Customize star</Text>
-        </TouchableOpacity>
-      </View>
+          <View style={styles.canvasWrapper}>
+            <GLView style={styles.glView} onContextCreate={createScene} />
+          </View>
+
+          <View style={styles.fixedButtonWrapper}>
+            <TouchableOpacity style={styles.button} onPress={handleCustomize}>
+              <Text style={styles.buttonText}>Customize star</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
     </View>
   );
 }
