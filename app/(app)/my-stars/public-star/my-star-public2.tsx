@@ -1,5 +1,5 @@
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { View, Text, TouchableOpacity, Pressable, StyleSheet, Dimensions } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import { GLView } from "expo-gl";
@@ -9,12 +9,16 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
+import { useState } from "react";
 
 const { width } = Dimensions.get("window");
 
-export default function ChosenStarScreen() {
+export default function MyStarPublic2() {
   const router = useRouter();
-  const { name, emissive } = useLocalSearchParams();
+  const { name, emissive } = useLocalSearchParams(); // ✅ name = fullName of initials (van ingelogde user)
+  const [isPrivate, setIsPrivate] = useState(false);
+
+  const displayName = typeof name === "string" ? name : "";
 
   const createScene = async (gl: any) => {
     const renderer = new Renderer({ gl });
@@ -40,13 +44,12 @@ export default function ChosenStarScreen() {
         star.position.set(0, 0, 0);
         star.rotation.x = -Math.PI / 2;
 
-        const emissiveColor = new THREE.Color(parseInt(emissive as string));
-
+        const glowColor = new THREE.Color(parseInt(emissive as string));
         star.traverse((child) => {
           if (child instanceof THREE.Mesh && child.material) {
             const material = child.material as THREE.MeshStandardMaterial;
-            material.color.set(0xffffff); // witte ster
-            material.emissive.set(emissiveColor); // gekozen gloed
+            material.color.set(0xffffff);
+            material.emissive.set(glowColor);
             material.emissiveIntensity = 1.5;
           }
         });
@@ -75,7 +78,7 @@ export default function ChosenStarScreen() {
       },
       undefined,
       (error) => {
-        console.error("❌ Error loading star.glb:", error);
+        console.error("Error loading star.glb", error);
       }
     );
   };
@@ -89,31 +92,58 @@ export default function ChosenStarScreen() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Back button */}
-      <TouchableOpacity style={{ position: "absolute", top: 50, left: 20, zIndex: 10 }} onPress={() => router.back()}>
+      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
           <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
       </TouchableOpacity>
 
       <Text style={styles.title}>My personal star</Text>
-      <Text style={styles.subtitle}>Chosen star</Text>
 
-      {/* 3D ster */}
-      <View style={styles.canvasWrapper}>
-        <GLView style={styles.glView} onContextCreate={createScene} />
+      <View style={styles.toggleContainer}>
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: "/(app)/my-stars/private-star/my-star-private2",
+              params: { name, emissive },
+            })
+          }
+          style={[
+            styles.toggleButton,
+            {
+              backgroundColor: isPrivate ? "#FEEDB6" : "#11152A",
+              borderTopLeftRadius: 12,
+              borderBottomLeftRadius: 12,
+            },
+          ]}
+        >
+          <Text style={[styles.toggleText, { color: isPrivate ? "#11152A" : "#fff" }]}>Private</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setIsPrivate(false)}
+          style={[
+            styles.toggleButton,
+            {
+              backgroundColor: !isPrivate ? "#FEEDB6" : "#11152A",
+              borderTopRightRadius: 12,
+              borderBottomRightRadius: 12,
+            },
+          ]}
+        >
+          <Text style={[styles.toggleText, { color: !isPrivate ? "#11152A" : "#fff" }]}>Public</Text>
+        </Pressable>
       </View>
 
-      {/* Naam */}
-      <Text style={styles.starName}>{name}</Text>
+      <View style={styles.canvasWrapper}>
+        <GLView style={styles.glView} onContextCreate={createScene} />
+        <View style={styles.nameOverlay}>
+          <Text style={styles.nameText}>{displayName}</Text>
+        </View>
+      </View>
 
-      {/* Add content knop */}
       <View style={styles.fixedButtonWrapper}>
-        <TouchableOpacity style={styles.button} onPress={() => router.push({
-        pathname: "/(app)/my-stars/public-star/my-star-public2",
-        params: { name, emissive },
-      })}>
-          <Text style={styles.buttonText}>Next</Text>
+        <TouchableOpacity style={styles.button}>
+          <Text style={styles.buttonText}>Add 3D/VR - space</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -121,6 +151,12 @@ export default function ChosenStarScreen() {
 }
 
 const styles = StyleSheet.create({
+  backBtn: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    zIndex: 10,
+  },
   title: {
     fontFamily: "Alice-Regular",
     fontSize: 20,
@@ -128,31 +164,45 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 50,
   },
-  subtitle: {
-    fontFamily: "Alice-Regular",
-    fontSize: 14,
-    color: "#fff",
-    textAlign: "center",
+  toggleContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: 20,
+  },
+  toggleButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 26,
+  },
+  toggleText: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
   },
   canvasWrapper: {
     alignSelf: "center",
-    marginTop: 40,
+    marginTop: 30,
+    height: 300,
+    width: 300,
     borderRadius: 20,
     overflow: "hidden",
-    backgroundColor: "transparent",
   },
   glView: {
-    width: 300,
     height: 300,
+    width: 300,
     backgroundColor: "transparent",
   },
-  starName: {
-    textAlign: "center",
-    color: "#fff",
+  nameOverlay: {
+    position: "absolute",
+    bottom: "4%",
+    alignSelf: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  nameText: {
+    fontSize: 16,
     fontFamily: "Alice-Regular",
-    fontSize: 20,
-    marginTop: 20,
+    color: "#fff",
+    textAlign: "center",
   },
   fixedButtonWrapper: {
     position: "absolute",
@@ -164,6 +214,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: "#FEEDB6",
     paddingVertical: 14,
+    paddingHorizontal: 32,
     borderRadius: 12,
     shadowColor: "#FEEDB6",
     shadowOffset: { width: 0, height: 4 },
@@ -173,8 +224,8 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 16,
+    color: "#000",
     fontFamily: "Alice-Regular",
     textAlign: "center",
-    color: "#000",
   },
 });

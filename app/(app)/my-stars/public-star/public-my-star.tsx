@@ -48,33 +48,29 @@ export default function PublicMyStar() {
       <Text style={styles.title}>My personal star</Text>
       <Text style={styles.subtitle}>Select what others will see on your public star:</Text>
 
-      <View style={styles.optionsWrapper}>
-        <TouchableOpacity
-          style={[styles.option, selection === "full" && styles.selectedOption]}
-          onPress={() => setSelection("full")}
-        >
-          <Text style={styles.optionText}>{fullName}</Text>
-          <View style={selection === "full" ? styles.radioSelected : styles.radioUnselected} />
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.option, selection === "full" && styles.selectedOption]}
+        onPress={() => setSelection("full")}
+      >
+        <Text style={styles.optionText}>{fullName}</Text>
+        <View style={selection === "full" ? styles.radioSelected : styles.radioUnselected} />
+      </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.option, selection === "initials" && styles.selectedOption]}
-          onPress={() => setSelection("initials")}
-        >
-          <Text style={styles.optionText}>{initials}</Text>
-          <View style={selection === "initials" ? styles.radioSelected : styles.radioUnselected} />
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        style={[styles.option, selection === "initials" && styles.selectedOption]}
+        onPress={() => setSelection("initials")}
+      >
+        <Text style={styles.optionText}>{initials}</Text>
+        <View style={selection === "initials" ? styles.radioSelected : styles.radioUnselected} />
+      </TouchableOpacity>
 
-      <View style={styles.fixedButtonWrapper}>
-        <TouchableOpacity
-          style={[styles.button, !selection && { opacity: 0.6 }]}
-          onPress={handleNext}
-          disabled={!selection}
-        >
-          <Text style={styles.buttonText}>Next</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        style={[styles.nextButton, !selection && { opacity: 0.6 }]}
+        onPress={handleNext}
+        disabled={!selection}
+      >
+        <Text style={styles.nextText}>Next</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -101,16 +97,12 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginHorizontal: 40,
   },
-  optionsWrapper: {
-    marginTop: 40,
-    gap: 20,
-    alignItems: "center",
-  },
   option: {
-    width: width - 40,
+    marginTop: 20,
     backgroundColor: "#ffffff22",
-    borderRadius: 12,
-    paddingVertical: 16,
+    marginHorizontal: 16,
+    borderRadius: 10,
+    paddingVertical: 14,
     paddingHorizontal: 20,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -140,27 +132,16 @@ const styles = StyleSheet.create({
     borderColor: "#FEEDB6",
     borderWidth: 2,
   },
-  fixedButtonWrapper: {
-    position: "absolute",
-    bottom: 110,
-    left: 20,
-    right: 20,
-    zIndex: 2,
-  },
-  button: {
+  nextButton: {
     backgroundColor: "#FEEDB6",
     paddingVertical: 14,
-    paddingHorizontal: 32,
     borderRadius: 12,
-    shadowColor: "#FEEDB6",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.8,
-    shadowRadius: 12,
-    elevation: 6,
+    marginTop: 40,
+    marginHorizontal: 20,
   },
-  buttonText: {
+  nextText: {
+    color: "#11152A",
     fontSize: 16,
-    color: "#000",
     fontFamily: "Alice-Regular",
     textAlign: "center",
   },
