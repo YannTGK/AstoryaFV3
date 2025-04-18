@@ -10,17 +10,24 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
+import useFlowStore from "@/lib/store/useFlowStore";
 
 const { width, height } = Dimensions.get("window");
 
 export default function MyStarScreen() {
   const router = useRouter();
   const [isPrivate, setIsPrivate] = useState(true);
+  const {
+    hasCompletedPrivate,
+    hasCompletedPublic,
+    privateFlowData,
+    publicFlowData,
+  } = useFlowStore();
 
   const createScene = async (gl: any) => {
     const renderer = new Renderer({ gl });
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
-    renderer.setClearColor(0x000000, 0); // transparant zwart
+    renderer.setClearColor(0x000000, 0);
     renderer.autoClear = true;
 
     const scene = new THREE.Scene();
@@ -37,10 +44,6 @@ export default function MyStarScreen() {
     const light = new THREE.AmbientLight(0xffffff, 1.5);
     scene.add(light);
 
-    const emissiveColor = 0xffffff;
-    const emissiveIntensity = 1.5; // sterkere gloed
-
-
     const loader = new GLTFLoader();
     loader.load(
       "https://cdn.jsdelivr.net/gh/YannTGK/GlbFIle@main/star.glb",
@@ -53,10 +56,10 @@ export default function MyStarScreen() {
         star.traverse((child) => {
           if (child instanceof THREE.Mesh && child.material) {
             const material = child.material as THREE.MeshStandardMaterial;
-            material.color?.setHex(0xffffff); // ster blijft wit
-            material.emissive?.setHex(emissiveColor); // gloedkleur instellen
-            material.emissiveIntensity = emissiveIntensity; // sterke glow
-          }          
+            material.color?.setHex(0xffffff);
+            material.emissive?.setHex(0xffffff);
+            material.emissiveIntensity = 1.5;
+          }
         });
 
         scene.add(star);
@@ -83,129 +86,116 @@ export default function MyStarScreen() {
       },
       undefined,
       (error) => {
-        console.error("❌ Error loading star.glb:", error);
+        console.error("Error loading star.glb", error);
       }
     );
   };
 
+  const handleCustomize = () => {
+    if (isPrivate) {
+      if (hasCompletedPrivate && privateFlowData?.emissive) {
+        router.push({
+          pathname: "/(app)/my-stars/private-star/my-star-private2",
+          params: {
+            name: privateFlowData.name,
+            emissive: privateFlowData.emissive,
+          },
+        });
+      } else {
+        router.push("/(app)/my-stars/private-star/private-my-star");
+      }
+    } else {
+      if (hasCompletedPublic && publicFlowData?.emissive) {
+        router.push({
+          pathname: "/(app)/my-stars/public-star/my-star-public2",
+          params: {
+            name: publicFlowData.name,
+            emissive: publicFlowData.emissive,
+          },
+        });
+      } else {
+        router.push("/(app)/my-stars/public-star/public-my-star");
+      }
+    }
+  };
+
   return (
     <View style={{ flex: 1 }}>
-      {/* Gradient background */}
-      <View style={StyleSheet.absoluteFill}>
-        <LinearGradient
-          colors={["#000000", "#273166", "#000000"]}
-          style={{ flex: 1 }}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-        />
-      </View>
+      <LinearGradient
+        colors={["#000000", "#273166", "#000000"]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      />
 
-      {/* GLView absoluut erbovenop zodat gradient zichtbaar blijft */}
-      <View style={styles.canvasWrapper}>
-        <GLView
-          style={styles.glView}
-          onContextCreate={createScene}
-        />
-      </View>
-
-      {/* Back button */}
-      <TouchableOpacity
-        style={{ position: "absolute", top: 40, left: 20, zIndex: 10, padding: 10 }}
-        onPress={() => router.back()}
-      >
+      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M15 18l-6-6 6-6"
-            stroke="#FEEDB6"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
       </TouchableOpacity>
 
-      {/* Title */}
       <Text style={styles.title}>My personal star</Text>
 
-      {/* Toggle */}
       <View style={styles.toggleContainer}>
         <Pressable
           onPress={() => setIsPrivate(true)}
           style={[
             styles.toggleButton,
-            {
-              backgroundColor: isPrivate ? "#FEEDB6" : "#11152A",
-              borderTopLeftRadius: 12,
-              borderBottomLeftRadius: 12,
-            },
+            { backgroundColor: isPrivate ? "#FEEDB6" : "#11152A", borderTopLeftRadius: 12, borderBottomLeftRadius: 12 },
           ]}
         >
-          <Text style={{
-            color: isPrivate ? "#11152A" : "#FFFFFF",
-            fontFamily: "Alice-Regular",
-            fontSize: 16,
-          }}>
-            Private
-          </Text>
+          <Text style={[styles.toggleText, { color: isPrivate ? "#11152A" : "#fff" }]}>Private</Text>
         </Pressable>
         <Pressable
           onPress={() => setIsPrivate(false)}
           style={[
             styles.toggleButton,
-            {
-              backgroundColor: !isPrivate ? "#FEEDB6" : "#11152A",
-              borderTopRightRadius: 12,
-              borderBottomRightRadius: 12,
-            },
+            { backgroundColor: !isPrivate ? "#FEEDB6" : "#11152A", borderTopRightRadius: 12, borderBottomRightRadius: 12 },
           ]}
         >
-          <Text style={{
-            color: !isPrivate ? "#11152A" : "#FFFFFF",
-            fontFamily: "Alice-Regular",
-            fontSize: 16,
-          }}>
-            Public
-          </Text>
+          <Text style={[styles.toggleText, { color: !isPrivate ? "#11152A" : "#fff" }]}>Public</Text>
         </Pressable>
       </View>
 
-      {/* Customize knop */}
-      <View style={styles.fixedButtonWrapper}>
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => {
-          if (isPrivate) {
-            router.push("/(app)/my-stars/private-star/private-my-star");
-          } else {
-            router.push("/(app)/my-stars/public-star/public-my-star");
-          }
-        }}
-      >
-        <Text style={styles.buttonText}>Customize star</Text>
-      </TouchableOpacity>
-    </View>
+      <View style={styles.canvasWrapper}>
+        <GLView style={styles.glView} onContextCreate={createScene} />
+      </View>
 
+      <View style={styles.fixedButtonWrapper}>
+        <TouchableOpacity style={styles.button} onPress={handleCustomize}>
+          <Text style={styles.buttonText}>Customize star</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  backBtn: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    zIndex: 10,
+  },
   title: {
-    color: "white",
-    fontSize: 18,
+    fontFamily: "Alice-Regular",
+    fontSize: 20,
+    color: "#fff",
     textAlign: "center",
     marginTop: 50,
-    fontFamily: "Alice-Regular",
   },
   toggleContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 20,
+    marginTop: 30,
   },
   toggleButton: {
     paddingVertical: 10,
     paddingHorizontal: 26,
-    marginTop: 20,
+  },
+  toggleText: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
   },
   canvasWrapper: {
     position: "absolute",
@@ -232,7 +222,6 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: "#FEEDB6",
     paddingVertical: 14,
-    paddingHorizontal: 32,
     borderRadius: 12,
     shadowColor: "#FEEDB6",
     shadowOffset: { width: 0, height: 4 },

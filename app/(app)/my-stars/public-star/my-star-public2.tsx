@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, Pressable, StyleSheet, Dimensions } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -9,16 +10,46 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
-import { useState } from "react";
+import useFlowStore from "@/lib/store/useFlowStore";
 
 const { width } = Dimensions.get("window");
 
 export default function MyStarPublic2() {
   const router = useRouter();
-  const { name, emissive } = useLocalSearchParams(); // ✅ name = fullName of initials (van ingelogde user)
+  const { name, emissive } = useLocalSearchParams(); // ontvangen via navigatie
   const [isPrivate, setIsPrivate] = useState(false);
 
-  const displayName = typeof name === "string" ? name : "";
+  const {
+    hasCompletedPrivate,
+    publicFlowData,
+    privateFlowData,
+    setCompletedPublic,
+  } = useFlowStore();
+
+  // ✅ Opslaan bij mount
+  useEffect(() => {
+    if (typeof name === "string" && typeof emissive === "string") {
+      setCompletedPublic({ name, emissive });
+    }
+  }, [name, emissive]);
+
+  const displayName = publicFlowData?.name ?? (typeof name === "string" ? name : "");
+
+  const handleToggleToPrivate = () => {
+    setIsPrivate(true);
+
+    if (hasCompletedPrivate && privateFlowData?.emissive && privateFlowData.name) {
+      router.push({
+        pathname: "/(app)/my-stars/private-star/my-star-private2",
+        params: {
+          name: privateFlowData.name,
+          emissive: privateFlowData.emissive,
+        },
+      });
+    } else {
+      router.push("/(app)/my-stars/private-star/private-my-star");
+    }
+  };
 
   const createScene = async (gl: any) => {
     const renderer = new Renderer({ gl });
@@ -102,12 +133,7 @@ export default function MyStarPublic2() {
 
       <View style={styles.toggleContainer}>
         <Pressable
-          onPress={() =>
-            router.push({
-              pathname: "/(app)/my-stars/private-star/my-star-private2",
-              params: { name, emissive },
-            })
-          }
+          onPress={handleToggleToPrivate}
           style={[
             styles.toggleButton,
             {
