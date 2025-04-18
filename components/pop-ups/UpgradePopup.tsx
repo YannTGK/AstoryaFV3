@@ -45,6 +45,7 @@ import {
               <Text style={styles.heading}>
                 IT’S TIME FOR YOU TO{"\n"}UPGRADE! ✦
               </Text>
+              <View style={styles.blueLine} />
   
               {showBasic ? (
                 <>
@@ -285,5 +286,12 @@ import {
       textAlignVertical: "center",
       flexShrink: 1,
     },
+    blueLine: {
+        height: 1,
+        width: "100%",
+        backgroundColor: "#273166", // donkerblauw zoals rest van de stijl
+        marginTop: 8,
+        marginBottom: 16,
+      },      
   });
   
