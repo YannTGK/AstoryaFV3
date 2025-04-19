@@ -16,8 +16,8 @@ import PrivateIcon from "@/assets/images/svg-icons/private.svg";
 import PrivateActiveIcon from "@/assets/images/svg-icons/private-active.svg";
 import SearchIcon from "@/assets/images/svg-icons/search.svg";
 import SearchActiveIcon from "@/assets/images/svg-icons/search-active.svg";
-import CloseIcon from "@/assets/images/svg-icons/close.svg";
-import Close2Icon from "@/assets/images/svg-icons/close2.svg";
+import CloseIcon from "@/assets/images/svg-icons/closea.svg";
+import OpenIcon from "@/assets/images/svg-icons/open.svg";
 
 export default function AppLayout() {
   const pathname = usePathname();
@@ -81,7 +81,7 @@ export default function AppLayout() {
           <View style={styles.exploreMenu}>
             <View style={styles.centered}>
               <TouchableOpacity style={styles.closeButton} onPress={() => setIsMenuOpen(!isMenuOpen)}>
-                {isMenuOpen ? <CloseIcon width={60} height={60} /> : <Close2Icon width={60} height={60} />}
+                {isMenuOpen ? <CloseIcon width={60} height={60} /> : <OpenIcon width={60} height={60} />}
               </TouchableOpacity>
             </View>
           </View>
