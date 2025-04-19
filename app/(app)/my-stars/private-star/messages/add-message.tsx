@@ -18,6 +18,8 @@ import DeleteIcon from "@/assets/images/svg-icons/delete.svg";
 import DownloadIcon from "@/assets/images/svg-icons/download.svg";
 import MoreIcon from "@/assets/images/svg-icons/more.svg";
 
+import { useMessageStore } from "@/lib/store/useMessageStore";
+
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width / 2 - 32;
 
@@ -25,9 +27,7 @@ export default function AddMessage() {
   const router = useRouter();
   const { to } = useLocalSearchParams();
 
-  const [messages, setMessages] = useState<
-    { id: number; to: string }[]
-  >([]);
+  const { messages, addMessage } = useMessageStore();
 
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -38,13 +38,7 @@ export default function AddMessage() {
       to.trim() !== "" &&
       !messages.some((msg) => msg.to === to)
     ) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          to,
-        },
-      ]);
+      addMessage(to);
     }
   }, [to]);
 
@@ -138,7 +132,7 @@ const styles = StyleSheet.create({
   },
   moreWrapper: {
     position: "absolute",
-    top: 110,
+    top: 55,
     right: 20,
     zIndex: 20,
     alignItems: "flex-end",
