@@ -11,6 +11,8 @@ export default function WriteMessage() {
   const [to, setTo] = useState("");
   const [message, setMessage] = useState("");
 
+  const allFieldsFilled = from.trim() && to.trim() && message.trim();
+
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
@@ -50,7 +52,7 @@ export default function WriteMessage() {
           {/* From */}
           <TextInput
             style={styles.input}
-            placeholder="From: @..."
+            placeholder="From: ..."
             placeholderTextColor="#888"
             value={from}
             onChangeText={setFrom}
@@ -87,8 +89,20 @@ export default function WriteMessage() {
       {/* Gefixeerde Add-knop */}
       <View style={styles.addWrapper}>
         <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => router.push("/(app)/my-stars/private-star/messages/add-message")}
+          style={[
+            styles.addButton,
+            !allFieldsFilled && styles.addButtonDisabled,
+          ]}
+          onPress={() => {
+            if (allFieldsFilled) {
+                router.push({
+                    pathname: "/(app)/my-stars/private-star/messages/add-message",
+                    params: { to },
+                  });                  
+            }
+          }}
+          disabled={!allFieldsFilled}
+          activeOpacity={allFieldsFilled ? 0.8 : 1}
         >
           <Text style={styles.addText}>Add</Text>
         </TouchableOpacity>
@@ -170,8 +184,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
   },
+  addButtonDisabled: {
+    opacity: 0.6,
+  },
   addText: {
-    color: "#000",
+    color: "#11152A",
     textAlign: "center",
     fontSize: 16,
     fontFamily: "Alice-Regular",
