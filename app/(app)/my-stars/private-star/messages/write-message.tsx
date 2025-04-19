@@ -97,7 +97,7 @@ export default function WriteMessage() {
             if (allFieldsFilled) {
                 router.push({
                     pathname: "/(app)/my-stars/private-star/messages/add-message",
-                    params: { to },
+                    params: { to, from, message },
                   });                  
             }
           }}

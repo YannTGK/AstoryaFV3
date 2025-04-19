@@ -6,6 +6,7 @@ import {
   StyleSheet,
   FlatList,
   Dimensions,
+  Modal,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -17,6 +18,7 @@ import EditIcon from "@/assets/images/svg-icons/edit.svg";
 import DeleteIcon from "@/assets/images/svg-icons/delete.svg";
 import DownloadIcon from "@/assets/images/svg-icons/download.svg";
 import MoreIcon from "@/assets/images/svg-icons/more.svg";
+import CloseIcon from "@/assets/images/svg-icons/close-icon.svg";
 
 import { useMessageStore } from "@/lib/store/useMessageStore";
 
@@ -25,34 +27,49 @@ const CARD_WIDTH = width / 2 - 32;
 
 export default function AddMessage() {
   const router = useRouter();
-  const { to } = useLocalSearchParams();
-
+  const { to, from, message } = useLocalSearchParams();
   const { messages, addMessage } = useMessageStore();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeMessage, setActiveMessage] = useState<any | null>(null);
 
   useEffect(() => {
     if (
       to &&
+      from &&
+      message &&
       typeof to === "string" &&
-      to.trim() !== "" &&
-      !messages.some((msg) => msg.to === to)
+      typeof from === "string" &&
+      typeof message === "string" &&
+      !messages.some(
+        (msg) =>
+          msg.to === to &&
+          msg.from === from &&
+          msg.message === message
+      )
     ) {
-      addMessage(to);
+      addMessage({
+        id: Date.now(),
+        to,
+        from,
+        message,
+      });
     }
-  }, [to]);
+  }, [to, from, message]);
 
   const addNewMessage = () => {
     router.push("/(app)/my-stars/private-star/messages/write-message");
   };
 
   const renderMessageCard = ({ item }: any) => (
-    <View style={styles.cardWrapper}>
-      <View style={styles.cardContent}>
-        <LetterIcon width={CARD_WIDTH} height={120} style={styles.letterSvg} />
-        <Text style={styles.forText}>For: {item.to}</Text>
+    <TouchableOpacity onPress={() => setActiveMessage(item)}>
+      <View style={styles.cardWrapper}>
+        <View style={styles.cardContent}>
+          <LetterIcon width={CARD_WIDTH} height={120} style={styles.letterSvg} />
+          <Text style={styles.forText}>For: {item.to}</Text>
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -64,7 +81,6 @@ export default function AddMessage() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Back-button */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
           <Path
@@ -77,7 +93,6 @@ export default function AddMessage() {
         </Svg>
       </TouchableOpacity>
 
-      {/* More-icon rechtsboven */}
       <View style={styles.moreWrapper}>
         <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)}>
           <MoreIcon width={24} height={24} />
@@ -101,10 +116,8 @@ export default function AddMessage() {
         )}
       </View>
 
-      {/* Titel */}
       <Text style={styles.title}>Messages</Text>
 
-      {/* Brieven */}
       <FlatList
         data={messages}
         numColumns={2}
@@ -113,12 +126,25 @@ export default function AddMessage() {
         renderItem={renderMessageCard}
       />
 
-      {/* Plus-knop */}
       <View style={styles.plusWrapper}>
         <TouchableOpacity onPress={addNewMessage}>
           <PlusIcon width={50} height={50} />
         </TouchableOpacity>
       </View>
+
+      <Modal visible={!!activeMessage} transparent animationType="fade">
+        <View style={styles.overlay}>
+          <View style={styles.letterPopup}>
+            <TouchableOpacity
+              style={styles.closeBtn}
+              onPress={() => setActiveMessage(null)}
+            >
+              <CloseIcon width={20} height={20} />
+            </TouchableOpacity>
+            <Text style={styles.popupBody}>{activeMessage?.message}</Text>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -198,5 +224,36 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     zIndex: 10,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  letterPopup: {
+    backgroundColor: "#FFFDF7",
+    borderRadius: 8,
+    padding: 20,
+    width: "100%",
+    position: "relative",
+  },
+  closeBtn: {
+    position: "absolute",
+    top: 14,
+    right: 14,
+    zIndex: 10,
+  },
+  popupText: {
+    fontFamily: "Alice-Regular",
+    fontSize: 15,
+    marginBottom: 10,
+  },
+  popupBody: {
+    fontFamily: "Alice-Regular",
+    fontSize: 14,
+    color: "#111",
+    lineHeight: 22,
   },
 });
