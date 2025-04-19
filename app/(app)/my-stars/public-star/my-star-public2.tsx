@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
   },
   fixedButtonWrapper: {
     position: "absolute",
-    bottom: 110,
+    bottom: 100,
     left: 20,
     right: 20,
     zIndex: 2,

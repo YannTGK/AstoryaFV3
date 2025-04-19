@@ -185,12 +185,34 @@ export default function MyStarPrivate2() {
 
       {/* Iconen */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollRow} contentContainerStyle={{ paddingHorizontal: 20 }}>
-        {icons.map((item, index) => (
-          <View key={index} style={styles.iconItem}>
+      {icons.map((item, index) => {
+        const isMessages = item.label === "Messages";
+
+        const handlePress = () => {
+          if (isMessages) {
+            router.push("/(app)/my-stars/private-star/messages/no-messages");
+          }
+        };
+
+        const content = (
+          <>
             {item.icon}
             <Text style={styles.iconLabel}>{item.label}</Text>
+          </>
+        );
+
+        return (
+          <View key={index} style={styles.iconItem}>
+            {isMessages ? (
+              <TouchableOpacity onPress={handlePress}>
+                {content}
+              </TouchableOpacity>
+            ) : (
+              content
+            )}
           </View>
-        ))}
+        );
+      })}
       </ScrollView>
     </View>
   );
