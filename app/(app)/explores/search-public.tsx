@@ -36,7 +36,10 @@ export default function SearchPublic() {
       </View>
 
       {/* Filterknop */}
-      <TouchableOpacity style={styles.filterButton}>
+      <TouchableOpacity
+        style={styles.filterButton}
+        onPress={() => router.push("/explores/filter")}
+        >
         <Text style={styles.filterText}>Filter</Text>
         <FilterIcon width={18} height={18} />
       </TouchableOpacity>
