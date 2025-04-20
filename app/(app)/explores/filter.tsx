@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     height: 44,
     justifyContent: "center",
-    paddingHorizontal: 6,
+    paddingHorizontal: 0,
   },
   picker: {
     flex: 1,
