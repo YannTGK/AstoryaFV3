@@ -1,16 +1,57 @@
 import { Tabs, usePathname, useRouter } from "expo-router";
-import { Image, View, StyleSheet, TouchableOpacity, Text } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
 import { useState } from "react";
+
+import ExploreIcon from "@/assets/images/svg-icons/explore.svg";
+import ExploreActiveIcon from "@/assets/images/svg-icons/explore-active.svg";
+import DedicateIcon from "@/assets/images/svg-icons/dedicate.svg";
+import DedicateActiveIcon from "@/assets/images/svg-icons/dedicate-active.svg";
+import MyStarIcon from "@/assets/images/svg-icons/my-star.svg";
+import MyStarActiveIcon from "@/assets/images/svg-icons/my-star-active.svg";
+import AccountIcon from "@/assets/images/svg-icons/account.svg";
+import AccountActiveIcon from "@/assets/images/svg-icons/account-active.svg";
+import PublicIcon from "@/assets/images/svg-icons/public.svg";
+import PublicActiveIcon from "@/assets/images/svg-icons/public-active.svg";
+import PrivateIcon from "@/assets/images/svg-icons/private.svg";
+import PrivateActiveIcon from "@/assets/images/svg-icons/private-active.svg";
+import SearchIcon from "@/assets/images/svg-icons/search.svg";
+import SearchActiveIcon from "@/assets/images/svg-icons/search-active.svg";
+import CloseIcon from "@/assets/images/svg-icons/closea.svg";
+import OpenIcon from "@/assets/images/svg-icons/open.svg";
+
+import { useLayoutStore } from "@/lib/store/layoutStore";
 
 export default function AppLayout() {
   const pathname = usePathname();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("public");
+
+  const [activeTab, setActiveTab] = useState<"public" | "private">("public");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const handleTabPress = (tab: string) => {
-    setActiveTab(tab);
-    router.replace(`/explores/${tab}`); // Navigate inside "explores"
+  const isSearching = useLayoutStore((state) => state.isSearching);
+  const setIsSearching = useLayoutStore((state) => state.setIsSearching);
+
+  const handleTabPress = (tab: "public" | "private" | "search") => {
+    if (tab === "search") {
+      if (isSearching) {
+        // Stop search → keer terug naar juiste tab
+        setIsSearching(false);
+        router.replace(`/explores/${activeTab}`);
+      } else {
+        // Start search → naar juiste zoekpagina
+        setIsSearching(true);
+        if (activeTab === "public") {
+          router.replace("/explores/search-public");
+        } else {
+          router.replace("/explores/search-private");
+        }
+      }
+    } else {
+      // Wissel naar public/private
+      setIsSearching(false);
+      setActiveTab(tab);
+      router.replace(`/explores/${tab}`);
+    }
   };
 
   return (
@@ -22,161 +63,81 @@ export default function AppLayout() {
           tabBarLabelStyle: styles.tabLabel,
           tabBarActiveTintColor: "#273166",
           tabBarInactiveTintColor: "#C4C4C4",
+          tabBarIconStyle: styles.tabIcon,
         }}
       >
-       <Tabs.Screen
+        <Tabs.Screen
           name="explores"
           options={{
             tabBarLabel: "Explore",
-            tabBarIcon: ({ focused }) => (
-              <Image
-                source={
-                  focused
-                    ? require("@/assets/images/icons/explore-active.png")
-                    : require("@/assets/images/icons/explore.png")
-                }
-                style={styles.icon}
-              />
-            ),
+            tabBarIcon: ({ focused }) =>
+              focused ? <ExploreActiveIcon width={28} height={28} /> : <ExploreIcon width={28} height={28} />,
           }}
         />
         <Tabs.Screen
           name="dedicates"
           options={{
             tabBarLabel: "Dedicate",
-            tabBarIcon: ({ focused }) => (
-              <Image
-                source={
-                  focused
-                    ? require("@/assets/images/icons/dedicate-active.png")
-                    : require("@/assets/images/icons/dedicate.png")
-                }
-                style={styles.icon}
-              />
-            ),
+            tabBarIcon: ({ focused }) =>
+              focused ? <DedicateActiveIcon width={28} height={28} /> : <DedicateIcon width={28} height={28} />,
           }}
         />
         <Tabs.Screen
           name="my-stars"
           options={{
             tabBarLabel: "My Star",
-            tabBarIcon: ({ focused }) => (
-              <Image
-                source={
-                  focused
-                    ? require("@/assets/images/icons/my-star-active.png")
-                    : require("@/assets/images/icons/my-star.png")
-                }
-                style={styles.icon}
-              />
-            ),
+            tabBarIcon: ({ focused }) =>
+              focused ? <MyStarActiveIcon width={28} height={28} /> : <MyStarIcon width={28} height={28} />,
           }}
         />
         <Tabs.Screen
           name="accounts"
           options={{
             tabBarLabel: "Account",
-            tabBarIcon: ({ focused }) => (
-              <Image
-                source={
-                  focused
-                    ? require("@/assets/images/icons/account-active.png")
-                    : require("@/assets/images/icons/account.png")
-                }
-                style={styles.icon}
-              />
-            ),
+            tabBarIcon: ({ focused }) =>
+              focused ? <AccountActiveIcon width={26} height={26} /> : <AccountIcon width={26} height={26} />,
           }}
         />
       </Tabs>
 
-      {/* ✅ Show Custom Explore Menu Only When Explore is Active */}
       {pathname.includes("explores") && (
         <>
-          {/* Close button blijft altijd zichtbaar */}
           <View style={styles.exploreMenu}>
             <View style={styles.centered}>
-              <TouchableOpacity 
-                style={styles.closeButton} 
-                onPress={() => setIsMenuOpen(!isMenuOpen)}
-              >
-                <Image
-                  source={
-                    isMenuOpen
-                      ? require("@/assets/images/icons/close.png") // Afbeelding voor open toestand
-                      : require("@/assets/images/icons/open.png") // Afbeelding voor gesloten toestand
-                  }
-                  style={styles.navIcon}
-                />
+              <TouchableOpacity style={styles.closeButton} onPress={() => setIsMenuOpen(!isMenuOpen)}>
+                {isMenuOpen ? <CloseIcon width={60} height={60} /> : <OpenIcon width={60} height={60} />}
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Custom menu alleen tonen als isMenuOpen true is */}
           {isMenuOpen && (
             <>
-              {/* ✅ Circular Background */}
               <View style={styles.circleHolder}>
                 <View style={styles.circle} />
               </View>
 
-              {/* ✅ Public Button */}
               <View style={styles.publicHolder}>
-                <TouchableOpacity
-                  style={styles.publicPlacement}
-                  onPress={() => handleTabPress("public")}
-                >
-                  <Image
-                    source={
-                      activeTab === "public"
-                        ? require("@/assets/images/icons/public-active.png")
-                        : require("@/assets/images/icons/public.png")
-                    }
-                    style={styles.icon}
-                  />
-                  <Text style={[styles.labelAround, activeTab === "public" && styles.activeText]}>
+                <TouchableOpacity style={styles.publicPlacement} onPress={() => handleTabPress("public")}>
+                  {activeTab === "public" ? <PublicActiveIcon width={28} height={28} /> : <PublicIcon width={28} height={28} />}
+                  <Text style={[styles.labelAround, activeTab === "public" && !isSearching && styles.activeText]}>
                     Public
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              {/* ✅ Private Button */}
               <View style={styles.publicHolder2}>
-                <TouchableOpacity
-                  style={styles.publicPlacement}
-                  onPress={() => handleTabPress("private")}
-                >
-                  <Image
-                    source={
-                      activeTab === "private"
-                        ? require("@/assets/images/icons/private-active.png")
-                        : require("@/assets/images/icons/private.png")
-                    }
-                    style={styles.icon}
-                  />
-                  <Text style={[styles.labelAround, activeTab === "private" && styles.activeText]}>
+                <TouchableOpacity style={styles.publicPlacement} onPress={() => handleTabPress("private")}>
+                  {activeTab === "private" ? <PrivateActiveIcon width={28} height={28} /> : <PrivateIcon width={28} height={28} />}
+                  <Text style={[styles.labelAround, activeTab === "private" && !isSearching && styles.activeText]}>
                     Private
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              {/* ✅ Search Button */}
               <View style={styles.publicHolder3}>
-                <TouchableOpacity
-                  style={styles.publicPlacement}
-                  onPress={() => handleTabPress("search")}
-                >
-                  <Image
-                    source={
-                      activeTab === "search"
-                        ? require("@/assets/images/icons/search-active.png")
-                        : require("@/assets/images/icons/search.png")
-                    }
-                    style={styles.icon}
-                  />
-                  <Text style={[styles.labelAround, activeTab === "search" && styles.activeText]}>
-                    Search
-                  </Text>
+                <TouchableOpacity style={styles.publicPlacement} onPress={() => handleTabPress("search")}>
+                  {isSearching ? <SearchActiveIcon width={26} height={26} /> : <SearchIcon width={26} height={26} />}
+                  <Text style={[styles.labelAround, isSearching && styles.activeText]}>Search</Text>
                 </TouchableOpacity>
               </View>
             </>
@@ -191,8 +152,8 @@ const styles = StyleSheet.create({
   tabBar: {
     backgroundColor: "white",
     position: "absolute",
-    height: 90,
-    paddingBottom: 20,
+    height: 80,
+    paddingBottom: 10,
     paddingTop: 10,
     borderTopWidth: 0,
     shadowColor: "#000",
@@ -206,14 +167,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Alice-Regular",
   },
-  icon: {
+  tabIcon: {
     width: 28,
     height: 28,
-    resizeMode: "contain",
+    marginBottom: 4,
   },
   exploreMenu: {
     position: "absolute",
-    bottom: 60,
+    bottom: 50,
     width: "100%",
     alignItems: "center",
     zIndex: 11,
@@ -226,16 +187,12 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     zIndex: 15,
   },
-  navIcon: {
-    width: 60,
-    height: 60,
-  },
   centered: {
     alignItems: "center",
   },
   circleHolder: {
     position: "absolute",
-    bottom: 0,
+    bottom: -10,
     width: "100%",
     alignItems: "center",
     zIndex: 9,
@@ -249,7 +206,7 @@ const styles = StyleSheet.create({
   },
   publicHolder: {
     position: "absolute",
-    bottom: 100,
+    bottom: 90,
     left: "50%",
     marginLeft: -64,
     alignItems: "center",
@@ -257,7 +214,7 @@ const styles = StyleSheet.create({
   },
   publicHolder2: {
     position: "absolute",
-    bottom: 130,
+    bottom: 120,
     left: "50%",
     marginLeft: -13,
     alignItems: "center",
@@ -265,7 +222,7 @@ const styles = StyleSheet.create({
   },
   publicHolder3: {
     position: "absolute",
-    bottom: 100,
+    bottom: 90,
     left: "50%",
     marginLeft: 39,
     alignItems: "center",
@@ -284,6 +241,6 @@ const styles = StyleSheet.create({
   },
   activeText: {
     color: "#FEEDB6",
-    fontWeight: "bold",
+    fontFamily: "Alice-Regular",
   },
 });

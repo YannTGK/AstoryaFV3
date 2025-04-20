@@ -16,10 +16,21 @@ export default function DedicateScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>👤 User Information</Text>
-      <Text style={styles.label}>Name: <Text style={styles.value}>{user.firstName} {user.lastName}</Text></Text>
-      <Text style={styles.label}>Email: <Text style={styles.value}>{user.email}</Text></Text>
-      <Text style={styles.label}>Phone: <Text style={styles.value}>{user.phoneNumber}</Text></Text>
-      <Text style={styles.label}>Date of Birth: <Text style={styles.value}>{new Date(user.dob).toLocaleDateString()}</Text></Text>
+      <Text style={styles.label}>
+        Name: <Text style={styles.value}>{user.firstName} {user.lastName}</Text>
+      </Text>
+      <Text style={styles.label}>
+        Username: <Text style={styles.value}>{user.username}</Text>
+      </Text>
+      <Text style={styles.label}>
+        Email: <Text style={styles.value}>{user.email}</Text>
+      </Text>
+      <Text style={styles.label}>
+        Phone: <Text style={styles.value}>{user.phoneNumber}</Text>
+      </Text>
+      <Text style={styles.label}>
+        Date of Birth: <Text style={styles.value}>{new Date(user.dob).toLocaleDateString()}</Text>
+      </Text>
     </View>
   );
 }

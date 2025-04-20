@@ -1,17 +1,22 @@
 import React, { useRef, useEffect } from "react";
-import { StyleSheet, View, Animated, PanResponder, Text } from "react-native";
+import { StyleSheet, View, Animated, PanResponder } from "react-native";
+import StarJoystickIcon from "@/assets/images/svg-icons/star-joystick.svg";
 
-export default function Joystick({ onMove }) {
-  const pan = useRef(new Animated.ValueXY()).current;
-  const lastDirection = useRef({ x: 0, y: 0 });
-  const isActive = useRef(false);
+type JoystickProps = {
+  onMove?: (x: number, y: number) => void;
+};
+
+export default function Joystick({ onMove }: JoystickProps) {
+const pan = useRef(new Animated.ValueXY()).current;
+const lastDirection = useRef({ x: 0, y: 0 });
+const isActive = useRef(false);
 
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderMove: (event, gesture) => {
         isActive.current = true;
-        const maxDistance = 64; 
+        const maxDistance = 64;
         const distance = Math.sqrt(gesture.dx ** 2 + gesture.dy ** 2);
 
         let normalizedX, normalizedY;
@@ -62,10 +67,7 @@ export default function Joystick({ onMove }) {
           {...panResponder.panHandlers}
           style={[styles.joystickHandle, { transform: pan.getTranslateTransform() }]}
         >
-          <Text style={[styles.arrow, styles.arrowUp]}>^</Text>
-          <Text style={[styles.arrow, styles.arrowRight]}>^</Text>
-          <Text style={[styles.arrow, styles.arrowDown]}>^</Text>
-          <Text style={[styles.arrow, styles.arrowLeft]}>^</Text>
+          <StarJoystickIcon width={50} height={50} />
         </Animated.View>
       </View>
     </View>
@@ -76,51 +78,25 @@ const styles = StyleSheet.create({
   joystickContainer: {
     position: "absolute",
     bottom: 130,
-    right: 30, 
-    width: 128, 
-    height: 128, 
+    right: 15,
+    width: 128,
+    height: 154,
   },
   joystickBase: {
-    width: 128, 
-    height: 128, 
+    width: 128,
+    height: 128,
     backgroundColor: "rgba(255, 255, 255, 0.25)",
-    borderRadius: 64, 
+    borderRadius: 64,
     justifyContent: "center",
     alignItems: "center",
   },
   joystickHandle: {
-    width: 64, 
+    width: 64,
     height: 64,
     backgroundColor: "rgba(255, 255, 255, 0.25)",
-    borderRadius: 32, 
+    borderRadius: 32,
     position: "absolute",
     justifyContent: "center",
     alignItems: "center",
-  },
-  arrow: {
-    position: "absolute",
-    fontSize: 28,
-    fontWeight: "regular",
-    color: "white",
-  },
-  arrowUp: {
-    top: 4,
-    left: "50%",
-    transform: [{ translateX: -6 }, { rotate: "0deg" }],
-  },
-  arrowDown: {
-    bottom: 4,
-    left: "50%",
-    transform: [{ translateX: -6 }, { rotate: "180deg" }],
-  },
-  arrowLeft: {
-    left: 16,
-    top: "50%",
-    transform: [{ translateY: -19 }, { rotate: "270deg" }],
-  },
-  arrowRight: {
-    right: 16,
-    top: "50%",
-    transform: [{ translateY: -19 }, { rotate: "90deg" }],
   },
 });
