@@ -19,21 +19,26 @@ import SearchActiveIcon from "@/assets/images/svg-icons/search-active.svg";
 import CloseIcon from "@/assets/images/svg-icons/closea.svg";
 import OpenIcon from "@/assets/images/svg-icons/open.svg";
 
+import { useLayoutStore } from "@/lib/store/layoutStore";
+
 export default function AppLayout() {
   const pathname = usePathname();
   const router = useRouter();
+
   const [activeTab, setActiveTab] = useState<"public" | "private">("public");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
+
+  const isSearching = useLayoutStore((state) => state.isSearching);
+  const setIsSearching = useLayoutStore((state) => state.setIsSearching);
 
   const handleTabPress = (tab: "public" | "private" | "search") => {
     if (tab === "search") {
       if (isSearching) {
-        // Search stond al aan → keer terug naar juiste tab
+        // Stop search → keer terug naar juiste tab
         setIsSearching(false);
         router.replace(`/explores/${activeTab}`);
       } else {
-        // Start search → ga naar juiste zoekscherm
+        // Start search → naar juiste zoekpagina
         setIsSearching(true);
         if (activeTab === "public") {
           router.replace("/explores/search-public");
@@ -42,12 +47,12 @@ export default function AppLayout() {
         }
       }
     } else {
-      // Gewoon wisselen tussen public/private
+      // Wissel naar public/private
       setIsSearching(false);
       setActiveTab(tab);
       router.replace(`/explores/${tab}`);
     }
-  };  
+  };
 
   return (
     <>
