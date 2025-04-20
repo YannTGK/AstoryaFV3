@@ -1,6 +1,6 @@
-import { View, Text, TouchableOpacity, Pressable, StyleSheet, Dimensions, Modal } from "react-native";
+import { View, Text, TouchableOpacity, Pressable, StyleSheet, Dimensions } from "react-native";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import { GLView } from "expo-gl";
@@ -10,83 +10,21 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
-import useFlowStore from "@/lib/store/useFlowStore";
 import UpgradePopup from "@/components/pop-ups/UpgradePopup";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
-export default function MyStarScreen() {
+export default function StartMyStarPrivate() {
   const router = useRouter();
-  const {
-    hasCompletedPrivate,
-    hasCompletedPublic,
-    privateFlowData,
-    publicFlowData,
-    toggleStatus,
-    setToggleStatus,
-  } = useFlowStore();
-
-  const [isPrivate, setIsPrivate] = useState(toggleStatus === "private");
   const [showPopup, setShowPopup] = useState(true);
   const [currentPopup, setCurrentPopup] = useState<"basic" | "premium">("premium");
 
-  useEffect(() => {
-    setIsPrivate(toggleStatus === "private");
-  }, [toggleStatus]);
-
-  const handleToggle = (status: "private" | "public") => {
-    setIsPrivate(status === "private");
-    setToggleStatus(status);
-
-    if (status === "private") {
-      if (hasCompletedPrivate && privateFlowData?.emissive) {
-        router.push({
-          pathname: "/(app)/my-stars/private-star/final-my-star-private",
-          params: {
-            name: privateFlowData.name,
-            emissive: privateFlowData.emissive,
-          },
-        });
-      }
-    } else {
-      if (hasCompletedPublic && publicFlowData?.emissive) {
-        router.push({
-          pathname: "/(app)/my-stars/public-star/final-my-star-public",
-          params: {
-            name: publicFlowData.name,
-            emissive: publicFlowData.emissive,
-          },
-        });
-      }
-    }
+  const handleToggleToPublic = () => {
+    router.replace("/(app)/my-stars/start-my-star-public");
   };
-
+  
   const handleCustomize = () => {
-    if (isPrivate) {
-      if (hasCompletedPrivate && privateFlowData?.emissive) {
-        router.push({
-          pathname: "/(app)/my-stars/private-star/final-my-star-private",
-          params: {
-            name: privateFlowData.name,
-            emissive: privateFlowData.emissive,
-          },
-        });
-      } else {
-        router.push("/(app)/my-stars/private-star/color-my-star-private");
-      }
-    } else {
-      if (hasCompletedPublic && publicFlowData?.emissive) {
-        router.push({
-          pathname: "/(app)/my-stars/public-star/final-my-star-public",
-          params: {
-            name: publicFlowData.name,
-            emissive: publicFlowData.emissive,
-          },
-        });
-      } else {
-        router.push("/(app)/my-stars/public-star/color-my-star-public");
-      }
-    }
+    router.push("/(app)/my-stars/private-star/color-my-star-private");
   };
 
   const createScene = async (gl: any) => {
@@ -98,12 +36,7 @@ export default function MyStarScreen() {
     const scene = new THREE.Scene();
     scene.background = null;
 
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      gl.drawingBufferWidth / gl.drawingBufferHeight,
-      0.1,
-      1000
-    );
+    const camera = new THREE.PerspectiveCamera(75, gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 1000);
     camera.position.z = 7;
 
     const light = new THREE.AmbientLight(0xffffff, 1.5);
@@ -121,8 +54,8 @@ export default function MyStarScreen() {
         star.traverse((child) => {
           if (child instanceof THREE.Mesh && child.material) {
             const material = child.material as THREE.MeshStandardMaterial;
-            material.color?.setHex(0xffffff);
-            material.emissive?.setHex(0xffffff);
+            material.color.set(0xffffff);
+            material.emissive.set(0xffffff);
             material.emissiveIntensity = 1.5;
           }
         });
@@ -131,14 +64,7 @@ export default function MyStarScreen() {
 
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
-        composer.addPass(
-          new UnrealBloomPass(
-            new THREE.Vector2(gl.drawingBufferWidth, gl.drawingBufferHeight),
-            0.9,
-            0.3,
-            0
-          )
-        );
+        composer.addPass(new UnrealBloomPass(new THREE.Vector2(gl.drawingBufferWidth, gl.drawingBufferHeight), 0.9, 0.3, 0));
 
         const animate = () => {
           requestAnimationFrame(animate);
@@ -165,14 +91,11 @@ export default function MyStarScreen() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* 👇 Upgrade popup overlay */}
       {showPopup && (
         <UpgradePopup
           type={currentPopup}
           onClose={() => setShowPopup(false)}
-          onSwitch={() =>
-            setCurrentPopup((prev) => (prev === "premium" ? "basic" : "premium"))
-          }
+          onSwitch={() => setCurrentPopup((prev) => (prev === "premium" ? "basic" : "premium"))}
         />
       )}
 
@@ -188,30 +111,15 @@ export default function MyStarScreen() {
 
           <View style={styles.toggleContainer}>
             <Pressable
-              onPress={() => handleToggle("private")}
-              style={[
-                styles.toggleButton,
-                {
-                  backgroundColor: isPrivate ? "#FEEDB6" : "#11152A",
-                  borderTopLeftRadius: 12,
-                  borderBottomLeftRadius: 12,
-                },
-              ]}
+              style={[styles.toggleButton, { backgroundColor: "#FEEDB6", borderTopLeftRadius: 12, borderBottomLeftRadius: 12 }]}
             >
-              <Text style={[styles.toggleText, { color: isPrivate ? "#11152A" : "#fff" }]}>Private</Text>
+              <Text style={[styles.toggleText, { color: "#11152A" }]}>Private</Text>
             </Pressable>
             <Pressable
-              onPress={() => handleToggle("public")}
-              style={[
-                styles.toggleButton,
-                {
-                  backgroundColor: !isPrivate ? "#FEEDB6" : "#11152A",
-                  borderTopRightRadius: 12,
-                  borderBottomRightRadius: 12,
-                },
-              ]}
+              onPress={handleToggleToPublic}
+              style={[styles.toggleButton, { backgroundColor: "#11152A", borderTopRightRadius: 12, borderBottomRightRadius: 12 }]}
             >
-              <Text style={[styles.toggleText, { color: !isPrivate ? "#11152A" : "#fff" }]}>Public</Text>
+              <Text style={[styles.toggleText, { color: "#fff" }]}>Public</Text>
             </Pressable>
           </View>
 

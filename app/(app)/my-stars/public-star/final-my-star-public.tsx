@@ -10,49 +10,19 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
-import useFlowStore from "@/lib/store/useFlowStore";
 
 const { width } = Dimensions.get("window");
 
 export default function MyStarPublic2() {
   const router = useRouter();
-  const { name, emissive } = useLocalSearchParams(); // ✅ ontvangen via navigatie
+  const { name, emissive } = useLocalSearchParams();
   const [isPrivate, setIsPrivate] = useState(false);
 
-  const {
-    hasCompletedPrivate,
-    privateFlowData,
-    publicFlowData,
-    setCompletedPublic,
-  } = useFlowStore();
-
-  // ✅ Bij openen dit scherm: flow opslaan
-  useEffect(() => {
-    if (typeof name === "string" && typeof emissive === "string") {
-      setCompletedPublic({ name, emissive });
-    }
-  }, [name, emissive]);
-
-  const displayName = publicFlowData?.name ?? (typeof name === "string" ? name : "");
+  const isValid = typeof name === "string" && typeof emissive === "string";
 
   const handleToggleToPrivate = () => {
     setIsPrivate(true);
-
-    if (hasCompletedPrivate && privateFlowData?.emissive && privateFlowData.name) {
-      router.push({
-        pathname: "/(app)/my-stars/private-star/final-my-star-private",
-        params: {
-          name: privateFlowData.name,
-          emissive: privateFlowData.emissive,
-        },
-      });
-    } else {
-      // ⛔ private flow nog niet gedaan → terug naar beginscherm met toggle op private
-      router.push({
-        pathname: "/(app)/my-stars/private-star/start-my-star-private",
-        params: { toggle: "private" },
-      });
-    }
+    router.replace("/(app)/my-stars/start-my-star-private");
   };
 
   const createScene = async (gl: any) => {
@@ -166,20 +136,30 @@ export default function MyStarPublic2() {
         </Pressable>
       </View>
 
-      {/* 3D STAR */}
-      <View style={styles.canvasWrapper}>
-        <GLView style={styles.glView} onContextCreate={createScene} />
-        <View style={styles.nameOverlay}>
-          <Text style={styles.nameText}>{displayName}</Text>
-        </View>
-      </View>
+      {/* Show nothing if no public star yet */}
+      {!isValid && (
+        <Text style={{ color: "#fff", textAlign: "center", marginTop: 100, fontFamily: "Alice-Regular", fontSize: 16 }}>
+          No public star has been created yet.
+        </Text>
+      )}
 
-      {/* Button */}
-      <View style={styles.fixedButtonWrapper}>
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Add 3D/VR - space</Text>
-        </TouchableOpacity>
-      </View>
+      {/* 3D Star + Name */}
+      {isValid && (
+        <>
+          <View style={styles.canvasWrapper}>
+            <GLView style={styles.glView} onContextCreate={createScene} />
+            <View style={styles.nameOverlay}>
+              <Text style={styles.nameText}>{name}</Text>
+            </View>
+          </View>
+
+          <View style={styles.fixedButtonWrapper}>
+            <TouchableOpacity style={styles.button}>
+              <Text style={styles.buttonText}>Add 3D/VR - space</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
     </View>
   );
 }

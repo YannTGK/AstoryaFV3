@@ -9,11 +9,10 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import useAuthStore from "@/lib/store/useAuthStore";
-import useFlowStore from "@/lib/store/useFlowStore";
 
-// SVG-component imports
+// SVG-iconen
 import PhotosIcon from "@/assets/images/svg-icons/photos.svg";
 import VideosIcon from "@/assets/images/svg-icons/videos.svg";
 import AudiosIcon from "@/assets/images/svg-icons/audios.svg";
@@ -24,42 +23,21 @@ import VRSpaceIcon from "@/assets/images/svg-icons/3D-VR-space.svg";
 
 const { width } = Dimensions.get("window");
 
-export default function MyStarPrivate2() {
+export default function FinalMyStarPrivate() {
   const router = useRouter();
   const { name, emissive } = useLocalSearchParams();
   const { user } = useAuthStore();
   const [isPrivate, setIsPrivate] = useState(true);
 
-  const {
-    hasCompletedPublic,
-    publicFlowData,
-    setCompletedPrivate,
-  } = useFlowStore();
-
-  useEffect(() => {
-    if (typeof name === "string" && typeof emissive === "string") {
-      setCompletedPrivate({ name, emissive });
-    }
-  }, [name, emissive]);
-
   const handleToggleToPublic = () => {
     setIsPrivate(false);
-
-    if (hasCompletedPublic && publicFlowData?.name && publicFlowData.emissive) {
-      router.push({
-        pathname: "/(app)/my-stars/public-star/final-my-star-public",
-        params: {
-          name: publicFlowData.name,
-          emissive: publicFlowData.emissive,
-        },
-      });
-    } else {
-      // ⛔ public flow nog niet gedaan → terug naar beginscherm met toggle op public
-      router.push({
-        pathname: "/(app)/my-stars/public-star/start-my-star-public",
-        params: { toggle: "public" },
-      });
-    }
+    router.push({
+      pathname: "/(app)/my-stars/start-my-star-public",
+      params: {
+        name: user?.firstName + " " + user?.lastName,
+        emissive: emissive as string,
+      },
+    });
   };
 
   const createScene = async (gl: any) => {
@@ -144,7 +122,6 @@ export default function MyStarPrivate2() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Back */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
           <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
@@ -153,10 +130,8 @@ export default function MyStarPrivate2() {
 
       <Text style={styles.title}>My personal star</Text>
 
-      {/* Toggle */}
       <View style={styles.toggleContainer}>
         <Pressable
-          onPress={() => setIsPrivate(true)}
           style={[
             styles.toggleButton,
             { backgroundColor: isPrivate ? "#FEEDB6" : "#11152A", borderTopLeftRadius: 12, borderBottomLeftRadius: 12 },
@@ -175,7 +150,6 @@ export default function MyStarPrivate2() {
         </Pressable>
       </View>
 
-      {/* 3D ster + naam overlay */}
       <View style={styles.canvasWrapper}>
         <GLView style={styles.glView} onContextCreate={createScene} />
         <View style={styles.nameOverlay}>
@@ -183,36 +157,32 @@ export default function MyStarPrivate2() {
         </View>
       </View>
 
-      {/* Iconen */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollRow} contentContainerStyle={{ paddingHorizontal: 20 }}>
-      {icons.map((item, index) => {
-        const isMessages = item.label === "Messages";
+        {icons.map((item, index) => {
+          const isMessages = item.label === "Messages";
 
-        const handlePress = () => {
-          if (isMessages) {
-            router.push("/(app)/my-stars/private-star/messages/no-messages");
-          }
-        };
+          const handlePress = () => {
+            if (isMessages) {
+              router.push("/(app)/my-stars/private-star/messages/no-messages");
+            }
+          };
 
-        const content = (
-          <>
-            {item.icon}
-            <Text style={styles.iconLabel}>{item.label}</Text>
-          </>
-        );
-
-        return (
-          <View key={index} style={styles.iconItem}>
-            {isMessages ? (
-              <TouchableOpacity onPress={handlePress}>
-                {content}
-              </TouchableOpacity>
-            ) : (
-              content
-            )}
-          </View>
-        );
-      })}
+          return (
+            <View key={index} style={styles.iconItem}>
+              {isMessages ? (
+                <TouchableOpacity onPress={handlePress}>
+                  {item.icon}
+                  <Text style={styles.iconLabel}>{item.label}</Text>
+                </TouchableOpacity>
+              ) : (
+                <>
+                  {item.icon}
+                  <Text style={styles.iconLabel}>{item.label}</Text>
+                </>
+              )}
+            </View>
+          );
+        })}
       </ScrollView>
     </View>
   );
