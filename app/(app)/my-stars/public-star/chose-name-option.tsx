@@ -22,7 +22,7 @@ export default function ChoseNameOption() {
     const selectedName = selection === "full" ? fullName : initials;
 
     router.push({
-      pathname: "/(app)/my-stars/public-star/my-star-public2",
+      pathname: "/(app)/my-stars/public-star/final-my-star-public",
       params: {
         name: selectedName,      // ✅ gekozen naam van gebruiker
         emissive: emissive as string, // ✅ kleur van ster behouden

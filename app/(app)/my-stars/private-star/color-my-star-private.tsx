@@ -1,10 +1,11 @@
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
 import * as THREE from "three";
+import { useState } from "react";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
@@ -12,9 +13,21 @@ import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPa
 
 const { width } = Dimensions.get("window");
 
-export default function ChosenStarScreen() {
+const starOptions = [
+    { name: "PEACE", color: 0xffffff, emissive: 0xffffff },
+    { name: "HOPE", color: 0xffffff, emissive: 0xffedaa },         // zacht geel
+    { name: "SUCCESS", color: 0xffffff, emissive: 0xffb3b3 },      // pastel rood
+    { name: "WEALTH", color: 0xffffff, emissive: 0xffc9aa },       // pastel oranje
+    { name: "HEALTH", color: 0xffffff, emissive: 0xd8ffd8 },       // pastel groen
+    { name: "OPPORTUNITY", color: 0xffffff, emissive: 0xaacfff },  // pastel blauw 
+    { name: "INSPIRATION", color: 0xffffff, emissive: 0xe3d1ff },  // pastel paars
+    { name: "REMEMBRANCE", color: 0xffffff, emissive: 0xffc1e6 },  // pastel roze
+  ]; 
+  
+
+export default function PrivateMyStar() {
   const router = useRouter();
-  const { name, emissive } = useLocalSearchParams();
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const createScene = async (gl: any) => {
     const renderer = new Renderer({ gl });
@@ -40,17 +53,19 @@ export default function ChosenStarScreen() {
         star.position.set(0, 0, 0);
         star.rotation.x = -Math.PI / 2;
 
-        const emissiveColor = new THREE.Color(parseInt(emissive as string));
+        const applyMaterial = () => {
+          star.traverse((child) => {
+            if (child instanceof THREE.Mesh && child.material) {
+              const material = child.material as THREE.MeshStandardMaterial;
+              const { color, emissive } = starOptions[currentIndex];
+              material.color.setHex(0xffffff); // ster blijft wit
+              material.emissive.setHex(emissive); 
+              material.emissiveIntensity = 1.5;
+            }
+          });
+        };
 
-        star.traverse((child) => {
-          if (child instanceof THREE.Mesh && child.material) {
-            const material = child.material as THREE.MeshStandardMaterial;
-            material.color.set(0xffffff); // witte ster
-            material.emissive.set(emissiveColor); // gekozen gloed
-            material.emissiveIntensity = 1.5;
-          }
-        });
-
+        applyMaterial();
         scene.add(star);
 
         const composer = new EffectComposer(renderer);
@@ -72,13 +87,12 @@ export default function ChosenStarScreen() {
         };
 
         animate();
-      },
-      undefined,
-      (error) => {
-        console.error("❌ Error loading star.glb:", error);
       }
     );
   };
+
+  const nextStar = () => setCurrentIndex((prev) => (prev + 1) % starOptions.length);
+  const prevStar = () => setCurrentIndex((prev) => (prev - 1 + starOptions.length) % starOptions.length);
 
   return (
     <View style={{ flex: 1 }}>
@@ -97,25 +111,48 @@ export default function ChosenStarScreen() {
       </TouchableOpacity>
 
       <Text style={styles.title}>My personal star</Text>
-      <Text style={styles.subtitle}>Chosen star</Text>
+      <Text style={styles.subtitle}>Choose the color of your star that will hold your last wish to your loved ones.</Text>
 
       {/* 3D ster */}
       <View style={styles.canvasWrapper}>
-        <GLView style={styles.glView} onContextCreate={createScene} />
+        <GLView key={currentIndex} style={styles.glView} onContextCreate={createScene} />
       </View>
 
-      {/* Naam */}
-      <Text style={styles.starName}>{name}</Text>
+      {/* Naam met pijltjes */}
+      <View style={styles.nameRow}>
+        <TouchableOpacity style={styles.arrowSide} onPress={prevStar}>
+          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+            <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          </Svg>
+        </TouchableOpacity>
 
-      {/* Add content knop */}
-      <View style={styles.fixedButtonWrapper}>
-        <TouchableOpacity style={styles.button} onPress={() => router.push({
-        pathname: "/(app)/my-stars/private-star/my-star-private2",
-        params: { name, emissive },
-      })}>
-          <Text style={styles.buttonText}>Add content</Text>
+        <Text style={styles.starName}>{starOptions[currentIndex].name}</Text>
+
+        <TouchableOpacity style={styles.arrowSide} onPress={nextStar}>
+          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+            <Path d="M9 6l6 6-6 6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          </Svg>
         </TouchableOpacity>
       </View>
+
+      {/* Select knop */}
+    {/* Select knop */}
+    <View style={styles.selectButtonWrapper}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() =>
+          router.push({
+            pathname: "/(app)/my-stars/private-star/chosen-private-star",
+            params: {
+              name: starOptions[currentIndex].name,
+              emissive: starOptions[currentIndex].emissive.toString(),
+            },
+          })
+        }
+      >
+        <Text style={styles.buttonText}>Select star</Text>
+      </TouchableOpacity>
+    </View>
     </View>
   );
 }
@@ -133,6 +170,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#fff",
     textAlign: "center",
+    paddingHorizontal: 30,
     marginTop: 20,
   },
   canvasWrapper: {
@@ -147,14 +185,23 @@ const styles = StyleSheet.create({
     height: 300,
     backgroundColor: "transparent",
   },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 24,
+    marginTop: 15,
+  },
   starName: {
     textAlign: "center",
     color: "#fff",
     fontFamily: "Alice-Regular",
     fontSize: 20,
-    marginTop: 20,
   },
-  fixedButtonWrapper: {
+  arrowSide: {
+    padding: 10,
+  },
+  selectButtonWrapper: {
     position: "absolute",
     bottom: 100,
     left: 20,

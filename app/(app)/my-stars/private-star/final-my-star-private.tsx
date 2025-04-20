@@ -47,7 +47,7 @@ export default function MyStarPrivate2() {
 
     if (hasCompletedPublic && publicFlowData?.name && publicFlowData.emissive) {
       router.push({
-        pathname: "/(app)/my-stars/public-star/my-star-public2",
+        pathname: "/(app)/my-stars/public-star/final-my-star-public",
         params: {
           name: publicFlowData.name,
           emissive: publicFlowData.emissive,
@@ -56,7 +56,7 @@ export default function MyStarPrivate2() {
     } else {
       // ⛔ public flow nog niet gedaan → terug naar beginscherm met toggle op public
       router.push({
-        pathname: "/(app)/my-stars/my-star",
+        pathname: "/(app)/my-stars/public-star/start-my-star-public",
         params: { toggle: "public" },
       });
     }

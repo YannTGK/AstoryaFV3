@@ -142,7 +142,7 @@ export default function PrivateMyStar() {
         style={styles.button}
         onPress={() =>
           router.push({
-            pathname: "/(app)/my-stars/public-star/chosen-star-public",
+            pathname: "/(app)/my-stars/public-star/chosen-public-star",
             params: {
               name: starOptions[currentIndex].name,
               emissive: starOptions[currentIndex].emissive.toString(),

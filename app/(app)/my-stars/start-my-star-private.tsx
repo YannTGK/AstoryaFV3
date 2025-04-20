@@ -41,7 +41,7 @@ export default function MyStarScreen() {
     if (status === "private") {
       if (hasCompletedPrivate && privateFlowData?.emissive) {
         router.push({
-          pathname: "/(app)/my-stars/private-star/my-star-private2",
+          pathname: "/(app)/my-stars/private-star/final-my-star-private",
           params: {
             name: privateFlowData.name,
             emissive: privateFlowData.emissive,
@@ -51,7 +51,7 @@ export default function MyStarScreen() {
     } else {
       if (hasCompletedPublic && publicFlowData?.emissive) {
         router.push({
-          pathname: "/(app)/my-stars/public-star/my-star-public2",
+          pathname: "/(app)/my-stars/public-star/final-my-star-public",
           params: {
             name: publicFlowData.name,
             emissive: publicFlowData.emissive,
@@ -65,26 +65,26 @@ export default function MyStarScreen() {
     if (isPrivate) {
       if (hasCompletedPrivate && privateFlowData?.emissive) {
         router.push({
-          pathname: "/(app)/my-stars/private-star/my-star-private2",
+          pathname: "/(app)/my-stars/private-star/final-my-star-private",
           params: {
             name: privateFlowData.name,
             emissive: privateFlowData.emissive,
           },
         });
       } else {
-        router.push("/(app)/my-stars/private-star/private-my-star");
+        router.push("/(app)/my-stars/private-star/color-my-star-private");
       }
     } else {
       if (hasCompletedPublic && publicFlowData?.emissive) {
         router.push({
-          pathname: "/(app)/my-stars/public-star/my-star-public2",
+          pathname: "/(app)/my-stars/public-star/final-my-star-public",
           params: {
             name: publicFlowData.name,
             emissive: publicFlowData.emissive,
           },
         });
       } else {
-        router.push("/(app)/my-stars/public-star/public-my-star");
+        router.push("/(app)/my-stars/public-star/color-my-star-public");
       }
     }
   };
