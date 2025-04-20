@@ -92,11 +92,7 @@ export default function StartMyStarPrivate() {
       />
 
       {showPopup && (
-        <UpgradePopup
-          type={currentPopup}
-          onClose={() => setShowPopup(false)}
-          onSwitch={() => setCurrentPopup((prev) => (prev === "premium" ? "basic" : "premium"))}
-        />
+        <UpgradePopup onClose={() => setShowPopup(false)} />
       )}
 
       {!showPopup && (
