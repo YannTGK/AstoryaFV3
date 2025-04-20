@@ -22,13 +22,32 @@ import OpenIcon from "@/assets/images/svg-icons/open.svg";
 export default function AppLayout() {
   const pathname = usePathname();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("public");
+  const [activeTab, setActiveTab] = useState<"public" | "private">("public");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   const handleTabPress = (tab: "public" | "private" | "search") => {
-    setActiveTab(tab);
-    router.replace(`/explores/${tab}`);
-  };
+    if (tab === "search") {
+      if (isSearching) {
+        // Search stond al aan → keer terug naar juiste tab
+        setIsSearching(false);
+        router.replace(`/explores/${activeTab}`);
+      } else {
+        // Start search → ga naar juiste zoekscherm
+        setIsSearching(true);
+        if (activeTab === "public") {
+          router.replace("/explores/search-public");
+        } else {
+          router.replace("/explores/search-private");
+        }
+      }
+    } else {
+      // Gewoon wisselen tussen public/private
+      setIsSearching(false);
+      setActiveTab(tab);
+      router.replace(`/explores/${tab}`);
+    }
+  };  
 
   return (
     <>
@@ -95,21 +114,25 @@ export default function AppLayout() {
               <View style={styles.publicHolder}>
                 <TouchableOpacity style={styles.publicPlacement} onPress={() => handleTabPress("public")}>
                   {activeTab === "public" ? <PublicActiveIcon width={28} height={28} /> : <PublicIcon width={28} height={28} />}
-                  <Text style={[styles.labelAround, activeTab === "public" && styles.activeText]}>Public</Text>
+                  <Text style={[styles.labelAround, activeTab === "public" && !isSearching && styles.activeText]}>
+                    Public
+                  </Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.publicHolder2}>
                 <TouchableOpacity style={styles.publicPlacement} onPress={() => handleTabPress("private")}>
                   {activeTab === "private" ? <PrivateActiveIcon width={28} height={28} /> : <PrivateIcon width={28} height={28} />}
-                  <Text style={[styles.labelAround, activeTab === "private" && styles.activeText]}>Private</Text>
+                  <Text style={[styles.labelAround, activeTab === "private" && !isSearching && styles.activeText]}>
+                    Private
+                  </Text>
                 </TouchableOpacity>
               </View>
 
               <View style={styles.publicHolder3}>
                 <TouchableOpacity style={styles.publicPlacement} onPress={() => handleTabPress("search")}>
-                  {activeTab === "search" ? <SearchActiveIcon width={26} height={26} /> : <SearchIcon width={26} height={26} />}
-                  <Text style={[styles.labelAround, activeTab === "search" && styles.activeText]}>Search</Text>
+                  {isSearching ? <SearchActiveIcon width={26} height={26} /> : <SearchIcon width={26} height={26} />}
+                  <Text style={[styles.labelAround, isSearching && styles.activeText]}>Search</Text>
                 </TouchableOpacity>
               </View>
             </>

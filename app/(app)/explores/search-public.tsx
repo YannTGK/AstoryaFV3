@@ -1,13 +1,12 @@
-import { View, Text, StyleSheet, TextInput } from "react-native";
+import { View, Text, TextInput, StyleSheet } from "react-native";
 
-export default function SearchScreen() {
-
+export default function SearchPublic() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🔎 Search Stars</Text>
+      <Text style={styles.title}>🔎 Search in Public Stars</Text>
       <TextInput
         style={styles.searchBox}
-        placeholder="Search for a star..."
+        placeholder="Search public stars..."
         placeholderTextColor="#aaa"
       />
     </View>
@@ -24,11 +23,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#fff",
-  },
-  userText: {
-    marginTop: 10,
-    fontSize: 16,
     color: "#fff",
   },
   searchBox: {
