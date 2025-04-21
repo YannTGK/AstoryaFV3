@@ -49,7 +49,7 @@ export default function Account2Screen() {
       </View>
 
       {/* Account-opties */}
-      <Option icon={<AccountIcon width={22} height={22} />} label="My profile" />
+      <Option icon={<AccountIcon width={22} height={22} />} label="My profile" onPress={() => router.push("/(app)/accounts/my-account/my-profile")} />
       <Option icon={<VisibilityIcon width={22} height={22} />} label="Visibility options" />
       <Option icon={<AddedAccountsIcon width={22} height={22} />} label="Added accounts" />
       <Option icon={<PaymentMethodsIcon width={22} height={22} />} label="Payment methods" />
@@ -59,17 +59,17 @@ export default function Account2Screen() {
   );
 }
 
-function Option({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <TouchableOpacity style={styles.optionRow}>
-      {icon}
-      <Text style={styles.optionLabel}>{label}</Text>
-      <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-        <Path d="M9 6l6 6-6 6" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-      </Svg>
-    </TouchableOpacity>
-  );
-}
+function Option({ icon, label, onPress }: { icon: React.ReactNode; label: string; onPress?: () => void }) {
+    return (
+      <TouchableOpacity style={styles.optionRow} onPress={onPress}>
+        {icon}
+        <Text style={styles.optionLabel}>{label}</Text>
+        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+          <Path d="M9 6l6 6-6 6" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
+      </TouchableOpacity>
+    );
+  }  
 
 const styles = StyleSheet.create({
   wrapper: {
