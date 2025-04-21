@@ -22,7 +22,7 @@ export default function MyProfileScreen() {
   const [lastName, setLastName] = useState(user?.lastName || "");
   const [email, setEmail] = useState(user?.email || "");
   const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || "");
-  const [dob, setDob] = useState(formatDate(user?.dob));
+  const [dob, setDob] = useState(formatDate(user?.dob ?? ""));
   const language = "English";
 
   return (
