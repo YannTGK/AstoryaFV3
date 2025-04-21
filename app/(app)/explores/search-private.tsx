@@ -38,7 +38,7 @@ export default function SearchPrivate() {
       {/* Filterknop */}
       <TouchableOpacity
         style={styles.filterButton}
-        onPress={() => router.push("/explores/filter")}
+        onPress={() => router.push({ pathname: "/explores/filter", params: { from: "private" } })}
         >
         <Text style={styles.filterText}>Filter</Text>
         <FilterIcon width={18} height={18} />

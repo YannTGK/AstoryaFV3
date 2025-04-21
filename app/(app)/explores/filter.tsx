@@ -1,12 +1,13 @@
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
 import { Picker } from "@react-native-picker/picker";
 import Svg, { Path } from "react-native-svg";
-import StarLoader from "../../../components/loaders/StarLoader"; // <- jouw custom loader
+import StarLoader from "../../../components/loaders/StarLoader"; 
 
 export default function Filter() {
   const router = useRouter();
+  const { from } = useLocalSearchParams();
 
   const [dob, setDob] = useState("");
   const [dod, setDod] = useState("");
@@ -28,17 +29,29 @@ export default function Filter() {
         clearInterval(interval);
         setTimeout(() => {
           setLoading(false);
-          router.replace("/(app)/explores/public");
+          if (from === "private") {
+            router.replace("/(app)/explores/private");
+          } else {
+            router.replace("/(app)/explores/public");
+          }
         }, 500);
       }
-    }, 150); // snelheid van progressie
+    }, 150);
+  };
+
+  const handleBack = () => {
+    if (from === "private") {
+      router.replace("/(app)/explores/private");
+    } else {
+      router.replace("/(app)/explores/public");
+    }
   };
 
   return (
     <View style={styles.container}>
       {/* Titel met backbutton gecentreerd */}
       <View style={styles.titleRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
           <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
             <Path
               d="M15 18l-6-6 6-6"
