@@ -1,32 +1,19 @@
+// services/api.ts
 import axios from 'axios';
-
-/* Online */
-const api = axios.create({
-    baseURL: 'https://astorya-api.onrender.com/api',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
-
-
-/* Home Yann 
-const api = axios.create({
-    baseURL: 'http://192.168.0.2:5001/api',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
-*/
-
-/*Dyangoo Hotspot
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const api = axios.create({
-    baseURL: 'http://172.20.10.2:5001/api',
-    headers: {
-        'Content-Type': 'application/json',
-    },
+  baseURL: 'https://astorya-api.onrender.com/api',
+  headers: { 'Content-Type': 'application/json' },
 });
 
-*/
+/* ── request‑interceptor: voeg token toe ───────────────────────────── */
+api.interceptors.request.use(async config => {
+  const token = await AsyncStorage.getItem('authToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 export default api;

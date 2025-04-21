@@ -10,6 +10,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
+import StarView from "@/components/stars/StarView";
 
 const { width } = Dimensions.get("window");
 
@@ -115,7 +116,7 @@ export default function PrivateMyStar() {
 
       {/* 3D ster */}
       <View style={styles.canvasWrapper}>
-        <GLView key={currentIndex} style={styles.glView} onContextCreate={createScene} />
+        <StarView emissive={starOptions[currentIndex].emissive} rotate={true} />
       </View>
 
       {/* Naam met pijltjes */}

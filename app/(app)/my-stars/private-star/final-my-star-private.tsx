@@ -11,6 +11,7 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
 import { useState } from "react";
 import useAuthStore from "@/lib/store/useAuthStore";
+import StarView from "@/components/stars/StarView";
 
 // SVG-iconen
 import PhotosIcon from "@/assets/images/svg-icons/photos.svg";
@@ -151,7 +152,7 @@ export default function FinalMyStarPrivate() {
       </View>
 
       <View style={styles.canvasWrapper}>
-        <GLView style={styles.glView} onContextCreate={createScene} />
+        <StarView emissive={parseInt(emissive)} rotate={false} />
         <View style={styles.nameOverlay}>
           <Text style={styles.nameText}>{user?.firstName} {user?.lastName}</Text>
         </View>
