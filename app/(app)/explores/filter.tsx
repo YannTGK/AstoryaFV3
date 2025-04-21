@@ -1,26 +1,57 @@
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { useState, useEffect } from "react";
 import { Picker } from "@react-native-picker/picker";
 import Svg, { Path } from "react-native-svg";
+import StarLoader from "../../../components/loaders/StarLoader"; 
 
 export default function Filter() {
   const router = useRouter();
+  const { from } = useLocalSearchParams();
 
   const [dob, setDob] = useState("");
   const [dod, setDod] = useState("");
   const [country, setCountry] = useState("Belgium");
   const [coordinate, setCoordinate] = useState("");
 
+  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+
   const handleApplyFilter = () => {
-    router.back();
+    setLoading(true);
+    setProgress(0);
+
+    let current = 0;
+    const interval = setInterval(() => {
+      current += 10;
+      setProgress(current);
+      if (current >= 100) {
+        clearInterval(interval);
+        setTimeout(() => {
+          setLoading(false);
+          if (from === "private") {
+            router.replace("/(app)/explores/private");
+          } else {
+            router.replace("/(app)/explores/public");
+          }
+        }, 500);
+      }
+    }, 150);
+  };
+
+  const handleBack = () => {
+    if (from === "private") {
+      router.replace("/(app)/explores/private");
+    } else {
+      router.replace("/(app)/explores/public");
+    }
   };
 
   return (
     <View style={styles.container}>
       {/* Titel met backbutton gecentreerd */}
       <View style={styles.titleRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
           <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
             <Path
               d="M15 18l-6-6 6-6"
@@ -84,6 +115,13 @@ export default function Filter() {
           <Text style={styles.buttonText}>Filter</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Loader overlay met percentage */}
+      {loading && (
+        <View style={styles.loaderOverlay}>
+          <StarLoader progress={progress} />
+        </View>
+      )}
     </View>
   );
 }
@@ -138,10 +176,9 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "#000",
     fontSize: 14,
-    textAlignVertical: "center", 
-    marginTop: -6, 
+    textAlignVertical: "center",
+    marginTop: -6,
   },
-  
   buttonWrapper: {
     marginTop: 25,
     marginBottom: 20,
@@ -161,5 +198,16 @@ const styles = StyleSheet.create({
     color: "#000",
     fontFamily: "Alice-Regular",
     textAlign: "center",
+  },
+  loaderOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
   },
 });
