@@ -38,7 +38,7 @@ export default function SearchPublic() {
       {/* Filterknop */}
       <TouchableOpacity
         style={styles.filterButton}
-        onPress={() => router.push("/explores/filter")}
+        onPress={() => router.push({ pathname: "/explores/filter", params: { from: "public" } })}
         >
         <Text style={styles.filterText}>Filter</Text>
         <FilterIcon width={18} height={18} />
@@ -115,6 +115,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignSelf: "flex-end",
     marginTop: 14,
+    marginBottom: 10,
     backgroundColor: "#FEEDB6",
     paddingVertical: 8,
     paddingHorizontal: 18,
