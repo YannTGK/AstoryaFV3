@@ -15,8 +15,8 @@ import StarsManager from '@/components/stars/StarManager';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
+import { useLayoutStore } from '@/lib/store/layoutStore';
 
-// SVG Icon imports
 import PhotosIcon from '@/assets/images/svg-icons/photos.svg';
 import VideosIcon from '@/assets/images/svg-icons/videos.svg';
 import AudiosIcon from '@/assets/images/svg-icons/audios.svg';
@@ -35,6 +35,12 @@ export default function PublicScreen() {
   const [scene, setScene] = useState<THREE.Scene | null>(null);
   const [selectedStarName, setSelectedStarName] = useState<string | null>(null);
   const [iconPositions, setIconPositions] = useState<{ x: number; y: number }[]>([]);
+  const [isStarSelected, setIsStarSelected] = useState(false);
+  const [activeStarId, setActiveStarId] = useState<string | null>(null);
+  const [originalScale, setOriginalScale] = useState<THREE.Vector3 | null>(null);
+  const previousCameraPosition = useRef<THREE.Vector3>(new THREE.Vector3());
+
+  const setIsSearching = useLayoutStore((state) => state.setIsSearching);
 
   const raycaster = new Raycaster();
   const touchPosition = new Vector2();
@@ -78,26 +84,45 @@ export default function PublicScreen() {
       }
 
       const data = obj.userData;
+
       if (data?.id && data?.content) {
-        setSelectedStarName("Voor- & Achternaam"); // ✅ Hardcoded naam
+        // Zelfde ster opnieuw aanklikken → sluit alles
+        if (data.id === activeStarId) {
+          if (originalScale) obj.scale.copy(originalScale); // herstel originele grootte
+          setSelectedStarName(null);
+          setIconPositions([]);
+          setIsStarSelected(false);
+          setActiveStarId(null);
+          setOriginalScale(null);
+          isCameraLocked.current = true;
+          targetCameraPosition.current.copy(previousCameraPosition.current);
+          setIsSearching(false); // nav blijft weg
+        } else {
+          // Nieuwe ster selecteren
+          previousCameraPosition.current.copy(cameraRef.current.position);
+          setSelectedStarName('Voor- & Achternaam');
+          setIsStarSelected(true);
+          setActiveStarId(data.id);
+          setOriginalScale(obj.scale.clone()); // originele grootte opslaan
+          setIsSearching(false); // nav blijft weg
 
-        const starWorldPos = obj.getWorldPosition(new THREE.Vector3());
-        const offset = new THREE.Vector3(0, 0, 10);
-        targetCameraPosition.current.copy(starWorldPos.clone().add(offset));
-        isCameraLocked.current = true;
+          const starWorldPos = obj.getWorldPosition(new THREE.Vector3());
+          const offset = new THREE.Vector3(0, 0, 10);
+          targetCameraPosition.current.copy(starWorldPos.clone().add(offset));
+          isCameraLocked.current = true;
 
-        obj.scale.multiplyScalar(0.7); // ✅ Maak ster iets kleiner
+          obj.scale.setScalar(obj.scale.x * 0.7); // slechts 1x verkleinen
 
-        // Posities voor iconen in een grotere cirkel
-        const r = 140;
-        const positions = Array.from({ length: 7 }, (_, i) => {
-          const angle = (i / 7) * 2 * Math.PI;
-          return {
-            x: width / 2 + r * Math.cos(angle),
-            y: height / 2 + r * Math.sin(angle),
-          };
-        });
-        setIconPositions(positions);
+          const r = 140;
+          const positions = Array.from({ length: 7 }, (_, i) => {
+            const angle = (i / 7) * 2 * Math.PI;
+            return {
+              x: width / 2 + r * Math.cos(angle),
+              y: height / 2 + r * Math.sin(angle),
+            };
+          });
+          setIconPositions(positions);
+        }
       }
     }
   };
@@ -163,12 +188,19 @@ export default function PublicScreen() {
         style={styles.glView}
         onContextCreate={createScene}
         onTouchEnd={(e) => handleTouch(e.nativeEvent)}
-        {...panResponder.panHandlers}
+        {...(!isStarSelected && panResponder.panHandlers)}
       />
       <View style={styles.crosshairContainer}>
         <Text style={styles.crosshair}>+</Text>
       </View>
-      <JoystickHandler cameraPosition={cameraPosition} cameraRotation={cameraRotation} />
+
+      {!isStarSelected && (
+        <JoystickHandler
+          cameraPosition={cameraPosition}
+          cameraRotation={cameraRotation}
+        />
+      )}
+
       {scene && <StarsManager scene={scene} />}
 
       {selectedStarName && (
@@ -206,7 +238,7 @@ const styles = StyleSheet.create({
     left: width / 2 - 100,
     width: 200,
     alignItems: 'center',
-    backgroundColor: 'transparent', // ✅ Geen vlak
+    backgroundColor: 'transparent',
     paddingVertical: 8,
     borderRadius: 8,
   },
