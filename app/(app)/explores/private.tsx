@@ -95,7 +95,7 @@ export default function PublicScreen() {
           setJoystickKey((prev) => prev + 1);
           setActiveStarId(null);
           setOriginalScale(null);
-          isCameraLocked.current = false;
+          isCameraLocked.current = true;
           targetCameraPosition.current.copy(previousCameraPosition.current);
           setIsSearching(false);
         } else {
@@ -164,14 +164,24 @@ export default function PublicScreen() {
       requestAnimationFrame(render);
 
       if (isCameraLocked.current && cameraRef.current) {
-        camera.position.lerp(targetCameraPosition.current, 0.05);
+        camera.position.lerp(targetCameraPosition.current, 0.1);
+      
+        // Check of camera dichtbij genoeg is om te stoppen met lock
+        const distance = camera.position.distanceTo(targetCameraPosition.current);
+        if (distance < 0.01) {
+          isCameraLocked.current = false;
+          // Update manual position so joystick resumes from correct spot
+          cameraPosition.current.x = camera.position.x;
+          cameraPosition.current.y = camera.position.y;
+          cameraPosition.current.z = camera.position.z;
+        }
       } else {
         camera.position.set(
           cameraPosition.current.x,
           cameraPosition.current.y,
           cameraPosition.current.z
         );
-      }
+      }      
 
       camera.rotation.x = cameraRotation.current.x;
       camera.rotation.y = cameraRotation.current.y;
