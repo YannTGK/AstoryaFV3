@@ -18,7 +18,7 @@ const initialAccounts = [
   { id: "3", username: "@William_Rodri" },
 ];
 
-const groups = [
+const initialGroups = [
   { id: "1", name: "@Family of 3" },
   { id: "2", name: "@BestFriends" },
   { id: "3", name: "@Family_FatherSide" },
@@ -31,12 +31,24 @@ export default function AddedAccountsScreen() {
   const [selectedUser, setSelectedUser] = useState<{ id: string; username: string } | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [groupMenuVisible, setGroupMenuVisible] = useState(false);
+  const [groups, setGroups] = useState(initialGroups);
+  const [groupToDelete, setGroupToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [groupDeleteModalVisible, setGroupDeleteModalVisible] = useState(false);
 
   const confirmDelete = () => {
     if (selectedUser) {
       setAccounts((prev) => prev.filter((acc) => acc.id !== selectedUser.id));
       setSelectedUser(null);
       setModalVisible(false);
+    }
+  };
+
+  const confirmGroupDelete = () => {
+    if (groupToDelete) {
+      setGroups((prev) => prev.filter((g) => g.id !== groupToDelete.id));
+      setGroupToDelete(null);
+      setGroupDeleteModalVisible(false);
+      setGroupMenuVisible(false);
     }
   };
 
@@ -120,12 +132,17 @@ export default function AddedAccountsScreen() {
                     router.push("/accounts/my-account/added-account/group-members");
                     setGroupMenuVisible(false);
                   }}
-                  >
+                >
                   <Text style={styles.menuText}>See members</Text>
                   <Feather name="users" size={16} color="#000" />
                 </TouchableOpacity>
-                
-                <TouchableOpacity style={styles.menuItem}>
+                <TouchableOpacity 
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setGroupToDelete(group);
+                    setGroupDeleteModalVisible(true);
+                  }}
+                >
                   <Text style={styles.menuText}>Delete</Text>
                   <Feather name="trash-2" size={16} color="#000" />
                 </TouchableOpacity>
@@ -136,33 +153,62 @@ export default function AddedAccountsScreen() {
       </View>
 
       <Modal transparent visible={modalVisible} animationType="fade">
-      <View style={styles.modalOverlay}>
-        <View style={styles.confirmBox}>
-          <Text style={styles.confirmText}>
-            Are you sure you want to remove{" "}
-            <Text style={{ fontWeight: "bold" }}>{selectedUser?.username}</Text>?
-          </Text>
-    
-          <View style={styles.confirmButtons}>
-            <Pressable
-              style={[styles.confirmBtn, styles.leftBtn]}
-              onPress={() => {
-                setModalVisible(false);
-                setSelectedUser(null);
-              }}
-            >
-              <Text style={styles.confirmBtnText}>No</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.confirmBtn, styles.rightBtn]}
-              onPress={confirmDelete}
-            >
-              <Text style={[styles.confirmBtnText, { color: "#007AFF" }]}>Yes</Text>
-            </Pressable>
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmBox}>
+            <Text style={styles.confirmText}>
+              Are you sure you want to remove{" "}
+              <Text style={{ fontWeight: "bold" }}>{selectedUser?.username}</Text>?
+            </Text>
+
+            <View style={styles.confirmButtons}>
+              <Pressable
+                style={[styles.confirmBtn, styles.leftBtn]}
+                onPress={() => {
+                  setModalVisible(false);
+                  setSelectedUser(null);
+                }}
+              >
+                <Text style={styles.confirmBtnText}>No</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.confirmBtn, styles.rightBtn]}
+                onPress={confirmDelete}
+              >
+                <Text style={[styles.confirmBtnText, { color: "#007AFF" }]}>Yes</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
-      </View>
-    </Modal>    
+      </Modal>
+
+      <Modal transparent visible={groupDeleteModalVisible} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmBox}>
+            <Text style={styles.confirmText}>
+              Are you sure you want to delete{" "}
+              <Text style={{ fontWeight: "bold" }}>{groupToDelete?.name}</Text>?
+            </Text>
+
+            <View style={styles.confirmButtons}>
+              <Pressable
+                style={[styles.confirmBtn, styles.leftBtn]}
+                onPress={() => {
+                  setGroupDeleteModalVisible(false);
+                  setGroupToDelete(null);
+                }}
+              >
+                <Text style={styles.confirmBtnText}>No</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.confirmBtn, styles.rightBtn]}
+                onPress={confirmGroupDelete}
+              >
+                <Text style={[styles.confirmBtnText, { color: "#007AFF" }]}>Yes</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -259,42 +305,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 30,
   },
-  modalContent: {
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 12,
-    width: "100%",
-  },
-  modalText: {
-    fontSize: 16,
-    fontFamily: "Alice-Regular",
-    color: "#000",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-  modalBtn: {
-    backgroundColor: "#FEEDB6",
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  modalBtnText: {
-    fontFamily: "Alice-Regular",
-    fontSize: 14,
-    color: "#000",
-    textAlign: "center",
-  },
   confirmBox: {
     backgroundColor: "#fff",
     borderRadius: 16,
     width: "80%",
     overflow: "hidden",
   },
-  
   confirmText: {
     fontSize: 16,
     fontFamily: "Alice-Regular",
@@ -303,30 +319,25 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 10,
   },
-  
   confirmButtons: {
     flexDirection: "row",
     borderTopWidth: 1,
     borderTopColor: "#E0E0E0",
   },
-  
   confirmBtn: {
     flex: 1,
     paddingVertical: 12,
     justifyContent: "center",
     alignItems: "center",
   },
-  
   leftBtn: {
     borderRightWidth: 1,
     borderRightColor: "#E0E0E0",
   },
-  
   rightBtn: {},
-  
   confirmBtnText: {
     fontFamily: "Alice-Regular",
     fontSize: 16,
     color: "#007AFF",
-  },  
+  },
 });
