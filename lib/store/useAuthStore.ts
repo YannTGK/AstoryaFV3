@@ -10,6 +10,7 @@ type User = {
   email: string;
   phoneNumber: string;
   dob: string;
+  plan: "EXPLORER" | "PREMIUM" | "LEGACY";
 };
 
 type AuthState = {
