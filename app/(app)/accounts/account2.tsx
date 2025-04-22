@@ -51,7 +51,7 @@ export default function Account2Screen() {
       {/* Account-opties */}
       <Option icon={<AccountIcon width={22} height={22} />} label="My profile" onPress={() => router.push("/(app)/accounts/my-account/my-profile")} />
       <Option icon={<VisibilityIcon width={22} height={22} />} label="Visibility options" onPress={() => router.push("/(app)/accounts/my-account/visibility")} />
-      <Option icon={<AddedAccountsIcon width={22} height={22} />} label="Added accounts" onPress={() => router.push("/(app)/accounts/my-account/added-account/added-account")} />
+      <Option icon={<AddedAccountsIcon width={22} height={22} />} label="Added accounts" onPress={() => router.push("/(app)/accounts/my-account/added-account/addedAccountScreen")} />
       <Option icon={<PaymentMethodsIcon width={22} height={22} />} label="Payment methods" />
       <Option icon={<EditPasswordIcon width={22} height={22} />} label="Edit password" />
       <Option icon={<DeleteAccountIcon width={22} height={22} />} label="Delete account" />

@@ -114,10 +114,17 @@ export default function AddedAccountsScreen() {
             </TouchableOpacity>
             {selectedGroupId === group.id && groupMenuVisible && (
               <View style={styles.groupMenu}>
-                <TouchableOpacity style={styles.menuItem}>
+                <TouchableOpacity 
+                  style={styles.menuItem}
+                  onPress={() => {
+                    router.push("/accounts/my-account/added-account/group-members");
+                    setGroupMenuVisible(false);
+                  }}
+                  >
                   <Text style={styles.menuText}>See members</Text>
                   <Feather name="users" size={16} color="#000" />
                 </TouchableOpacity>
+                
                 <TouchableOpacity style={styles.menuItem}>
                   <Text style={styles.menuText}>Delete</Text>
                   <Feather name="trash-2" size={16} color="#000" />
