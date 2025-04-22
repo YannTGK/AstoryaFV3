@@ -107,20 +107,22 @@ export default function PublicScreen() {
           setIsSearching(false);
 
           const starWorldPos = obj.getWorldPosition(new THREE.Vector3());
-          const offset = new THREE.Vector3(0, 0, 10);
+          const offset = new THREE.Vector3(0, -1, 10);
           targetCameraPosition.current.copy(starWorldPos.clone().add(offset));
           isCameraLocked.current = true;
 
           obj.scale.setScalar(obj.scale.x * 0.7);
 
+          const yOffset = -40; // naar boven verplaatsen
           const r = 140;
           const positions = Array.from({ length: 7 }, (_, i) => {
             const angle = (i / 7) * 2 * Math.PI;
             return {
               x: width / 2 + r * Math.cos(angle),
-              y: height / 2 + r * Math.sin(angle),
+              y: height / 2 + yOffset + r * Math.sin(angle),
             };
           });
+          
           setIconPositions(positions);
         }
       }
@@ -245,7 +247,7 @@ const styles = StyleSheet.create({
   crosshair: { fontSize: 24, color: 'white', textAlign: 'center' },
   nameOverlay: {
     position: 'absolute',
-    top: height / 2 + 170,
+    top: height / 2 + 135,
     left: width / 2 - 100,
     width: 200,
     alignItems: 'center',
