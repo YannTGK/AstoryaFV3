@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     textAlign: "center",
     marginTop: 50,
-    marginBottom: 20,
+    marginBottom: 0,
   },
   form: {
     paddingHorizontal: 20,
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontFamily: "Alice-Regular",
-    marginTop: 20,
+    marginTop: 40,
     marginBottom: 20,
   },
   label: {
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   },
   inputWrapper: {
     backgroundColor: "rgba(196, 196, 196, 0.3)", // semi-transparant grijs-blauw
-    borderRadius: 12,
+    borderRadius: 8,
     paddingVertical: 14,
     paddingHorizontal: 16,
     flexDirection: "row",
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   },
   inputText: {
     color: "#fff",
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: "Alice-Regular",
   },  
   circle: {
@@ -185,25 +185,25 @@ const styles = StyleSheet.create({
   extraRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 8,
+    marginTop: -10,
   },
   extraText: {
     color: "#fff",
-    marginLeft: 10,
-    fontSize: 14,
+    marginLeft: 6,
+    fontSize: 16,
     fontFamily: "Alice-Regular",
     flexShrink: 1,
   },
   confirmBtn: {
-    marginTop: 30,
+    marginTop: 150,
     marginHorizontal: 20,
     backgroundColor: "#FEEDB6",
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: 8,
   },
   confirmText: {
     color: "#000",
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: "Alice-Regular",
     textAlign: "center",
     fontWeight: "600",
