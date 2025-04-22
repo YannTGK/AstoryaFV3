@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     textAlign: "center",
     marginTop: 50,
-    marginBottom: 0,
+    marginBottom: 20,
   },
   form: {
     paddingHorizontal: 20,
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontFamily: "Alice-Regular",
-    marginTop: 40,
+    marginTop: 20,
     marginBottom: 20,
   },
   label: {
