@@ -85,9 +85,9 @@
                 mesh.material = Array.isArray(mesh.material)
                   ? mesh.material.map((mat) => {
                       const m = mat.clone() as THREE.MeshStandardMaterial;
-                      m.color.copy(color);        // always white
-                      m.emissive.copy(emissive);  // soft glow
-                      m.emissiveIntensity = 1; // Sterkte glow van de ster
+                      m.color.copy(color);
+                      m.emissive.copy(emissive);
+                      m.emissiveIntensity = 1;
                       m.needsUpdate = true;
                       return m;
                     })
@@ -95,11 +95,13 @@
                       const m = mesh.material.clone() as THREE.MeshStandardMaterial;
                       m.color.copy(color);
                       m.emissive.copy(emissive);
-                      m.emissiveIntensity = 0.3; //Sterkte glow van de emissie
+                      m.emissiveIntensity = 0.3;
                       m.needsUpdate = true;
                       return m;
                     })();
               }
+    
+              // ✅ userData doorkopiëren naar child nodes (voor raycasting)
               child.userData = { ...child.userData, ...this.userData };
             });
     
@@ -121,14 +123,13 @@
     
     export default function StarsManager({ scene }: StarsManagerProps) {
       const starsRef = useRef<Star[]>([]);
-      const seed = 42; // deterministic placement
+      const seed = 42;
     
       useEffect(() => {
         const numStars = 40;
         const sizeRange: [number, number] = [2.5, 3.5];
         const positionRange = 500;
     
-        /* ---------- maak sterren -------------------------------------- */
         for (let i = 0; i < numStars; i++) {
           const uniqueSeed = seed + i;
     
@@ -152,15 +153,16 @@
             emissive: new THREE.Color(option.emissive),
           });
     
-          /* ---------- random rotation speed ---------------------------- */
+          // ✅ Extra data voor interactie
           star.userData.name = option.name;
+          star.userData.content = true; // ✅ belangrijk voor raycasting
           star.userData.rotationSpeed =
-            seededRandom(uniqueSeed * 99) * 0.010 + 0.025; // 0.002–0.008 rad/frame
+            seededRandom(uniqueSeed * 99) * 0.010 + 0.025;
+    
           starsRef.current.push(star);
           scene.add(star);
         }
     
-        /* ---------- animatie‑loop ------------------------------------- */
         let frameId: number;
         const spin = () => {
           starsRef.current.forEach(
@@ -170,7 +172,6 @@
         };
         spin();
     
-        /* ---------- cleanup ------------------------------------------- */
         return () => {
           frameId && cancelAnimationFrame(frameId);
           starsRef.current.forEach((s) => scene.remove(s));
@@ -178,7 +179,8 @@
         };
       }, [scene]);
     
-      return null; // manager voegt alleen objecten toe
+      return null;
     }
     
     export { Star };
+    

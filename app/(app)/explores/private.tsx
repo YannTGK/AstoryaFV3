@@ -79,15 +79,17 @@ export default function PublicScreen() {
 
       const data = obj.userData;
       if (data?.id && data?.content) {
-        setSelectedStarName(data.name ?? "Unknown");
+        setSelectedStarName("Voor- & Achternaam"); // ✅ Hardcoded naam
 
         const starWorldPos = obj.getWorldPosition(new THREE.Vector3());
         const offset = new THREE.Vector3(0, 0, 10);
         targetCameraPosition.current.copy(starWorldPos.clone().add(offset));
         isCameraLocked.current = true;
 
+        obj.scale.multiplyScalar(0.7); // ✅ Maak ster iets kleiner
+
         // Posities voor iconen in een grotere cirkel
-        const r = 125;
+        const r = 140;
         const positions = Array.from({ length: 7 }, (_, i) => {
           const angle = (i / 7) * 2 * Math.PI;
           return {
@@ -96,7 +98,6 @@ export default function PublicScreen() {
           };
         });
         setIconPositions(positions);
-
       }
     }
   };
@@ -201,11 +202,11 @@ const styles = StyleSheet.create({
   crosshair: { fontSize: 24, color: 'white', textAlign: 'center' },
   nameOverlay: {
     position: 'absolute',
-    top: height / 2 + 110,
+    top: height / 2 + 170,
     left: width / 2 - 100,
     width: 200,
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'transparent', // ✅ Geen vlak
     paddingVertical: 8,
     borderRadius: 8,
   },
