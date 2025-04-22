@@ -88,9 +88,10 @@ export default function AddedAccountsScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Accounts</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("/accounts/my-account/added-account/add-new-account")}>
             <Feather name="plus" size={24} color="#fff" />
           </TouchableOpacity>
+
         </View>
 
         {accounts.map((item) => (
