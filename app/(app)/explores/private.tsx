@@ -36,6 +36,7 @@ export default function PublicScreen() {
   const [selectedStarName, setSelectedStarName] = useState<string | null>(null);
   const [iconPositions, setIconPositions] = useState<{ x: number; y: number }[]>([]);
   const [isStarSelected, setIsStarSelected] = useState(false);
+  const [joystickKey, setJoystickKey] = useState(0);
   const [activeStarId, setActiveStarId] = useState<string | null>(null);
   const [originalScale, setOriginalScale] = useState<THREE.Vector3 | null>(null);
   const previousCameraPosition = useRef<THREE.Vector3>(new THREE.Vector3());
@@ -56,7 +57,7 @@ export default function PublicScreen() {
     exposure: 1,
   });
 
-  const iconSize = 70;
+  const iconSize = 65;
   const iconOffset = iconSize / 2;
 
   const iconComponents = [
@@ -86,32 +87,31 @@ export default function PublicScreen() {
       const data = obj.userData;
 
       if (data?.id && data?.content) {
-        // Zelfde ster opnieuw aanklikken → sluit alles
         if (data.id === activeStarId) {
-          if (originalScale) obj.scale.copy(originalScale); // herstel originele grootte
+          if (originalScale) obj.scale.copy(originalScale);
           setSelectedStarName(null);
           setIconPositions([]);
           setIsStarSelected(false);
+          setJoystickKey((prev) => prev + 1);
           setActiveStarId(null);
           setOriginalScale(null);
-          isCameraLocked.current = true;
+          isCameraLocked.current = false;
           targetCameraPosition.current.copy(previousCameraPosition.current);
-          setIsSearching(false); // nav blijft weg
+          setIsSearching(false);
         } else {
-          // Nieuwe ster selecteren
           previousCameraPosition.current.copy(cameraRef.current.position);
           setSelectedStarName('Voor- & Achternaam');
           setIsStarSelected(true);
           setActiveStarId(data.id);
-          setOriginalScale(obj.scale.clone()); // originele grootte opslaan
-          setIsSearching(false); // nav blijft weg
+          setOriginalScale(obj.scale.clone());
+          setIsSearching(false);
 
           const starWorldPos = obj.getWorldPosition(new THREE.Vector3());
           const offset = new THREE.Vector3(0, 0, 10);
           targetCameraPosition.current.copy(starWorldPos.clone().add(offset));
           isCameraLocked.current = true;
 
-          obj.scale.setScalar(obj.scale.x * 0.7); // slechts 1x verkleinen
+          obj.scale.setScalar(obj.scale.x * 0.7);
 
           const r = 140;
           const positions = Array.from({ length: 7 }, (_, i) => {
@@ -196,6 +196,7 @@ export default function PublicScreen() {
 
       {!isStarSelected && (
         <JoystickHandler
+          key={joystickKey}
           cameraPosition={cameraPosition}
           cameraRotation={cameraRotation}
         />
