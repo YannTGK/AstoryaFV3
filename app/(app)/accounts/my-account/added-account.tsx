@@ -1,16 +1,18 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  Modal,
+  Pressable,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import { useRouter } from "expo-router";
 import { Entypo, Feather } from "@expo/vector-icons";
 
-const accounts = [
+const initialAccounts = [
   { id: "1", username: "@Marie-bel" },
   { id: "2", username: "@AnnieJohn" },
   { id: "3", username: "@William_Rodri" },
@@ -24,6 +26,17 @@ const groups = [
 
 export default function AddedAccountsScreen() {
   const router = useRouter();
+  const [accounts, setAccounts] = useState(initialAccounts);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{ id: string; username: string } | null>(null);
+
+  const confirmDelete = () => {
+    if (selectedUser) {
+      setAccounts((prev) => prev.filter((acc) => acc.id !== selectedUser.id));
+      setSelectedUser(null);
+      setModalVisible(false);
+    }
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -34,7 +47,7 @@ export default function AddedAccountsScreen() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Terugknop */}
+      {/* Back button */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
           <Path
@@ -47,10 +60,10 @@ export default function AddedAccountsScreen() {
         </Svg>
       </TouchableOpacity>
 
-      {/* Titel */}
+      {/* Title */}
       <Text style={styles.title}>Added accounts</Text>
 
-      {/* Sectie: Accounts */}
+      {/* Accounts Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Accounts</Text>
@@ -63,14 +76,20 @@ export default function AddedAccountsScreen() {
           <View style={styles.accountItem} key={item.id}>
             <View style={styles.avatarPlaceholder} />
             <Text style={styles.username}>{item.username}</Text>
-            <TouchableOpacity style={styles.deleteButton}>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => {
+                setSelectedUser(item);
+                setModalVisible(true);
+              }}
+            >
               <Feather name="trash-2" size={18} color="#000" />
             </TouchableOpacity>
           </View>
         ))}
       </View>
 
-      {/* Sectie: Groups */}
+      {/* Groups Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Groups</Text>
@@ -88,6 +107,38 @@ export default function AddedAccountsScreen() {
           </View>
         ))}
       </View>
+
+      {/* Confirm Delete Modal */}
+      <Modal transparent visible={modalVisible} animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalText}>
+              Are you sure you want to remove{" "}
+              <Text style={{ fontWeight: "bold" }}>
+                {selectedUser?.username}
+              </Text>
+              ?
+            </Text>
+
+            <View style={styles.modalActions}>
+              <Pressable style={styles.modalBtn} onPress={confirmDelete}>
+                <Text style={styles.modalBtnText}>Yes</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.modalBtn, { backgroundColor: "#ccc" }]}
+                onPress={() => {
+                  setModalVisible(false);
+                  setSelectedUser(null);
+                }}
+              >
+                <Text style={[styles.modalBtnText, { color: "#000" }]}>
+                  No
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -147,6 +198,9 @@ const styles = StyleSheet.create({
     fontFamily: "Alice-Regular",
     fontSize: 14,
   },
+  deleteButton: {
+    padding: 4,
+  },
   groupItem: {
     backgroundColor: "#fff",
     paddingVertical: 12,
@@ -162,8 +216,40 @@ const styles = StyleSheet.create({
     fontFamily: "Alice-Regular",
     fontSize: 14,
   },
-  deleteButton: {
-    padding: 4,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 30,
   },
-  
+  modalContent: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 12,
+    width: "100%",
+  },
+  modalText: {
+    fontSize: 16,
+    fontFamily: "Alice-Regular",
+    color: "#000",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
+  modalBtn: {
+    backgroundColor: "#FEEDB6",
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  modalBtnText: {
+    fontFamily: "Alice-Regular",
+    fontSize: 14,
+    color: "#000",
+    textAlign: "center",
+  },
 });
