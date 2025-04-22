@@ -29,12 +29,24 @@ export default function AddedAccountsScreen() {
   const [accounts, setAccounts] = useState(initialAccounts);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{ id: string; username: string } | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [groupMenuVisible, setGroupMenuVisible] = useState(false);
 
   const confirmDelete = () => {
     if (selectedUser) {
       setAccounts((prev) => prev.filter((acc) => acc.id !== selectedUser.id));
       setSelectedUser(null);
       setModalVisible(false);
+    }
+  };
+
+  const toggleGroupMenu = (groupId: string) => {
+    if (selectedGroupId === groupId && groupMenuVisible) {
+      setGroupMenuVisible(false);
+      setSelectedGroupId(null);
+    } else {
+      setSelectedGroupId(groupId);
+      setGroupMenuVisible(true);
     }
   };
 
@@ -47,7 +59,6 @@ export default function AddedAccountsScreen() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Back button */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
           <Path
@@ -60,10 +71,8 @@ export default function AddedAccountsScreen() {
         </Svg>
       </TouchableOpacity>
 
-      {/* Title */}
       <Text style={styles.title}>Added accounts</Text>
 
-      {/* Accounts Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Accounts</Text>
@@ -89,7 +98,6 @@ export default function AddedAccountsScreen() {
         ))}
       </View>
 
-      {/* Groups Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Groups</Text>
@@ -101,58 +109,60 @@ export default function AddedAccountsScreen() {
         {groups.map((group) => (
           <View style={styles.groupItem} key={group.id}>
             <Text style={styles.groupName}>{group.name}</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => toggleGroupMenu(group.id)}>
               <Entypo name="dots-three-vertical" size={16} color="#000" />
             </TouchableOpacity>
+            {selectedGroupId === group.id && groupMenuVisible && (
+              <View style={styles.groupMenu}>
+                <TouchableOpacity style={styles.menuItem}>
+                  <Text style={styles.menuText}>See members</Text>
+                  <Feather name="users" size={16} color="#000" />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem}>
+                  <Text style={styles.menuText}>Delete</Text>
+                  <Feather name="trash-2" size={16} color="#000" />
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         ))}
       </View>
 
-      {/* Confirm Delete Modal */}
       <Modal transparent visible={modalVisible} animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalText}>
-              Are you sure you want to remove{" "}
-              <Text style={{ fontWeight: "bold" }}>
-                {selectedUser?.username}
-              </Text>
-              ?
-            </Text>
-
-            <View style={styles.modalActions}>
-              <Pressable style={styles.modalBtn} onPress={confirmDelete}>
-                <Text style={styles.modalBtnText}>Yes</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.modalBtn, { backgroundColor: "#ccc" }]}
-                onPress={() => {
-                  setModalVisible(false);
-                  setSelectedUser(null);
-                }}
-              >
-                <Text style={[styles.modalBtnText, { color: "#000" }]}>
-                  No
-                </Text>
-              </Pressable>
-            </View>
+      <View style={styles.modalOverlay}>
+        <View style={styles.confirmBox}>
+          <Text style={styles.confirmText}>
+            Are you sure you want to remove{" "}
+            <Text style={{ fontWeight: "bold" }}>{selectedUser?.username}</Text>?
+          </Text>
+    
+          <View style={styles.confirmButtons}>
+            <Pressable
+              style={[styles.confirmBtn, styles.leftBtn]}
+              onPress={() => {
+                setModalVisible(false);
+                setSelectedUser(null);
+              }}
+            >
+              <Text style={styles.confirmBtnText}>No</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.confirmBtn, styles.rightBtn]}
+              onPress={confirmDelete}
+            >
+              <Text style={[styles.confirmBtnText, { color: "#007AFF" }]}>Yes</Text>
+            </Pressable>
           </View>
         </View>
-      </Modal>
+      </View>
+    </Modal>    
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-  },
-  backBtn: {
-    position: "absolute",
-    top: 50,
-    left: 20,
-    zIndex: 10,
-  },
+  wrapper: { flex: 1 },
+  backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
   title: {
     fontSize: 20,
     fontFamily: "Alice-Regular",
@@ -161,21 +171,14 @@ const styles = StyleSheet.create({
     marginTop: 50,
     marginBottom: 30,
   },
-  section: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
+  section: { paddingHorizontal: 20, marginBottom: 24 },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 12,
   },
-  sectionTitle: {
-    fontFamily: "Alice-Regular",
-    fontSize: 20,
-    color: "#fff",
-  },
+  sectionTitle: { fontFamily: "Alice-Regular", fontSize: 20, color: "#fff" },
   accountItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -198,9 +201,7 @@ const styles = StyleSheet.create({
     fontFamily: "Alice-Regular",
     fontSize: 14,
   },
-  deleteButton: {
-    padding: 4,
-  },
+  deleteButton: { padding: 4 },
   groupItem: {
     backgroundColor: "#fff",
     paddingVertical: 12,
@@ -210,11 +211,39 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 10,
+    position: "relative",
   },
   groupName: {
     color: "#000",
     fontFamily: "Alice-Regular",
     fontSize: 14,
+  },
+  groupMenu: {
+    position: "absolute",
+    top: 50,
+    right: 10,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    zIndex: 100,
+  },
+  menuItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+    minWidth: 130,
+  },
+  menuText: {
+    fontSize: 14,
+    fontFamily: "Alice-Regular",
+    color: "#000",
   },
   modalOverlay: {
     flex: 1,
@@ -252,4 +281,45 @@ const styles = StyleSheet.create({
     color: "#000",
     textAlign: "center",
   },
+  confirmBox: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    width: "80%",
+    overflow: "hidden",
+  },
+  
+  confirmText: {
+    fontSize: 16,
+    fontFamily: "Alice-Regular",
+    color: "#000",
+    textAlign: "center",
+    paddingVertical: 20,
+    paddingHorizontal: 10,
+  },
+  
+  confirmButtons: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: "#E0E0E0",
+  },
+  
+  confirmBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  
+  leftBtn: {
+    borderRightWidth: 1,
+    borderRightColor: "#E0E0E0",
+  },
+  
+  rightBtn: {},
+  
+  confirmBtnText: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+    color: "#007AFF",
+  },  
 });
