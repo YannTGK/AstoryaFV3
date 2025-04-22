@@ -1,28 +1,35 @@
-import React from "react";
-import Joystick from "./JoystickDesign";
-import { THREE } from "expo-three";
+import React from 'react';
+import Joystick from './JoystickDesign';
+import * as THREE from 'three'; // ✅ niet { THREE }, maar * as THREE
 
-console.log("✅ Joystick is loading!");
+type Props = {
+  cameraPosition: React.MutableRefObject<{ x: number; y: number; z: number }>;
+  cameraRotation: React.MutableRefObject<{ x: number; y: number }>;
+  disabled?: boolean;
+};
 
-export default function JoystickHandler({ cameraPosition, cameraRotation, disabled = false }) {
-  const handleJoystickMove = (x, y) => {
+console.log('✅ Joystick is loading!');
+
+export default function JoystickHandler({
+  cameraPosition,
+  cameraRotation,
+  disabled = false,
+}: Props) {
+  const handleJoystickMove = (x: number, y: number) => {
     if (disabled) return;
 
     const moveSpeed = 1;
 
-    // Calculate forward vector based on camera rotation
     const forwardVector = new THREE.Vector3(0, 0, -1);
-    forwardVector.applyEuler(
-      new THREE.Euler(cameraRotation.current.x, cameraRotation.current.y, 0)
-    ).normalize();
+    forwardVector
+      .applyEuler(new THREE.Euler(cameraRotation.current.x, cameraRotation.current.y, 0))
+      .normalize();
 
-    // Calculate right vector based on camera rotation
     const rightVector = new THREE.Vector3(1, 0, 0);
-    rightVector.applyEuler(
-      new THREE.Euler(cameraRotation.current.x, cameraRotation.current.y, 0)
-    ).normalize();
+    rightVector
+      .applyEuler(new THREE.Euler(cameraRotation.current.x, cameraRotation.current.y, 0))
+      .normalize();
 
-    // Update camera position: right movement and forward movement
     cameraPosition.current.x += x * rightVector.x * moveSpeed;
     cameraPosition.current.y += x * rightVector.y * moveSpeed;
     cameraPosition.current.z += x * rightVector.z * moveSpeed;
@@ -32,7 +39,5 @@ export default function JoystickHandler({ cameraPosition, cameraRotation, disabl
     cameraPosition.current.z += y * forwardVector.z * moveSpeed;
   };
 
-  return (
-    <Joystick onMove={handleJoystickMove} />
-  );
+  return <Joystick onMove={handleJoystickMove} />;
 }
