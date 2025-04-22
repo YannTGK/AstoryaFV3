@@ -55,7 +55,7 @@ export default function AddedAccountsScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Accounts</Text>
           <TouchableOpacity>
-            <Feather name="plus" size={20} color="#fff" />
+            <Feather name="plus" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
 
@@ -64,7 +64,7 @@ export default function AddedAccountsScreen() {
             <View style={styles.avatarPlaceholder} />
             <Text style={styles.username}>{item.username}</Text>
             <TouchableOpacity style={styles.deleteButton}>
-              <Feather name="trash-2" size={18} color="#fff" />
+              <Feather name="trash-2" size={18} color="#000" />
             </TouchableOpacity>
           </View>
         ))}
@@ -75,7 +75,7 @@ export default function AddedAccountsScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Groups</Text>
           <TouchableOpacity>
-            <Feather name="plus" size={20} color="#fff" />
+            <Feather name="plus" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
 
