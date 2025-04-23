@@ -2,28 +2,35 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
+  FlatList,
 } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import Svg, { Path } from "react-native-svg";
 
-const allUsers = [
+const MOCK_USERS = [
   { id: "1", username: "@Elisabeth_251" },
   { id: "2", username: "@Elisabeth_28" },
   { id: "3", username: "@Elisabeth_20x" },
 ];
 
-export default function AddNewAccount() {
-  const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+export default function AddAccountScreen() {
+  const [search, setSearch] = useState("");
+  const [selectedUser, setSelectedUser] = useState<{ id: string; username: string } | null>(null);
 
-  const filteredUsers = allUsers.filter((user) =>
-    user.username.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = MOCK_USERS.filter((user) =>
+    user.username.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleSelect = (user: { id: string; username: string }) => {
+    setSelectedUser(user);
+  };
+
+  const handleRemoveSelected = () => {
+    setSelectedUser(null);
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -34,131 +41,182 @@ export default function AddNewAccount() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M15 18l-6-6 6-6"
-            stroke="#FEEDB6"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
-      </TouchableOpacity>
-
       <Text style={styles.title}>Added accounts</Text>
-
-      <Text style={styles.description}>
+      <Text style={styles.infoText}>
         To add new people who aren’t in your contacts, enter their username to
         add them to your contact list or send them an invitation.
       </Text>
 
-      <View style={styles.searchBox}>
+      <View style={styles.searchWrapper}>
         <TextInput
-          style={styles.input}
+          style={styles.searchInput}
+          value={search}
+          onChangeText={setSearch}
           placeholder="Search"
           placeholderTextColor="#999"
-          value={searchTerm}
-          onChangeText={setSearchTerm}
         />
+        <Feather name="search" size={20} color="#666" style={styles.searchIcon} />
       </View>
 
-      <View style={styles.results}>
-        {filteredUsers.map((user) => (
+      {selectedUser && (
+        <View style={styles.selectedUserContainer}>
+          <View style={styles.selectedUserAvatarWrapper}>
+            <View style={styles.selectedUserAvatar} />
+            <TouchableOpacity
+              style={styles.removeSelectedUser}
+              onPress={handleRemoveSelected}
+            >
+              <Feather name="x" size={16} color="#000" />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.selectedUsername}>{selectedUser.username}</Text>
+        </View>
+      )}
+
+      <FlatList
+        data={filteredUsers}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
           <TouchableOpacity
-            key={user.id}
             style={[
               styles.userItem,
-              selectedUser === user.id && { backgroundColor: "#FEEDB6" },
+              selectedUser?.id === item.id && styles.userItemSelected,
             ]}
-            onPress={() => setSelectedUser(user.id)}
+            onPress={() => handleSelect(item)}
           >
-            <View style={styles.avatarPlaceholder} />
-            <Text style={styles.username}>{user.username}</Text>
+            <View style={styles.avatar} />
+            <Text style={styles.username}>{item.username}</Text>
+            {selectedUser?.id === item.id && (
+              <Feather name="check" size={16} color="#006F45" />
+            )}
           </TouchableOpacity>
-        ))}
-      </View>
+        )}
+      />
 
       <TouchableOpacity
-        style={[styles.addBtn, { backgroundColor: selectedUser ? "#FEEDB6" : "#ccc" }]}
         disabled={!selectedUser}
-        onPress={() => {
-          // voeg gebruiker toe
-        }}
+        style={[styles.addButton, selectedUser && styles.addButtonActive]}
       >
-        <Text style={[styles.addBtnText, { color: selectedUser ? "#000" : "#888" }]}>Add</Text>
+        <Text
+          style={[styles.addButtonText, selectedUser && styles.addButtonTextActive]}
+        >
+          Add
+        </Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: { flex: 1 },
-  backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
+  wrapper: { flex: 1, paddingTop: 60 },
   title: {
-    fontSize: 20,
-    fontFamily: "Alice-Regular",
-    color: "#fff",
     textAlign: "center",
-    marginTop: 50,
-    marginBottom: 16,
-  },
-  description: {
-    fontFamily: "Alice-Regular",
     fontSize: 18,
+    fontFamily: "Alice-Regular",
     color: "#fff",
-    textAlign: "left",
-    marginHorizontal: 24,
-    marginBottom: 16,
-    marginTop: 24,
+    marginBottom: 20,
   },
-  searchBox: {
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  input: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+  infoText: {
+    color: "#fff",
     fontFamily: "Alice-Regular",
-    fontSize: 18,
+    fontSize: 14,
+    paddingHorizontal: 20,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  searchWrapper: {
+    marginHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 25,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    fontFamily: "Alice-Regular",
+    fontSize: 14,
     color: "#000",
   },
-  results: {
-    paddingHorizontal: 16,
-    marginTop: 16,
+  searchIcon: {
+    marginLeft: 8,
+  },
+  avatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#ccc",
+    marginRight: 10,
+  },
+  selectedUserContainer: {
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  selectedUserAvatarWrapper: {
+    position: "relative",
+  },
+  selectedUserAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#ccc",
+  },
+  removeSelectedUser: {
+    position: "absolute",
+    right: -6,
+    bottom: -6,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 4,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 1,
+  },
+  selectedUsername: {
+    marginTop: 8,
+    fontFamily: "Alice-Regular",
+    fontSize: 14,
+    color: "#fff",
   },
   userItem: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    marginHorizontal: 20,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 10,
   },
-  avatarPlaceholder: {
-    width: 32,
-    height: 32,
-    borderRadius: 15,
-    backgroundColor: "#ccc",
-    marginRight: 10,
+  userItemSelected: {
+    backgroundColor: "#FEEDB6",
   },
   username: {
+    flex: 1,
     fontFamily: "Alice-Regular",
-    fontSize: 18,
+    fontSize: 14,
     color: "#000",
   },
-  addBtn: {
-    paddingVertical: 12,
+  addButton: {
+    marginTop: 10,
+    marginHorizontal: 20,
+    backgroundColor: "#ccc",
+    paddingVertical: 14,
     borderRadius: 10,
-    marginHorizontal: 16,
-    marginTop: 125,
     alignItems: "center",
   },
-  addBtnText: {
+  addButtonActive: {
+    backgroundColor: "#FEEDB6",
+  },
+  addButtonText: {
     fontFamily: "Alice-Regular",
-    fontSize: 18,
+    fontSize: 16,
+    color: "#888",
+  },
+  addButtonTextActive: {
+    color: "#000",
   },
 });
