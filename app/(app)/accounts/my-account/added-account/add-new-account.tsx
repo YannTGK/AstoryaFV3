@@ -9,6 +9,8 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Path } from "react-native-svg";
+import { useRouter } from "expo-router";
 
 const MOCK_USERS = [
   { id: "1", username: "@Elisabeth_251" },
@@ -17,19 +19,23 @@ const MOCK_USERS = [
 ];
 
 export default function AddAccountScreen() {
+  const router = useRouter();
   const [search, setSearch] = useState("");
-  const [selectedUser, setSelectedUser] = useState<{ id: string; username: string } | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<{ id: string; username: string }[]>([]);
 
   const filteredUsers = MOCK_USERS.filter((user) =>
     user.username.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleSelect = (user: { id: string; username: string }) => {
-    setSelectedUser(user);
-  };
+  const isSelected = (user: { id: string; username: string }) =>
+    selectedUsers.find((u) => u.id === user.id);
 
-  const handleRemoveSelected = () => {
-    setSelectedUser(null);
+  const toggleSelectUser = (user: { id: string; username: string }) => {
+    if (isSelected(user)) {
+      setSelectedUsers((prev) => prev.filter((u) => u.id !== user.id));
+    } else {
+      setSelectedUsers((prev) => [...prev, user]);
+    }
   };
 
   return (
@@ -40,6 +46,19 @@ export default function AddAccountScreen() {
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
       />
+
+      {/* Back button */}
+      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M15 18l-6-6 6-6"
+            stroke="#FEEDB6"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </Svg>
+      </TouchableOpacity>
 
       <Text style={styles.title}>Added accounts</Text>
       <Text style={styles.infoText}>
@@ -58,47 +77,59 @@ export default function AddAccountScreen() {
         <Feather name="search" size={20} color="#666" style={styles.searchIcon} />
       </View>
 
-      {selectedUser && (
-        <View style={styles.selectedUserContainer}>
-          <View style={styles.selectedUserAvatarWrapper}>
-            <View style={styles.selectedUserAvatar} />
-            <TouchableOpacity
-              style={styles.removeSelectedUser}
-              onPress={handleRemoveSelected}
-            >
-              <Feather name="x" size={16} color="#000" />
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.selectedUsername}>{selectedUser.username}</Text>
+      {selectedUsers.length > 0 && (
+        <View style={styles.selectedContainer}>
+          {selectedUsers.map((user) => (
+            <View key={user.id} style={styles.selectedItem}>
+              <View style={styles.profileWrapper}>
+                <View style={styles.avatarLarge} />
+                <TouchableOpacity
+                  style={styles.removeIcon}
+                  onPress={() =>
+                    setSelectedUsers((prev) =>
+                      prev.filter((u) => u.id !== user.id)
+                    )
+                  }
+                >
+                  <Feather name="x" size={12} color="#000" />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.selectedUsername}>{user.username}</Text>
+            </View>
+          ))}
         </View>
       )}
 
       <FlatList
         data={filteredUsers}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[
-              styles.userItem,
-              selectedUser?.id === item.id && styles.userItemSelected,
-            ]}
-            onPress={() => handleSelect(item)}
-          >
-            <View style={styles.avatar} />
-            <Text style={styles.username}>{item.username}</Text>
-            {selectedUser?.id === item.id && (
-              <Feather name="check" size={16} color="#006F45" />
-            )}
-          </TouchableOpacity>
-        )}
+        renderItem={({ item }) => {
+          const selected = isSelected(item);
+          return (
+            <TouchableOpacity
+              style={[styles.userItem, selected && styles.userItemSelected]}
+              onPress={() => toggleSelectUser(item)}
+            >
+              <View style={styles.avatar} />
+              <Text style={styles.username}>{item.username}</Text>
+              {selected && <Feather name="check" size={16} color="#006F45" />}
+            </TouchableOpacity>
+          );
+        }}
       />
 
       <TouchableOpacity
-        disabled={!selectedUser}
-        style={[styles.addButton, selectedUser && styles.addButtonActive]}
+        disabled={selectedUsers.length === 0}
+        style={[
+          styles.addButton,
+          selectedUsers.length > 0 && styles.addButtonActive,
+        ]}
       >
         <Text
-          style={[styles.addButtonText, selectedUser && styles.addButtonTextActive]}
+          style={[
+            styles.addButtonText,
+            selectedUsers.length > 0 && styles.addButtonTextActive,
+          ]}
         >
           Add
         </Text>
@@ -109,9 +140,15 @@ export default function AddAccountScreen() {
 
 const styles = StyleSheet.create({
   wrapper: { flex: 1, paddingTop: 60 },
+  backBtn: {
+    position: "absolute",
+    top: 55,
+    left: 20,
+    zIndex: 10,
+  },
   title: {
     textAlign: "center",
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: "Alice-Regular",
     color: "#fff",
     marginBottom: 20,
@@ -119,9 +156,9 @@ const styles = StyleSheet.create({
   infoText: {
     color: "#fff",
     fontFamily: "Alice-Regular",
-    fontSize: 14,
-    paddingHorizontal: 20,
-    textAlign: "center",
+    fontSize: 18,
+    paddingHorizontal: 16,
+    textAlign: "left",
     marginBottom: 20,
   },
   searchWrapper: {
@@ -137,83 +174,96 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
     fontFamily: "Alice-Regular",
-    fontSize: 14,
+    fontSize: 18,
     color: "#000",
   },
   searchIcon: {
     marginLeft: 8,
   },
-  avatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#ccc",
-    marginRight: 10,
-  },
-  selectedUserContainer: {
-    alignItems: "center",
+  selectedContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: 16,
+    marginTop: 16,
     marginBottom: 16,
+    gap: 12,
   },
-  selectedUserAvatarWrapper: {
+  selectedItem: {
+    alignItems: "center",
+    width: 80,
+  },
+  profileWrapper: {
     position: "relative",
+    width: 50,
+    height: 50,
   },
-  selectedUserAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  avatarLarge: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: "#ccc",
   },
-  removeSelectedUser: {
+  removeIcon: {
     position: "absolute",
-    right: -6,
-    bottom: -6,
+    right: -4,
+    bottom: -4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 4,
-    elevation: 3,
+    justifyContent: "center",
+    alignItems: "center",
     shadowColor: "#000",
+    shadowOpacity: 0.2,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 1,
+    elevation: 2,
   },
   selectedUsername: {
-    marginTop: 8,
     fontFamily: "Alice-Regular",
-    fontSize: 14,
+    fontSize: 13,
     color: "#fff",
+    marginTop: 8,
+    textAlign: "center",
   },
   userItem: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     padding: 12,
-    borderRadius: 10,
-    marginBottom: 10,
+    borderRadius: 8,
+    marginBottom: 16,
   },
   userItemSelected: {
     backgroundColor: "#FEEDB6",
   },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#ccc",
+    marginRight: 12,
+  },
   username: {
     flex: 1,
     fontFamily: "Alice-Regular",
-    fontSize: 14,
+    fontSize: 18,
     color: "#000",
   },
   addButton: {
-    marginTop: 10,
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     backgroundColor: "#ccc",
-    paddingVertical: 14,
-    borderRadius: 10,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: "center",
+    marginBottom: 100,
   },
   addButtonActive: {
     backgroundColor: "#FEEDB6",
   },
   addButtonText: {
     fontFamily: "Alice-Regular",
-    fontSize: 16,
+    fontSize: 18,
     color: "#888",
   },
   addButtonTextActive: {
