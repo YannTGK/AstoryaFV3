@@ -1,34 +1,23 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, Pressable, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Pressable,
+  StyleSheet,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import StarView from "@/components/stars/StarView";
-
-import UpgradePopup from "@/components/pop-ups/UpgradePopup";
-import useAuthStore from "@/lib/store/useAuthStore";
 import api from "@/services/api";
+
+import useAuthStore from "@/lib/store/useAuthStore";
 
 export default function StartMyStarPublic() {
   const router = useRouter();
-  const { user, setUser } = useAuthStore();
+  const { user } = useAuthStore();
 
-  const [showPopup, setShowPopup] = useState(false);
-
-  /* popup tonen bij EXPLORER */
-  useEffect(() => {
-    if (user?.plan === "EXPLORER") setShowPopup(true);
-  }, [user]);
-
-  const handleUpgrade = async () => {
-    try {
-      await api.put(`/users/${user._id}`, { plan: "LEGACY" });
-      setUser({ ...user, plan: "LEGACY" });
-      setShowPopup(false);
-    } catch (err) {
-      console.error("Upgrade mislukt:", err);
-    }
-  };
 
   const goBack = useCallback(() => router.back(), []);
   const goPrivate = useCallback(
@@ -36,9 +25,42 @@ export default function StartMyStarPublic() {
     []
   );
   const goCustomize = useCallback(
-    () => router.push("/(app)/my-stars/public-star/color-my-star-public"),
+    () =>
+      router.push("/(app)/my-stars/public-star/color-my-star-public"),
     []
   );
+
+  const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  const run = async () => {
+    if (!user) {            // guest? gewoon door
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { data: stars } = await api.get("/stars");
+      const pub = stars.find((s: any) => !s.isPrivate);
+
+      if (pub) {
+        const hex = pub.color?.startsWith("#") ? pub.color : "#ffffff";
+        const emissive = parseInt(hex.slice(1), 16).toString();
+
+        router.replace({
+          pathname: "/(app)/my-stars/public-star/final-my-star-public",
+          params: { name: pub.publicName || pub.word, emissive },
+        });
+        return;             // stopt hier bij redirect
+      }
+    } catch (e) {
+      console.error("public-star fetch error:", e);
+    } finally {
+      setLoading(false);    // laat creatie-UI zien
+    }
+  };
+  run();
+}, [user, router]);
 
   return (
     <View style={styles.root}>
@@ -48,56 +70,62 @@ export default function StartMyStarPublic() {
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
       />
+      {/* Terug-knop */}
+      <TouchableOpacity style={styles.backBtn} onPress={goBack}>
+        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M15 18l-6-6 6-6"
+            stroke="#FEEDB6"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </Svg>
+      </TouchableOpacity>
 
-      {showPopup && (
-        <UpgradePopup
-          onClose={() => setShowPopup(false)}
-          onUpgrade={handleUpgrade}
-        />
-      )}
+      <Text style={styles.title}>My personal star</Text>
 
-      {!showPopup && (
-        <>
-          {/* Back */}
-          <TouchableOpacity style={styles.backBtn} onPress={goBack}>
-            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-              <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-            </Svg>
-          </TouchableOpacity>
+      {/* Private / Public toggle */}
+      <View style={styles.toggleContainer}>
+        <Pressable
+          onPress={goPrivate}
+          style={[styles.toggleBtn, styles.private]}
+        >
+          <Text style={[styles.toggleTxt, styles.privateTxt]}>
+            Private
+          </Text>
+        </Pressable>
+        <Pressable style={[styles.toggleBtn, styles.public]}>
+          <Text style={[styles.toggleTxt, styles.publicTxt]}>
+            Public
+          </Text>
+        </Pressable>
+      </View>
 
-          <Text style={styles.title}>My personal star</Text>
+      {/* Ster-voorbeeld */}
+      <View style={styles.canvasWrapper}>
+        <StarView emissive={0xffffff} rotate />
+      </View>
 
-          {/* toggle */}
-          <View style={styles.toggleContainer}>
-            <Pressable onPress={goPrivate} style={[styles.toggleBtn, styles.private]}>
-              <Text style={[styles.toggleTxt, styles.privateTxt]}>Private</Text>
-            </Pressable>
-            <Pressable style={[styles.toggleBtn, styles.public]}>
-              <Text style={[styles.toggleTxt, styles.publicTxt]}>Public</Text>
-            </Pressable>
-          </View>
-
-          {/* ster */}
-          <View style={styles.canvasWrapper}>
-            <StarView emissive={0xffffff} rotate />
-          </View>
-
-          {/* CTA */}
-          <View style={styles.ctaWrapper}>
-            <TouchableOpacity style={styles.button} onPress={goCustomize}>
-              <Text style={styles.buttonTxt}>Customize star</Text>
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
+      {/* CTA */}
+      <View style={styles.ctaWrapper}>
+        <TouchableOpacity style={styles.button} onPress={goCustomize}>
+          <Text style={styles.buttonTxt}>Customize star</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
-/* ───────────── styles ───────────── */
+/* ───────────────── styles ───────────────── */
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
+  backBtn: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    zIndex: 10,
+  },
   title: {
     fontFamily: "Alice-Regular",
     fontSize: 20,
@@ -105,7 +133,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 50,
   },
-  toggleContainer: { flexDirection: "row", justifyContent: "center", marginTop: 30 },
+  toggleContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 30,
+  },
   toggleBtn: { paddingVertical: 10, paddingHorizontal: 26 },
   private: {
     backgroundColor: "#11152A",
@@ -128,8 +160,14 @@ const styles = StyleSheet.create({
     height: 300,
     borderRadius: 20,
     overflow: "hidden",
+    backgroundColor: "transparent",
   },
-  ctaWrapper: { position: "absolute", bottom: 100, left: 20, right: 20 },
+  ctaWrapper: {
+    position: "absolute",
+    bottom: 100,
+    left: 20,
+    right: 20,
+  },
   button: {
     backgroundColor: "#FEEDB6",
     paddingVertical: 14,

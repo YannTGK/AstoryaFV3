@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
 import {
-  View, Text, TouchableOpacity, Pressable,
-  StyleSheet, Dimensions
+  View,
+  Text,
+  TouchableOpacity,
+  Pressable,
+  StyleSheet,
+  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -16,20 +20,21 @@ const { width } = Dimensions.get("window");
 
 export default function StartMyStarPrivate() {
   const router = useRouter();
-  const { user, setUser } = useAuthStore();
+  const { user } = useAuthStore();
 
   const [showPopup, setShowPopup] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
-  /* ───────────────── popup-logica ───────────────── */
+  /* ─── bepalen of popup moet verschijnen ─── */
   useEffect(() => {
     const init = async () => {
       if (!user) return;
 
-      // ① Toon popup als plan EXPLORER is
+      // Toon popup voor EXPLORER-plan
       if (user.plan === "EXPLORER") setShowPopup(true);
 
       try {
+        // Extra check: als premium/legacy al een private star heeft → doorskippen
         const { data: stars } = await api.get("/stars");
         const hasPrivateStar = stars.some((s: any) => s.isPrivate);
 
@@ -37,7 +42,9 @@ export default function StartMyStarPrivate() {
           (user.plan === "PREMIUM" || user.plan === "LEGACY") &&
           hasPrivateStar
         ) {
-          router.replace("/(app)/my-stars/private-star/final-my-star-private");
+          router.replace(
+            "/(app)/my-stars/private-star/final-my-star-private"
+          );
           return;
         }
       } catch (err) {
@@ -50,17 +57,6 @@ export default function StartMyStarPrivate() {
 
     init();
   }, [user]);
-
-  /* ───────────── handlers ───────────── */
-  const handleUpgrade = async () => {
-    try {
-      await api.put(`/users/${user._id}`, { plan: "LEGACY" });
-      setUser({ ...user, plan: "LEGACY" });
-      setShowPopup(false);
-    } catch (err) {
-      console.error("Upgrade mislukt:", err);
-    }
-  };
 
   const handleToggleToPublic = () =>
     router.replace("/(app)/my-stars/start-my-star-public");
@@ -77,45 +73,60 @@ export default function StartMyStarPrivate() {
         style={StyleSheet.absoluteFill}
       />
 
+      {/* ─── UPGRADE POPUP ─── */}
       {showPopup && (
-        <UpgradePopup
-          onClose={() => setShowPopup(false)}
-          onUpgrade={handleUpgrade}
-        />
+        <UpgradePopup onClose={() => setShowPopup(false)} />
       )}
 
+      {/* ─── REST VAN HET SCHERM ─── */}
       {!showPopup && (
         <>
-          {/* Back */}
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          {/* Terug-knop */}
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.back()}
+          >
             <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-              <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+              <Path
+                d="M15 18l-6-6 6-6"
+                stroke="#FEEDB6"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </Svg>
           </TouchableOpacity>
 
           <Text style={styles.title}>My personal star</Text>
 
-          {/* toggle */}
+          {/* Private / Public toggle */}
           <View style={styles.toggleContainer}>
             <Pressable style={[styles.toggleBtn, styles.privateOn]}>
-              <Text style={[styles.toggleTxt, { color: "#11152A" }]}>Private</Text>
+              <Text style={[styles.toggleTxt, { color: "#11152A" }]}>
+                Private
+              </Text>
             </Pressable>
             <Pressable
               style={[styles.toggleBtn, styles.publicOff]}
               onPress={handleToggleToPublic}
             >
-              <Text style={[styles.toggleTxt, { color: "#fff" }]}>Public</Text>
+              <Text style={[styles.toggleTxt, { color: "#fff" }]}>
+                Public
+              </Text>
             </Pressable>
           </View>
 
-          {/* ster */}
+          {/* Ster-voorbeeld */}
           <View style={styles.canvasWrapper}>
             <StarView emissive={0xffffff} size={300} rotate />
           </View>
 
           {/* CTA */}
           <View style={styles.fixedButtonWrapper}>
-            <TouchableOpacity style={styles.button} onPress={handleCustomize}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleCustomize}
+            >
               <Text style={styles.buttonText}>Customize star</Text>
             </TouchableOpacity>
           </View>
@@ -125,7 +136,7 @@ export default function StartMyStarPrivate() {
   );
 }
 
-/* ───────────── styles ───────────── */
+/* ───────────────── styles ───────────────── */
 const styles = StyleSheet.create({
   backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
   title: {
@@ -135,10 +146,22 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 50,
   },
-  toggleContainer: { flexDirection: "row", justifyContent: "center", marginTop: 30 },
+  toggleContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 30,
+  },
   toggleBtn: { paddingVertical: 10, paddingHorizontal: 26 },
-  privateOn: { backgroundColor: "#FEEDB6", borderTopLeftRadius: 12, borderBottomLeftRadius: 12 },
-  publicOff: { backgroundColor: "#11152A", borderTopRightRadius: 12, borderBottomRightRadius: 12 },
+  privateOn: {
+    backgroundColor: "#FEEDB6",
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+  },
+  publicOff: {
+    backgroundColor: "#11152A",
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
+  },
   toggleTxt: { fontFamily: "Alice-Regular", fontSize: 16 },
   canvasWrapper: {
     position: "absolute",
@@ -149,7 +172,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: "hidden",
   },
-  fixedButtonWrapper: { position: "absolute", bottom: 100, left: 20, right: 20 },
+  fixedButtonWrapper: {
+    position: "absolute",
+    bottom: 100,
+    left: 20,
+    right: 20,
+  },
   button: {
     backgroundColor: "#FEEDB6",
     paddingVertical: 14,
@@ -160,5 +188,10 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 6,
   },
-  buttonText: { fontSize: 16, color: "#000", fontFamily: "Alice-Regular", textAlign: "center" },
+  buttonText: {
+    fontSize: 16,
+    color: "#000",
+    fontFamily: "Alice-Regular",
+    textAlign: "center",
+  },
 });
