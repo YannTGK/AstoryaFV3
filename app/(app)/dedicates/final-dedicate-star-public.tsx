@@ -30,6 +30,14 @@ export default function FinalMyStarPublic() {
     router.replace("/dedicates/final-dedicate-star-private");
   };
 
+  const handleAddPeople = () => {
+    router.push("/dedicates/add-people-dedicate");
+  };
+
+  const handleSeeMembers = () => {
+    router.push("/dedicates/see-members-dedicate");
+  };
+
   const createScene = async (gl: any) => {
     const renderer = new Renderer({ gl });
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
@@ -116,11 +124,11 @@ export default function FinalMyStarPublic() {
       {/* menu bij openklikken */}
       {menuOpen && (
         <View style={styles.menu}>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={handleAddPeople}>
             <AddPeopleIcon width={16} height={16} />
             <Text style={styles.menuText}>Add people</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={handleSeeMembers}>
             <SeeMembersIcon width={16} height={16} />
             <Text style={styles.menuText}>See members</Text>
           </TouchableOpacity>

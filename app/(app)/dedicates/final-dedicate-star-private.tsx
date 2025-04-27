@@ -18,7 +18,7 @@ import VideosIcon from "@/assets/images/svg-icons/videos.svg";
 import AudiosIcon from "@/assets/images/svg-icons/audios.svg";
 import DocumentsIcon from "@/assets/images/svg-icons/documents.svg";
 import BookOfLifeIcon from "@/assets/images/svg-icons/book-of-life.svg";
-import MoreIcon from "@/assets/images/svg-icons/more.svg"; // drie puntjes
+import MoreIcon from "@/assets/images/svg-icons/more.svg"; 
 import AddPeopleIcon from "@/assets/images/svg-icons/add-people.svg"; 
 import SeeMembersIcon from "@/assets/images/svg-icons/see-members.svg"; 
 
@@ -28,7 +28,7 @@ export default function FinalMyStarPrivate() {
   const router = useRouter();
   const { name, emissive } = useLocalSearchParams();
   const { user } = useAuthStore();
-  const [isPrivate, setIsPrivate] = useState(true); // standaard PRIVATE (correct!)
+  const [isPrivate, setIsPrivate] = useState(true); // standaard PRIVATE
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleToggleToPublic = () => {
@@ -113,6 +113,14 @@ export default function FinalMyStarPrivate() {
     { label: "Book of Life", icon: <BookOfLifeIcon width={60} height={60} /> },
   ];
 
+  const handleAddPeople = () => {
+    router.push("/dedicates/add-people-dedicate");
+  };
+
+  const handleSeeMembers = () => {
+    router.push("/dedicates/see-members-dedicate");
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
@@ -134,11 +142,11 @@ export default function FinalMyStarPrivate() {
 
       {menuOpen && (
         <View style={styles.menu}>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={handleAddPeople}>
             <AddPeopleIcon width={16} height={16} />
             <Text style={styles.menuText}>Add people</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={handleSeeMembers}>
             <SeeMembersIcon width={16} height={16} />
             <Text style={styles.menuText}>See members</Text>
           </TouchableOpacity>
