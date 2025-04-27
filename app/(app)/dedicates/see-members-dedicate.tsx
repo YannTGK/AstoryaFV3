@@ -14,6 +14,14 @@ const members = [
 export default function SeeMembersDedicate() {
   const router = useRouter();
 
+  const handleMemberPress = (memberName: string) => {
+    if (memberName === "You") {
+      router.push("/dedicates/you-members-status-dedicate");
+    } else {
+      router.push("/dedicates/account-members-status-dedicate");
+    }
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
@@ -47,10 +55,10 @@ export default function SeeMembersDedicate() {
       {/* Members lijst */}
       <ScrollView style={styles.listWrapper} contentContainerStyle={{ paddingBottom: 100 }}>
         {members.map((member, idx) => (
-          <View key={idx} style={styles.memberItem}>
+          <TouchableOpacity key={idx} style={styles.memberItem} onPress={() => handleMemberPress(member.name)}>
             <View style={styles.avatar} />
             <Text style={styles.memberName}>{member.name}</Text>
-          </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
     </View>
