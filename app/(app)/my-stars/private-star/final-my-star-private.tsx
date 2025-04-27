@@ -152,7 +152,7 @@ export default function FinalMyStarPrivate() {
       </View>
 
       <View style={styles.canvasWrapper}>
-        <StarView emissive={parseInt(emissive)} rotate={false} />
+      <StarView emissive={parseInt(emissive as string)} rotate={false} />
         <View style={styles.nameOverlay}>
           <Text style={styles.nameText}>{user?.firstName} {user?.lastName}</Text>
         </View>

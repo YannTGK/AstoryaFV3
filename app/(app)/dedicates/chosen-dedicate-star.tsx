@@ -97,7 +97,7 @@ export default function ChosenStarScreen() {
         </Svg>
       </TouchableOpacity>
 
-      <Text style={styles.title}>My personal star</Text>
+      <Text style={styles.title}>Dedicate star</Text>
       <Text style={styles.subtitle}>Chosen star</Text>
 
       {/* 3D ster */}
@@ -111,7 +111,7 @@ export default function ChosenStarScreen() {
       {/* Add content knop */}
       <View style={styles.fixedButtonWrapper}>
         <TouchableOpacity style={styles.button} onPress={() => router.push({
-        pathname: "/(app)/my-stars/private-star/final-my-star-private",
+        pathname: "/dedicates/final-dedicate-star-private",
         params: { name, emissive },
       })}>
           <Text style={styles.buttonText}>Add content</Text>

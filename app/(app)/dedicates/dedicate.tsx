@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -8,10 +8,18 @@ import Svg, { Path } from "react-native-svg";
 import StarIcon from "@/assets/images/svg-icons/star.svg";
 import PlusIcon from "@/assets/images/svg-icons/plus3.svg";
 
+// Popup
+import UpgradePopupDedicate from "@/components/pop-ups/UpgradePopupDedicate";
+
 const { width } = Dimensions.get("window");
 
 export default function DedicateScreen() {
   const router = useRouter();
+  const [showPopup, setShowPopup] = useState(false);
+
+  const handlePlusPress = () => {
+    setShowPopup(true);
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -22,7 +30,7 @@ export default function DedicateScreen() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Back-knop (zoals My Star) */}
+      {/* Back-knop */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
           <Path
@@ -35,11 +43,11 @@ export default function DedicateScreen() {
         </Svg>
       </TouchableOpacity>
 
-      {/* Titel (zoals My Star) */}
+      {/* Titel */}
       <Text style={styles.title}>Dedicated stars</Text>
 
       {/* Plus-knop */}
-      <TouchableOpacity style={styles.plusBtn}>
+      <TouchableOpacity style={styles.plusBtn} onPress={handlePlusPress}>
         <PlusIcon width={36} height={36} />
       </TouchableOpacity>
 
@@ -58,6 +66,11 @@ export default function DedicateScreen() {
           <Text style={styles.starLabel}>Emma Lopez</Text>
         </View>
       </View>
+
+      {/* Popup */}
+      {showPopup && (
+        <UpgradePopupDedicate onClose={() => setShowPopup(false)} />
+      )}
     </View>
   );
 }
@@ -68,11 +81,6 @@ const styles = StyleSheet.create({
     top: 50,
     left: 20,
     zIndex: 10,
-  },
-  backCircle: {
-    backgroundColor: "#FEEDB6",
-    borderRadius: 8,
-    padding: 6,
   },
   title: {
     fontSize: 20,
