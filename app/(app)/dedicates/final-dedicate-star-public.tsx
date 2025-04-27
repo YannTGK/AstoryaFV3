@@ -35,7 +35,7 @@ export default function FinalMyStarPublic() {
   };
 
   const handleSeeMembers = () => {
-    router.push("/dedicates/see-members-dedicate");
+    router.push("/dedicates/no-members-dedicate");
   };
 
   const createScene = async (gl: any) => {

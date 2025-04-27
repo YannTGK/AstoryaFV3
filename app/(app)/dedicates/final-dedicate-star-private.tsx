@@ -118,7 +118,7 @@ export default function FinalMyStarPrivate() {
   };
 
   const handleSeeMembers = () => {
-    router.push("/dedicates/see-members-dedicate");
+    router.push("/dedicates/no-members-dedicate");
   };
 
   return (
