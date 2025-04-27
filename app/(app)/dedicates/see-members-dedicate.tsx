@@ -16,7 +16,7 @@ export default function SeeMembersDedicate() {
 
   const handleMemberPress = (memberName: string) => {
     if (memberName === "You") {
-      router.push("/dedicates/you-members-status-dedicate");
+      router.push("/dedicates/you-members-status-dedicate-if-admin"); //you-members-status-dedicate-if-viewer   of  you-members-status-dedicate-if-editer
     } else {
       router.push("/dedicates/account-members-status-dedicate");
     }

@@ -21,6 +21,10 @@ export default function DedicateScreen() {
     setShowPopup(true);
   };
 
+  const handleStarPress = () => {
+    router.push("/dedicates/created-dedicates/dedicated-star-private");
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
@@ -53,18 +57,12 @@ export default function DedicateScreen() {
 
       {/* Sterren grid */}
       <View style={styles.grid}>
-        <View style={styles.starWrapper}>
-          <StarIcon width={140} height={140} />
-          <Text style={styles.starLabel}>Elina De Vos</Text>
-        </View>
-        <View style={styles.starWrapper}>
-          <StarIcon width={140} height={140} />
-          <Text style={styles.starLabel}>Merel De Bruyne</Text>
-        </View>
-        <View style={styles.starWrapper}>
-          <StarIcon width={140} height={140} />
-          <Text style={styles.starLabel}>Emma Lopez</Text>
-        </View>
+        {["Elina De Vos", "Merel De Bruyne", "Emma Lopez"].map((starName, idx) => (
+          <TouchableOpacity key={idx} style={styles.starWrapper} onPress={handleStarPress}>
+            <StarIcon width={140} height={140} />
+            <Text style={styles.starLabel}>{starName}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       {/* Popup */}
