@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   },
   plusBtn: {
     position: "absolute",
-    top: 105,
+    top: 85,
     right: 24,
     zIndex: 10,
   },
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     columnGap: 20,
     rowGap: 40,
-    marginTop: 80,
+    marginTop: 60,
   },
   starWrapper: {
     width: (width - 52) / 2,
