@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView, Modal } from "react-native";
 import { useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -11,6 +11,7 @@ export default function AddMembersDedicate() {
 
   const [search, setSearch] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [showPopup, setShowPopup] = useState(false);
 
   const users = [
     "Elisabeth_251",
@@ -33,9 +34,21 @@ export default function AddMembersDedicate() {
     setSelectedUsers(selectedUsers.filter(u => u !== user));
   };
 
-  const handleAddMembers = () => {
-    console.log("Added members:", selectedUsers);
-    router.back();
+  const handleConfirmAdd = () => {
+    setShowPopup(true);
+  };
+
+  const handleYes = () => {
+    setShowPopup(false);
+    router.push("/dedicates/add-members-dedicate-status"); // ✅ juiste route
+  };
+
+  const handleNo = () => {
+    setShowPopup(false);
+  };
+
+  const handleSendInvitation = () => {
+    router.push("/dedicates/send-invitation-dedicate"); // ✅ juiste route
   };
 
   const filteredUsers = users.filter(u => u.toLowerCase().includes(search.toLowerCase()));
@@ -56,8 +69,8 @@ export default function AddMembersDedicate() {
         </Svg>
       </TouchableOpacity>
 
-      {/* Send invitation button rechtsboven */}
-      <TouchableOpacity style={styles.invitationBtn}>
+      {/* Send invitation button */}
+      <TouchableOpacity style={styles.invitationBtn} onPress={handleSendInvitation}>
         <Text style={styles.invitationText}>Send invitation</Text>
       </TouchableOpacity>
 
@@ -79,7 +92,7 @@ export default function AddMembersDedicate() {
         />
       </View>
 
-      {/* Body met geselecteerden en resultaten */}
+      {/* Body */}
       <View style={{ flex: 1 }}>
         {/* Selected members */}
         {selectedUsers.length > 0 && (
@@ -116,8 +129,6 @@ export default function AddMembersDedicate() {
               <Text style={styles.resultText}>@{user}</Text>
             </TouchableOpacity>
           ))}
-
-          {/* Padding onderaan zodat Add button niet overlapt */}
           <View style={{ height: 150 }} />
         </ScrollView>
       </View>
@@ -127,13 +138,37 @@ export default function AddMembersDedicate() {
         <TouchableOpacity
           style={[styles.button, !selectedUsers.length && styles.buttonDisabled]}
           disabled={selectedUsers.length === 0}
-          onPress={handleAddMembers}
+          onPress={handleConfirmAdd}
         >
           <Text style={[styles.buttonText, !selectedUsers.length && styles.buttonTextDisabled]}>
             Add
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Popup */}
+      <Modal
+        transparent
+        visible={showPopup}
+        animationType="fade"
+      >
+        <View style={styles.popupOverlay}>
+          <View style={styles.popupBox}>
+            <Text style={styles.popupText}>
+              Are you sure you want to add a{"\n"}new person to the star?
+            </Text>
+            <View style={styles.popupButtons}>
+              <TouchableOpacity style={[styles.popupButton, styles.rightBorder]} onPress={handleYes}>
+                <Text style={styles.popupButtonTextYes}>Yes</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.popupButton} onPress={handleNo}>
+                <Text style={styles.popupButtonTextNo}>No</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -274,7 +309,51 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
   },
-  buttonTextDisabled: {
-    /*color: "#999",*/
+  buttonTextDisabled: {},
+  popupOverlay: {
+    flex: 1,
+    backgroundColor: "#00000088",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  popupBox: {
+    width: 280,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    alignItems: "center",
+  },
+  popupText: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+    color: "#11152A",
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  popupButtons: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    width: "100%",
+  },
+  popupButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  rightBorder: {
+    borderRightWidth: 1,
+    borderRightColor: "#eee",
+  },
+  popupButtonTextYes: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+    color: "#0A84FF",
+  },
+  popupButtonTextNo: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+    color: "#0A84FF",
   },
 });
