@@ -56,7 +56,7 @@ import {
                   <Text style={styles.planPrice}>FREE</Text>
   
                   <View style={styles.list}>
-                    <Text style={styles.listItem}>✓ Explore the starry sky ☼</Text>
+                    <Text style={styles.listItem}>✓ Explore the starry sky</Text>
                     <Text style={styles.listItem}>✓ Personal starry sky</Text>
                     <Text style={styles.listItem}>✓ 3D/VR experience</Text>
                     <Text style={styles.listItem}>✓ Download memories</Text>
@@ -77,7 +77,7 @@ import {
                   </Text>
   
                   <View style={styles.list}>
-                    <Text style={styles.listItem}>✓ Private star ☼</Text>
+                    <Text style={styles.listItem}>✓ Dedicated star</Text>
                     <Text style={styles.listItem}>✓ Life's story</Text>
                     <Text style={styles.listItem}>✓ Automatic activation</Text>
                     <Text style={styles.listItem}>✓ Full control</Text>
