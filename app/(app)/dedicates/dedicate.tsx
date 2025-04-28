@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -8,10 +8,22 @@ import Svg, { Path } from "react-native-svg";
 import StarIcon from "@/assets/images/svg-icons/star.svg";
 import PlusIcon from "@/assets/images/svg-icons/plus3.svg";
 
+// Popup
+import UpgradePopupDedicate from "@/components/pop-ups/UpgradePopupDedicate";
+
 const { width } = Dimensions.get("window");
 
 export default function DedicateScreen() {
   const router = useRouter();
+  const [showPopup, setShowPopup] = useState(false);
+
+  const handlePlusPress = () => {
+    setShowPopup(true);
+  };
+
+  const handleStarPress = () => {
+    router.push("/dedicates/created-dedicates/dedicated-star-private");
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -22,7 +34,7 @@ export default function DedicateScreen() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Back-knop (zoals My Star) */}
+      {/* Back-knop */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
           <Path
@@ -35,29 +47,28 @@ export default function DedicateScreen() {
         </Svg>
       </TouchableOpacity>
 
-      {/* Titel (zoals My Star) */}
+      {/* Titel */}
       <Text style={styles.title}>Dedicated stars</Text>
 
       {/* Plus-knop */}
-      <TouchableOpacity style={styles.plusBtn}>
+      <TouchableOpacity style={styles.plusBtn} onPress={handlePlusPress}>
         <PlusIcon width={36} height={36} />
       </TouchableOpacity>
 
       {/* Sterren grid */}
       <View style={styles.grid}>
-        <View style={styles.starWrapper}>
-          <StarIcon width={140} height={140} />
-          <Text style={styles.starLabel}>Elina De Vos</Text>
-        </View>
-        <View style={styles.starWrapper}>
-          <StarIcon width={140} height={140} />
-          <Text style={styles.starLabel}>Merel De Bruyne</Text>
-        </View>
-        <View style={styles.starWrapper}>
-          <StarIcon width={140} height={140} />
-          <Text style={styles.starLabel}>Emma Lopez</Text>
-        </View>
+        {["Elina De Vos", "Merel De Bruyne", "Emma Lopez"].map((starName, idx) => (
+          <TouchableOpacity key={idx} style={styles.starWrapper} onPress={handleStarPress}>
+            <StarIcon width={140} height={140} />
+            <Text style={styles.starLabel}>{starName}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
+
+      {/* Popup */}
+      {showPopup && (
+        <UpgradePopupDedicate onClose={() => setShowPopup(false)} />
+      )}
     </View>
   );
 }
@@ -69,11 +80,6 @@ const styles = StyleSheet.create({
     left: 20,
     zIndex: 10,
   },
-  backCircle: {
-    backgroundColor: "#FEEDB6",
-    borderRadius: 8,
-    padding: 6,
-  },
   title: {
     fontSize: 20,
     fontFamily: "Alice-Regular",
@@ -83,7 +89,7 @@ const styles = StyleSheet.create({
   },
   plusBtn: {
     position: "absolute",
-    top: 105,
+    top: 85,
     right: 24,
     zIndex: 10,
   },
@@ -93,7 +99,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     columnGap: 20,
     rowGap: 40,
-    marginTop: 80,
+    marginTop: 60,
   },
   starWrapper: {
     width: (width - 52) / 2,

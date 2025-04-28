@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, Pressable, StyleSheet, Dimensions, ScrollView } from "react-native";
+import { View, Text, TouchableOpacity, Pressable, StyleSheet, Dimensions } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
@@ -10,35 +10,32 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
 import { useState } from "react";
-import useAuthStore from "@/lib/store/useAuthStore";
 import StarView from "@/components/stars/StarView";
 
-// SVG-iconen
-import PhotosIcon from "@/assets/images/svg-icons/photos.svg";
-import VideosIcon from "@/assets/images/svg-icons/videos.svg";
-import AudiosIcon from "@/assets/images/svg-icons/audios.svg";
-import MessagesIcon from "@/assets/images/svg-icons/messages.svg";
-import DocumentsIcon from "@/assets/images/svg-icons/documents.svg";
-import BookOfLifeIcon from "@/assets/images/svg-icons/book-of-life.svg";
-import VRSpaceIcon from "@/assets/images/svg-icons/3D-VR-space.svg";
+// extra icons
+import MoreIcon from "@/assets/images/svg-icons/more.svg";
+import AddPeopleIcon from "@/assets/images/svg-icons/add-people.svg";
+import SeeMembersIcon from "@/assets/images/svg-icons/see-members.svg";
 
 const { width } = Dimensions.get("window");
 
-export default function FinalMyStarPrivate() {
+export default function FinalMyStarPublic() {
   const router = useRouter();
   const { name, emissive } = useLocalSearchParams();
-  const { user } = useAuthStore();
-  const [isPrivate, setIsPrivate] = useState(true);
+  const [isPrivate, setIsPrivate] = useState(false); // standaard op PUBLIC
+  const [menuOpen, setMenuOpen] = useState(false);   // voor de drie puntjes
 
-  const handleToggleToPublic = () => {
-    setIsPrivate(false);
-    router.push({
-      pathname: "/(app)/my-stars/start-my-star-public",
-      params: {
-        name: user?.firstName + " " + user?.lastName,
-        emissive: emissive as string,
-      },
-    });
+  const handleToggleToPrivate = () => {
+    setIsPrivate(true);
+    router.replace("/dedicates/final-dedicate-star-private");
+  };
+
+  const handleAddPeople = () => {
+    router.push("/dedicates/add-people-dedicate");
+  };
+
+  const handleSeeMembers = () => {
+    router.push("/dedicates/no-members-dedicate");
   };
 
   const createScene = async (gl: any) => {
@@ -104,16 +101,6 @@ export default function FinalMyStarPrivate() {
     );
   };
 
-  const icons = [
-    { label: "Photo's", icon: <PhotosIcon width={60} height={60} /> },
-    { label: "Video’s", icon: <VideosIcon width={60} height={60} /> },
-    { label: "Audio’s", icon: <AudiosIcon width={60} height={60} /> },
-    { label: "Messages", icon: <MessagesIcon width={60} height={60} /> },
-    { label: "Documents", icon: <DocumentsIcon width={60} height={60} /> },
-    { label: "Book of Life", icon: <BookOfLifeIcon width={60} height={60} /> },
-    { label: "3D VR Space", icon: <VRSpaceIcon width={60} height={60} /> },
-  ];
-
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
@@ -129,22 +116,50 @@ export default function FinalMyStarPrivate() {
         </Svg>
       </TouchableOpacity>
 
-      <Text style={styles.title}>My personal star</Text>
+      {/* drie puntjes rechts */}
+      <TouchableOpacity style={styles.moreBtn} onPress={() => setMenuOpen(!menuOpen)}>
+        <MoreIcon width={24} height={24} />
+      </TouchableOpacity>
+
+      {/* menu bij openklikken */}
+      {menuOpen && (
+        <View style={styles.menu}>
+          <TouchableOpacity style={styles.menuItem} onPress={handleAddPeople}>
+            <AddPeopleIcon width={16} height={16} />
+            <Text style={styles.menuText}>Add people</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={handleSeeMembers}>
+            <SeeMembersIcon width={16} height={16} />
+            <Text style={styles.menuText}>See members</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <Text style={styles.title}>Dedicated star</Text>
 
       <View style={styles.toggleContainer}>
         <Pressable
+          onPress={handleToggleToPrivate}
           style={[
             styles.toggleButton,
-            { backgroundColor: isPrivate ? "#FEEDB6" : "#11152A", borderTopLeftRadius: 12, borderBottomLeftRadius: 12 },
+            {
+              backgroundColor: isPrivate ? "#FEEDB6" : "#11152A",
+              borderTopLeftRadius: 12,
+              borderBottomLeftRadius: 12,
+            },
           ]}
         >
           <Text style={[styles.toggleText, { color: isPrivate ? "#11152A" : "#fff" }]}>Private</Text>
         </Pressable>
         <Pressable
-          onPress={handleToggleToPublic}
+          onPress={() => setIsPrivate(false)}
           style={[
             styles.toggleButton,
-            { backgroundColor: !isPrivate ? "#FEEDB6" : "#11152A", borderTopRightRadius: 12, borderBottomRightRadius: 12 },
+            {
+              backgroundColor: !isPrivate ? "#FEEDB6" : "#11152A",
+              borderTopRightRadius: 12,
+              borderBottomRightRadius: 12,
+            },
           ]}
         >
           <Text style={[styles.toggleText, { color: !isPrivate ? "#11152A" : "#fff" }]}>Public</Text>
@@ -152,39 +167,11 @@ export default function FinalMyStarPrivate() {
       </View>
 
       <View style={styles.canvasWrapper}>
-      <StarView emissive={parseInt(emissive as string)} rotate={false} />
+        <StarView emissive={parseInt(emissive as string)} rotate={false} />
         <View style={styles.nameOverlay}>
-          <Text style={styles.nameText}>{user?.firstName} {user?.lastName}</Text>
+          <Text style={styles.nameText}>First- & L.</Text>
         </View>
       </View>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollRow} contentContainerStyle={{ paddingHorizontal: 20 }}>
-        {icons.map((item, index) => {
-          const isMessages = item.label === "Messages";
-
-          const handlePress = () => {
-            if (isMessages) {
-              router.push("/(app)/my-stars/private-star/messages/no-messages");
-            }
-          };
-
-          return (
-            <View key={index} style={styles.iconItem}>
-              {isMessages ? (
-                <TouchableOpacity onPress={handlePress}>
-                  {item.icon}
-                  <Text style={styles.iconLabel}>{item.label}</Text>
-                </TouchableOpacity>
-              ) : (
-                <>
-                  {item.icon}
-                  <Text style={styles.iconLabel}>{item.label}</Text>
-                </>
-              )}
-            </View>
-          );
-        })}
-      </ScrollView>
     </View>
   );
 }
@@ -195,6 +182,36 @@ const styles = StyleSheet.create({
     top: 50,
     left: 20,
     zIndex: 10,
+  },
+  moreBtn: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    zIndex: 10,
+  },
+  menu: {
+    position: "absolute",
+    top: 90,
+    right: 20,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 10,
+    gap: 8,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    zIndex: 20,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  menuText: {
+    fontSize: 13,
+    fontFamily: "Alice-Regular",
+    color: "#11152A",
   },
   title: {
     fontFamily: "Alice-Regular",
@@ -224,11 +241,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: "hidden",
   },
-  glView: {
-    height: 300,
-    width: 300,
-    backgroundColor: "transparent",
-  },
   nameOverlay: {
     position: "absolute",
     bottom: "4%",
@@ -242,19 +254,5 @@ const styles = StyleSheet.create({
     fontFamily: "Alice-Regular",
     color: "#fff",
     textAlign: "center",
-  },
-  scrollRow: {
-    marginTop: 40,
-  },
-  iconItem: {
-    alignItems: "center",
-    marginRight: 20,
-  },
-  iconLabel: {
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-    fontSize: 12,
-    textAlign: "center",
-    marginTop: 4,
   },
 });

@@ -13,14 +13,14 @@ import { useState } from "react";
 import useAuthStore from "@/lib/store/useAuthStore";
 import StarView from "@/components/stars/StarView";
 
-// SVG-iconen
 import PhotosIcon from "@/assets/images/svg-icons/photos.svg";
 import VideosIcon from "@/assets/images/svg-icons/videos.svg";
 import AudiosIcon from "@/assets/images/svg-icons/audios.svg";
-import MessagesIcon from "@/assets/images/svg-icons/messages.svg";
 import DocumentsIcon from "@/assets/images/svg-icons/documents.svg";
 import BookOfLifeIcon from "@/assets/images/svg-icons/book-of-life.svg";
-import VRSpaceIcon from "@/assets/images/svg-icons/3D-VR-space.svg";
+import MoreIcon from "@/assets/images/svg-icons/more.svg"; 
+import AddPeopleIcon from "@/assets/images/svg-icons/add-people.svg"; 
+import SeeMembersIcon from "@/assets/images/svg-icons/see-members.svg"; 
 
 const { width } = Dimensions.get("window");
 
@@ -28,12 +28,13 @@ export default function FinalMyStarPrivate() {
   const router = useRouter();
   const { name, emissive } = useLocalSearchParams();
   const { user } = useAuthStore();
-  const [isPrivate, setIsPrivate] = useState(true);
+  const [isPrivate, setIsPrivate] = useState(true); // standaard PRIVATE
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleToggleToPublic = () => {
     setIsPrivate(false);
     router.push({
-      pathname: "/(app)/my-stars/start-my-star-public",
+      pathname: "/dedicates/final-dedicate-star-public",
       params: {
         name: user?.firstName + " " + user?.lastName,
         emissive: emissive as string,
@@ -108,11 +109,17 @@ export default function FinalMyStarPrivate() {
     { label: "Photo's", icon: <PhotosIcon width={60} height={60} /> },
     { label: "Video’s", icon: <VideosIcon width={60} height={60} /> },
     { label: "Audio’s", icon: <AudiosIcon width={60} height={60} /> },
-    { label: "Messages", icon: <MessagesIcon width={60} height={60} /> },
     { label: "Documents", icon: <DocumentsIcon width={60} height={60} /> },
     { label: "Book of Life", icon: <BookOfLifeIcon width={60} height={60} /> },
-    { label: "3D VR Space", icon: <VRSpaceIcon width={60} height={60} /> },
   ];
+
+  const handleAddPeople = () => {
+    router.push("/dedicates/add-people-dedicate");
+  };
+
+  const handleSeeMembers = () => {
+    router.push("/dedicates/no-members-dedicate");
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -129,7 +136,24 @@ export default function FinalMyStarPrivate() {
         </Svg>
       </TouchableOpacity>
 
-      <Text style={styles.title}>My personal star</Text>
+      <TouchableOpacity style={styles.moreBtn} onPress={() => setMenuOpen(!menuOpen)}>
+        <MoreIcon width={24} height={24} />
+      </TouchableOpacity>
+
+      {menuOpen && (
+        <View style={styles.menu}>
+          <TouchableOpacity style={styles.menuItem} onPress={handleAddPeople}>
+            <AddPeopleIcon width={16} height={16} />
+            <Text style={styles.menuText}>Add people</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={handleSeeMembers}>
+            <SeeMembersIcon width={16} height={16} />
+            <Text style={styles.menuText}>See members</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <Text style={styles.title}>Dedicated star</Text>
 
       <View style={styles.toggleContainer}>
         <Pressable
@@ -152,38 +176,19 @@ export default function FinalMyStarPrivate() {
       </View>
 
       <View style={styles.canvasWrapper}>
-      <StarView emissive={parseInt(emissive as string)} rotate={false} />
+        <StarView emissive={parseInt(emissive as string)} rotate={false} />
         <View style={styles.nameOverlay}>
-          <Text style={styles.nameText}>{user?.firstName} {user?.lastName}</Text>
+          <Text style={styles.nameText}>First- & lastname</Text>
         </View>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollRow} contentContainerStyle={{ paddingHorizontal: 20 }}>
-        {icons.map((item, index) => {
-          const isMessages = item.label === "Messages";
-
-          const handlePress = () => {
-            if (isMessages) {
-              router.push("/(app)/my-stars/private-star/messages/no-messages");
-            }
-          };
-
-          return (
-            <View key={index} style={styles.iconItem}>
-              {isMessages ? (
-                <TouchableOpacity onPress={handlePress}>
-                  {item.icon}
-                  <Text style={styles.iconLabel}>{item.label}</Text>
-                </TouchableOpacity>
-              ) : (
-                <>
-                  {item.icon}
-                  <Text style={styles.iconLabel}>{item.label}</Text>
-                </>
-              )}
-            </View>
-          );
-        })}
+        {icons.map((item, index) => (
+          <View key={index} style={styles.iconItem}>
+            {item.icon}
+            <Text style={styles.iconLabel}>{item.label}</Text>
+          </View>
+        ))}
       </ScrollView>
     </View>
   );
@@ -195,6 +200,36 @@ const styles = StyleSheet.create({
     top: 50,
     left: 20,
     zIndex: 10,
+  },
+  moreBtn: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    zIndex: 10,
+  },
+  menu: {
+    position: "absolute",
+    top: 90,
+    right: 20,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 10,
+    gap: 8,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    zIndex: 20,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  menuText: {
+    fontSize: 13,
+    fontFamily: "Alice-Regular",
+    color: "#11152A",
   },
   title: {
     fontFamily: "Alice-Regular",
@@ -223,11 +258,6 @@ const styles = StyleSheet.create({
     width: 300,
     borderRadius: 20,
     overflow: "hidden",
-  },
-  glView: {
-    height: 300,
-    width: 300,
-    backgroundColor: "transparent",
   },
   nameOverlay: {
     position: "absolute",
