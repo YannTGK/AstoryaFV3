@@ -114,16 +114,6 @@ export default function FinalMyStarPrivate() {
     { label: "3D VR Space", icon: <VRSpaceIcon width={60} height={60} /> },
   ];
 
-  const handlePress = (label: string) => {
-    if (label === "Messages") {
-      router.push("/(app)/my-stars/private-star/messages/no-messages");
-    } else if (label === "Documents") {
-      router.push("/(app)/my-stars/private-star/documents/no-documents");
-    } else if (label === "Audio’s") {
-      router.push("/(app)/my-stars/private-star/audios/no-audios");
-    }
-  };
-
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
@@ -162,21 +152,38 @@ export default function FinalMyStarPrivate() {
       </View>
 
       <View style={styles.canvasWrapper}>
-        <StarView emissive={parseInt(emissive as string)} rotate={false} />
+        <StarView emissive={parseInt(emissive)} rotate={false} />
         <View style={styles.nameOverlay}>
           <Text style={styles.nameText}>{user?.firstName} {user?.lastName}</Text>
         </View>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollRow} contentContainerStyle={{ paddingHorizontal: 20 }}>
-        {icons.map((item, index) => (
-          <View key={index} style={styles.iconItem}>
-            <TouchableOpacity onPress={() => handlePress(item.label)}>
-              {item.icon}
-              <Text style={styles.iconLabel}>{item.label}</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
+        {icons.map((item, index) => {
+          const isMessages = item.label === "Messages";
+
+          const handlePress = () => {
+            if (isMessages) {
+              router.push("/(app)/my-stars/private-star/messages/no-messages");
+            }
+          };
+
+          return (
+            <View key={index} style={styles.iconItem}>
+              {isMessages ? (
+                <TouchableOpacity onPress={handlePress}>
+                  {item.icon}
+                  <Text style={styles.iconLabel}>{item.label}</Text>
+                </TouchableOpacity>
+              ) : (
+                <>
+                  {item.icon}
+                  <Text style={styles.iconLabel}>{item.label}</Text>
+                </>
+              )}
+            </View>
+          );
+        })}
       </ScrollView>
     </View>
   );

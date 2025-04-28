@@ -102,7 +102,7 @@ export default function ChosenStarScreen() {
 
       {/* 3D ster */}
       <View style={styles.canvasWrapper}>
-        <StarView emissive={parseInt(emissive as string)} rotate={false} />
+        <StarView emissive={parseInt(emissive)} rotate={false} />
       </View>
 
       {/* Naam */}
