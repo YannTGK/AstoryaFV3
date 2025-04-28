@@ -1,88 +1,60 @@
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+} from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
-import { GLView } from "expo-gl";
-import { Renderer } from "expo-three";
-import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
-import StarView from "@/components/stars/StarView";
+
+import StarView   from "@/components/stars/StarView";
+import { createStar } from "@/services/stars";
+import useAuthStore   from "@/lib/store/useAuthStore";
 
 const { width } = Dimensions.get("window");
 
-export default function ChosenStarScreen() {
+export default function ChosenPrivateStar() {
   const router = useRouter();
-  const { name, emissive } = useLocalSearchParams();
+  const { user } = useAuthStore();                // ← nieuw
+  const { name, emissive } = useLocalSearchParams<{
+    name: string;
+    emissive: string;
+  }>();
 
-  const createScene = async (gl: any) => {
-    const renderer = new Renderer({ gl });
-    renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
-    renderer.setClearColor(0x000000, 0);
-    renderer.autoClear = true;
+  const [saving, setSaving] = useState(false);
 
-    const scene = new THREE.Scene();
-    scene.background = null;
+  /* hex-kleur uit emissive-decimaal */
+  const colorHex = "#" + parseInt(emissive).toString(16).padStart(6, "0");
 
-    const camera = new THREE.PerspectiveCamera(75, gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 1000);
-    camera.position.z = 7;
+  const handleSaveAndContinue = async () => {
+    if (saving) return;
+    setSaving(true);
 
-    const light = new THREE.AmbientLight(0xffffff, 1.5);
-    scene.add(light);
+    try {
+      await createStar({
+        word:       name.toUpperCase(),
+        color:      colorHex,
+        isPrivate:  true,
+        publicName: `${user?.firstName ?? ""} ${user?.lastName ?? ""}`, // ← nieuw
+      });
 
-    const loader = new GLTFLoader();
-    loader.load(
-      "https://cdn.jsdelivr.net/gh/YannTGK/GlbFIle@main/star.glb",
-      (gltf) => {
-        const star = gltf.scene;
-        star.scale.set(3.2, 3.2, 3.2);
-        star.position.set(0, 0, 0);
-        star.rotation.x = -Math.PI / 2;
-
-        const emissiveColor = new THREE.Color(parseInt(emissive as string));
-
-        star.traverse((child) => {
-          if (child instanceof THREE.Mesh && child.material) {
-            const material = child.material as THREE.MeshStandardMaterial;
-            material.color.set(0xffffff); // witte ster
-            material.emissive.set(emissiveColor); // gekozen gloed
-            material.emissiveIntensity = 1.5;
-          }
-        });
-
-        scene.add(star);
-
-        const composer = new EffectComposer(renderer);
-        composer.addPass(new RenderPass(scene, camera));
-        composer.addPass(
-          new UnrealBloomPass(
-            new THREE.Vector2(gl.drawingBufferWidth, gl.drawingBufferHeight),
-            0.9,
-            0.3,
-            0
-          )
-        );
-
-        const animate = () => {
-          requestAnimationFrame(animate);
-          star.rotation.z += 0.005;
-          composer.render();
-          gl.endFrameEXP();
-        };
-
-        animate();
-      },
-      undefined,
-      (error) => {
-        console.error("❌ Error loading star.glb:", error);
-      }
-    );
+      router.replace({
+        pathname: "/(app)/my-stars/private-star/final-my-star-private",
+        params:   { name, emissive },
+      });
+    } catch (err) {
+      console.error("Private star aanmaken mislukt:", err);
+      // eventueel Alert.alert("Oops", "Kon ster niet opslaan");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.root}>
       <LinearGradient
         colors={["#000000", "#273166", "#000000"]}
         style={StyleSheet.absoluteFill}
@@ -90,38 +62,47 @@ export default function ChosenStarScreen() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Back button */}
-      <TouchableOpacity style={{ position: "absolute", top: 50, left: 20, zIndex: 10 }} onPress={() => router.back()}>
+      {/* ← Terug */}
+      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          <Path
+            d="M15 18l-6-6 6-6"
+            stroke="#FEEDB6"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </Svg>
       </TouchableOpacity>
 
       <Text style={styles.title}>My personal star</Text>
       <Text style={styles.subtitle}>Chosen star</Text>
 
-      {/* 3D ster */}
+      {/* 3D-ster */}
       <View style={styles.canvasWrapper}>
         <StarView emissive={parseInt(emissive)} rotate={false} />
       </View>
 
-      {/* Naam */}
       <Text style={styles.starName}>{name}</Text>
 
-      {/* Add content knop */}
-      <View style={styles.fixedButtonWrapper}>
-        <TouchableOpacity style={styles.button} onPress={() => router.push({
-        pathname: "/(app)/my-stars/private-star/final-my-star-private",
-        params: { name, emissive },
-      })}>
-          <Text style={styles.buttonText}>Add content</Text>
+      {/* CTA */}
+      <View style={styles.ctaWrapper}>
+        <TouchableOpacity style={styles.button} onPress={handleSaveAndContinue}>
+          <Text style={styles.buttonText}>
+            {saving ? "Saving…" : "Add content"}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
+/* ───────── styles ───────── */
 const styles = StyleSheet.create({
+  root: { flex: 1 },
+
+  backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
+
   title: {
     fontFamily: "Alice-Regular",
     fontSize: 20,
@@ -136,18 +117,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 20,
   },
+
   canvasWrapper: {
     alignSelf: "center",
     marginTop: 40,
     borderRadius: 20,
     overflow: "hidden",
-    backgroundColor: "transparent",
   },
-  glView: {
-    width: 300,
-    height: 300,
-    backgroundColor: "transparent",
-  },
+
   starName: {
     textAlign: "center",
     color: "#fff",
@@ -155,12 +132,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     marginTop: 20,
   },
-  fixedButtonWrapper: {
+
+  ctaWrapper: {
     position: "absolute",
     bottom: 100,
     left: 20,
     right: 20,
-    zIndex: 2,
   },
   button: {
     backgroundColor: "#FEEDB6",

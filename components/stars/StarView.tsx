@@ -1,4 +1,3 @@
-// StarView.tsx ───────────────────────────────────────────────────────────
 import React, { useCallback, useEffect, useRef } from "react";
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
@@ -12,20 +11,67 @@ import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPa
  * Component props
  *─────────────────────────────*/
 export type StarViewProps = {
-  /** Bloom colour (hex number **0xffedaa**, string `"ffedaa"` or CSS‐style `"#ffedaa"`) */
-  emissive?: THREE.ColorRepresentation;
-  /** Square size in px */
-  size?: number;
-  /** Set `false` if you need a still thumbnail */
-  rotate?: boolean;
-  /** Forward any React Native style */
-  style?: object;
+  emissive?: THREE.ColorRepresentation; // Bloom colour
+  size?: number;                        // Square size in px
+  rotate?: boolean;                     // false ⇒ still thumbnail
+  style?: object;                       // React‑Native style override
 };
 
 /*──────────────────────────────
- * Module‑level GLTF cache
+ * Module‑level GLTF cache (lifetime = JS bundle)
  *─────────────────────────────*/
-let cachedGLTF: THREE.Object3D | null = null; // lives for the lifetime of the JS bundle
+let cachedGLTF: THREE.Object3D | null = null;
+
+/*──────────────────────────────
+ *  Helper – wrap numeric GL handles so Three can WeakMap‑pen
+ *─────────────────────────────*/
+function patchNumericHandles(gl: ExpoWebGLRenderingContext) {
+  type HandleMap = Map<number, any>;
+  const wrappers: Record<string, HandleMap> = {
+    framebuffer: new Map(),
+    renderbuffer: new Map(),
+    texture: new Map(),
+    program: new Map(),
+    shader: new Map(),
+  };
+
+  const makePatch = (
+    type: keyof typeof wrappers,
+    createFn: keyof typeof gl,
+    deleteFn: keyof typeof gl
+  ) => {
+    const cache = wrappers[type];
+    const origCreate = (gl as any)[createFn] as (...a: any[]) => any;
+    const origDelete = (gl as any)[deleteFn] as (...a: any[]) => any;
+
+    (gl as any)[createFn] = function (...args: any[]) {
+      const handle = origCreate.apply(this, args);
+      if (typeof handle === "number") {
+        let obj = cache.get(handle);
+        if (!obj) {
+          obj = Object.create(null); // ultra‑light wrapper
+          Object.defineProperty(obj, "__expoHandle", { value: handle });
+          cache.set(handle, obj);
+        }
+        return obj;
+      }
+      return handle; // native JSI already returns objects
+    };
+
+    (gl as any)[deleteFn] = function (obj: any, ...dArgs: any[]) {
+      const handle =
+        typeof obj === "number" ? obj : obj?.__expoHandle ?? obj;
+      cache.delete(handle);
+      return origDelete.apply(this, [handle, ...dArgs]);
+    };
+  };
+
+  makePatch("framebuffer", "createFramebuffer", "deleteFramebuffer");
+  makePatch("renderbuffer", "createRenderbuffer", "deleteRenderbuffer");
+  makePatch("texture", "createTexture", "deleteTexture");
+  makePatch("program", "createProgram", "deleteProgram");
+  makePatch("shader", "createShader", "deleteShader");
+}
 
 /*──────────────────────────────
  * StarView component
@@ -36,20 +82,23 @@ export default function StarView({
   rotate = true,
   style,
 }: StarViewProps) {
-  const starRef = useRef<THREE.Object3D>();     // this component’s mesh clone
-  const frameRef = useRef<number>();            // rAF id so we can cancel on unmount
+  const starRef = useRef<THREE.Object3D>();
+  const frameRef = useRef<number>();
 
   /*────────────────────────────
    * 1. Create GL context + scene
    *───────────────────────────*/
   const onContextCreate = useCallback(
     async (gl: ExpoWebGLRenderingContext) => {
-      /* renderer -------------------------------------------------------*/
+      /* 1.a – patch GL so WeakMap‑errors nooit optreden */
+      patchNumericHandles(gl);
+
+      /* renderer -----------------------------------------------------*/
       const renderer = new Renderer({ gl });
       renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
       renderer.setClearColor(0x000000, 0);
 
-      /* scene ----------------------------------------------------------*/
+      /* scene --------------------------------------------------------*/
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(
         75,
@@ -60,7 +109,7 @@ export default function StarView({
       camera.position.z = 7;
       scene.add(new THREE.AmbientLight(0xffffff, 1.5));
 
-      /* mesh (clone of cached GLTF) ------------------------------------*/
+      /* mesh (clone of cached GLTF) ----------------------------------*/
       if (!cachedGLTF) {
         const root = await new GLTFLoader().loadAsync(
           "https://cdn.jsdelivr.net/gh/YannTGK/GlbFIle@main/star.glb"
@@ -72,17 +121,17 @@ export default function StarView({
       starRef.current!.scale.set(3.2, 3.2, 3.2);
       scene.add(starRef.current);
 
-      /* initial material setup */
-      starRef.current.traverse((obj) => {
-        if (obj instanceof THREE.Mesh) {
-          const mat = obj.material as THREE.MeshStandardMaterial;
-          mat.color.set(0xffffff);
-          mat.emissive.set(emissive as any);
-          mat.emissiveIntensity = 1.5;
+      // init material
+      starRef.current.traverse((o) => {
+        if (o instanceof THREE.Mesh) {
+          const m = o.material as THREE.MeshStandardMaterial;
+          m.color.set(0xffffff);
+          m.emissive.set(emissive as any);
+          m.emissiveIntensity = 1.5;
         }
       });
 
-      /* post‑processing -----------------------------------------------*/
+      /* post‑processing (safe, want WeakMap‑proof) -------------------*/
       const composer = new EffectComposer(renderer);
       composer.addPass(new RenderPass(scene, camera));
       composer.addPass(
@@ -94,7 +143,7 @@ export default function StarView({
         )
       );
 
-      /* render loop ----------------------------------------------------*/
+      /* render loop --------------------------------------------------*/
       const animate = () => {
         frameRef.current = requestAnimationFrame(animate);
         if (rotate && starRef.current) starRef.current.rotation.z += 0.005;
@@ -111,20 +160,17 @@ export default function StarView({
    *───────────────────────────*/
   useEffect(() => {
     if (!starRef.current) return;
-
-    starRef.current.traverse((obj) => {
-      if (obj instanceof THREE.Mesh) {
-        const mat = obj.material as THREE.MeshStandardMaterial;
-
-        // accept 0xaabbcc | "aabbcc" | "#aabbcc"
-        const color = typeof emissive === "string" && emissive.startsWith("#")
-          ? emissive
-          : typeof emissive === "string"
+    starRef.current.traverse((o) => {
+      if (o instanceof THREE.Mesh) {
+        const m = o.material as THREE.MeshStandardMaterial;
+        const col =
+          typeof emissive === "string" && emissive.startsWith("#")
+            ? emissive
+            : typeof emissive === "string"
             ? `#${emissive.replace(/^0x/i, "")}`
             : emissive;
-
-        mat.emissive.set(color as any);
-        mat.needsUpdate = true; // ensure WebGL gets the new uniform
+        m.emissive.set(col as any);
+        m.needsUpdate = true;
       }
     });
   }, [emissive]);
@@ -132,19 +178,14 @@ export default function StarView({
   /*────────────────────────────
    * 3. Cleanup on unmount
    *───────────────────────────*/
-  useEffect(() => {
-    return () => frameRef.current && cancelAnimationFrame(frameRef.current);
-  }, []);
+  useEffect(() => () => frameRef.current && cancelAnimationFrame(frameRef.current), []);
 
   /*────────────────────────────
-   * 4. Render GLView
+   * 4. Render
    *───────────────────────────*/
   return (
     <GLView
-      style={[
-        { width: size, height: size, backgroundColor: "transparent" },
-        style,
-      ]}
+      style={[{ width: size, height: size, backgroundColor: "transparent" }, style]}
       onContextCreate={onContextCreate}
     />
   );

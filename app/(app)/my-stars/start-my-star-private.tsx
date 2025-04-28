@@ -1,3 +1,4 @@
+// app/(app)/my-stars/private-star/StartMyStarPrivate.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -5,83 +6,88 @@ import {
   TouchableOpacity,
   Pressable,
   StyleSheet,
-  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import StarView from "@/components/stars/StarView";
-
-import UpgradePopup from "@/components/pop-ups/UpgradePopup";
 import useAuthStore from "@/lib/store/useAuthStore";
 import api from "@/services/api";
-
-const { width } = Dimensions.get("window");
 
 export default function StartMyStarPrivate() {
   const router = useRouter();
   const { user } = useAuthStore();
 
   const [showPopup, setShowPopup] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  const [isReady, setIsReady]     = useState(false);
 
-  /* ─── bepalen of popup moet verschijnen ─── */
   useEffect(() => {
     const init = async () => {
       if (!user) return;
 
-      // Toon popup voor EXPLORER-plan
-      if (user.plan === "EXPLORER") setShowPopup(true);
-
       try {
-        // Extra check: als premium/legacy al een private star heeft → doorskippen
+        // 1) haal alle sterren op
         const { data: stars } = await api.get("/stars");
-        const hasPrivateStar = stars.some((s: any) => s.isPrivate);
+        // 2) zoek private ster
+        const privateStar = stars.find((s: any) => s.isPrivate);
+        if (privateStar) {
+          // kleur als decimaal emissive
+          const hex = privateStar.color?.startsWith("#")
+            ? privateStar.color
+            : "#ffffff";
+          const emissive = parseInt(hex.slice(1), 16).toString();
 
-        if (
-          (user.plan === "PREMIUM" || user.plan === "LEGACY") &&
-          hasPrivateStar
-        ) {
-          router.replace(
-            "/(app)/my-stars/private-star/final-my-star-private"
-          );
+          // direct naar chosen-private-star
+          router.replace({
+            pathname: "/(app)/my-stars/private-star/chosen-private-star",
+            params: {
+              // id kun je optioneel meegeven als je later wilt updaten
+              id:        privateStar._id,
+              name:      privateStar.publicName || privateStar.word,
+              emissive,
+            },
+          });
           return;
+        }
+
+        // 3) geen bestaande private star: toon eventueel popup
+        if (user.plan === "EXPLORER") {
+          setShowPopup(true);
         }
       } catch (err) {
         console.error("Fout bij ophalen sterren:", err);
-        setShowPopup(true); // fallback
+        // fallback: toon popup voor explorer
+        if (user.plan === "EXPLORER") {
+          setShowPopup(true);
+        }
       } finally {
         setIsReady(true);
       }
     };
 
     init();
-  }, [user]);
+  }, [user, router]);
 
-  const handleToggleToPublic = () =>
-    router.replace("/(app)/my-stars/start-my-star-public");
-
-  const handleCustomize = () =>
+  const goCustomize = () =>
     router.push("/(app)/my-stars/private-star/color-my-star-private");
+  const goPublic = () =>
+    router.replace("/(app)/my-stars/start-my-star-public");
 
   if (!isReady) return null;
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.root}>
       <LinearGradient
         colors={["#000", "#273166", "#000"]}
         style={StyleSheet.absoluteFill}
       />
 
-      {/* ─── UPGRADE POPUP ─── */}
-      {showPopup && (
-        <UpgradePopup onClose={() => setShowPopup(false)} />
-      )}
+      {/* Upgrade-popup voor EXPLORER */}
+      {showPopup && <UpgradePopup onClose={() => setShowPopup(false)} />}
 
-      {/* ─── REST VAN HET SCHERM ─── */}
       {!showPopup && (
         <>
-          {/* Terug-knop */}
+          {/* Back */}
           <TouchableOpacity
             style={styles.backBtn}
             onPress={() => router.back()}
@@ -108,7 +114,7 @@ export default function StartMyStarPrivate() {
             </Pressable>
             <Pressable
               style={[styles.toggleBtn, styles.publicOff]}
-              onPress={handleToggleToPublic}
+              onPress={goPublic}
             >
               <Text style={[styles.toggleTxt, { color: "#fff" }]}>
                 Public
@@ -122,10 +128,10 @@ export default function StartMyStarPrivate() {
           </View>
 
           {/* CTA */}
-          <View style={styles.fixedButtonWrapper}>
+          <View style={styles.ctaWrapper}>
             <TouchableOpacity
               style={styles.button}
-              onPress={handleCustomize}
+              onPress={goCustomize}
             >
               <Text style={styles.buttonText}>Customize star</Text>
             </TouchableOpacity>
@@ -136,9 +142,10 @@ export default function StartMyStarPrivate() {
   );
 }
 
-/* ───────────────── styles ───────────────── */
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
+
   title: {
     fontFamily: "Alice-Regular",
     fontSize: 20,
@@ -146,12 +153,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 50,
   },
+
   toggleContainer: {
     flexDirection: "row",
     justifyContent: "center",
     marginTop: 30,
   },
   toggleBtn: { paddingVertical: 10, paddingHorizontal: 26 },
+
   privateOn: {
     backgroundColor: "#FEEDB6",
     borderTopLeftRadius: 12,
@@ -163,6 +172,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 12,
   },
   toggleTxt: { fontFamily: "Alice-Regular", fontSize: 16 },
+
   canvasWrapper: {
     position: "absolute",
     height: 300,
@@ -172,7 +182,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: "hidden",
   },
-  fixedButtonWrapper: {
+
+  ctaWrapper: {
     position: "absolute",
     bottom: 100,
     left: 20,
@@ -190,8 +201,8 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 16,
-    color: "#000",
     fontFamily: "Alice-Regular",
     textAlign: "center",
+    color: "#000",
   },
 });

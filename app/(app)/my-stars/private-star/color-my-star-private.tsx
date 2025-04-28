@@ -26,7 +26,7 @@ const starOptions = [
   ]; 
   
 
-export default function PrivateMyStar() {
+export default function ColorMyStarPrivate() {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
 
