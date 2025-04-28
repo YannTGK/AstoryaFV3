@@ -71,7 +71,7 @@ import {
                 </>
               ) : (
                 <>
-                  <Text style={styles.planTitle}>PREMIUM PLAN</Text>
+                  <Text style={styles.planTitle}>BUY FOR LOVED ONES</Text>
                   <Text style={styles.planPrice}>
                     € 1,99 <Text style={styles.perMonth}>/month</Text>
                   </Text>
