@@ -14,3 +14,6 @@ export interface CreateStarDTO {
  */
 export const createStar = (body: CreateStarDTO) =>
   api.post("/stars", body);     // ↖︎ wijzig het pad als jouw backend /users/:id/stars verwacht
+
+export const updateStar = (starId: string, data: Partial<CreateStarDTO>) =>
+  api.put(`/stars/${starId}`, data);
