@@ -1,159 +1,69 @@
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
-import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+  View, Text, TouchableOpacity, StyleSheet, ScrollView,
+} from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
-import { GLView } from "expo-gl";
-import { Renderer } from "expo-three";
-import * as THREE from "three";
-import { useState } from "react";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
 import StarView from "@/components/stars/StarView";
 
-const { width } = Dimensions.get("window");
-
 const starOptions = [
-    { name: "PEACEFUL", color: 0xffffff, emissive: 0xffffff },
-    { name: "LIVELY", color: 0xffffff, emissive: 0xffedaa },         // zacht geel
-    { name: "POWERFUL", color: 0xffffff, emissive: 0xffb3b3 },      // pastel rood
-    { name: "ENERGETIC", color: 0xffffff, emissive: 0xffc9aa },       // pastel oranje
-    { name: "CARING", color: 0xffffff, emissive: 0xd8ffd8 },       // pastel groen
-    { name: "BRAVE", color: 0xffffff, emissive: 0xaacfff },  // pastel blauw 
-    { name: "CREATIVE", color: 0xffffff, emissive: 0xe3d1ff },  // pastel paars
-    { name: "Unforgettable", color: 0xffffff, emissive: 0xffc1e6 },  // pastel roze
-  ]; 
-  
+  { word: "PEACEFUL",      emissive: 0xffffff, colorHex: "#ffffff" },
+  { word: "LIVELY",        emissive: 0xffedaa, colorHex: "#ffedaa" },
+  { word: "POWERFUL",      emissive: 0xffb3b3, colorHex: "#ffb3b3" },
+  { word: "ENERGETIC",     emissive: 0xffc9aa, colorHex: "#ffc9aa" },
+  { word: "CARING",        emissive: 0xd8ffd8, colorHex: "#d8ffd8" },
+  { word: "BRAVE",         emissive: 0xaacfff, colorHex: "#aacfff" },
+  { word: "CREATIVE",      emissive: 0xe3d1ff, colorHex: "#e3d1ff" },
+  { word: "UNFORGETTABLE", emissive: 0xffc1e6, colorHex: "#ffc1e6" },
+];
 
-export default function PrivateMyStar() {
+export default function ColorDedicateStar() {
   const router = useRouter();
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const { publicName } = useLocalSearchParams<{ publicName: string }>();
+  const [idx, setIdx] = useState(0);
 
-  const createScene = async (gl: any) => {
-    const renderer = new Renderer({ gl });
-    renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
-    renderer.setClearColor(0x000000, 0);
-    renderer.autoClear = true;
+  const option = starOptions[idx];
 
-    const scene = new THREE.Scene();
-    scene.background = null;
+  const next   = () => setIdx((p) => (p + 1) % starOptions.length);
+  const prev   = () => setIdx((p) => (p - 1 + starOptions.length) % starOptions.length);
 
-    const camera = new THREE.PerspectiveCamera(75, gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 1000);
-    camera.position.z = 7;
-
-    const light = new THREE.AmbientLight(0xffffff, 1.5);
-    scene.add(light);
-
-    const loader = new GLTFLoader();
-    loader.load(
-      "https://cdn.jsdelivr.net/gh/YannTGK/GlbFIle@main/star.glb",
-      (gltf) => {
-        const star = gltf.scene;
-        star.scale.set(3.2, 3.2, 3.2);
-        star.position.set(0, 0, 0);
-        star.rotation.x = -Math.PI / 2;
-
-        const applyMaterial = () => {
-          star.traverse((child) => {
-            if (child instanceof THREE.Mesh && child.material) {
-              const material = child.material as THREE.MeshStandardMaterial;
-              const { color, emissive } = starOptions[currentIndex];
-              material.color.setHex(0xffffff); // ster blijft wit
-              material.emissive.setHex(emissive); 
-              material.emissiveIntensity = 1.5;
-            }
-          });
-        };
-
-        applyMaterial();
-        scene.add(star);
-
-        const composer = new EffectComposer(renderer);
-        composer.addPass(new RenderPass(scene, camera));
-        composer.addPass(
-          new UnrealBloomPass(
-            new THREE.Vector2(gl.drawingBufferWidth, gl.drawingBufferHeight),
-            0.9,
-            0.3,
-            0
-          )
-        );
-
-        const animate = () => {
-          requestAnimationFrame(animate);
-          star.rotation.z += 0.005;
-          composer.render();
-          gl.endFrameEXP();
-        };
-
-        animate();
-      }
-    );
+  const handleSelect = () => {
+    router.push({
+      pathname: "/dedicates/chosen-dedicate-star",
+      params: {
+        publicName,
+        word: option.word,
+        color: option.colorHex,
+        emissive: option.emissive.toString(),
+      },
+    });
   };
-
-  const nextStar = () => setCurrentIndex((prev) => (prev + 1) % starOptions.length);
-  const prevStar = () => setCurrentIndex((prev) => (prev - 1 + starOptions.length) % starOptions.length);
 
   return (
     <View style={{ flex: 1 }}>
-      <LinearGradient
-        colors={["#000000", "#273166", "#000000"]}
-        style={StyleSheet.absoluteFill}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-      />
-
-      {/* Back button */}
-      <TouchableOpacity style={{ position: "absolute", top: 50, left: 20, zIndex: 10 }} onPress={() => router.back()}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-        </Svg>
+      <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
+      <TouchableOpacity style={{ position: "absolute", top: 50, left: 20 }} onPress={() => router.back()}>
+        <Svg width={24} height={24}><Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} /></Svg>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Dedicate star</Text>
-      <Text style={styles.subtitle}>Choose the color of the star you buy in memory of a loved one, a color that reflects who they were.</Text>
+      <Text style={styles.title}>Choose a word & colour</Text>
 
-      {/* 3D ster */}
       <View style={styles.canvasWrapper}>
-        <StarView emissive={starOptions[currentIndex].emissive} rotate={true} />
+        <StarView emissive={option.emissive} rotate />
       </View>
 
-      {/* Naam met pijltjes */}
       <View style={styles.nameRow}>
-        <TouchableOpacity style={styles.arrowSide} onPress={prevStar}>
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-            <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-          </Svg>
-        </TouchableOpacity>
-
-        <Text style={styles.starName}>{starOptions[currentIndex].name}</Text>
-
-        <TouchableOpacity style={styles.arrowSide} onPress={nextStar}>
-          <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-            <Path d="M9 6l6 6-6 6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-          </Svg>
-        </TouchableOpacity>
+        <TouchableOpacity onPress={prev}><Svg width={24} height={24}><Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} /></Svg></TouchableOpacity>
+        <Text style={styles.starName}>{option.word}</Text>
+        <TouchableOpacity onPress={next}><Svg width={24} height={24}><Path d="M9 6l6 6-6 6" stroke="#FEEDB6" strokeWidth={2} /></Svg></TouchableOpacity>
       </View>
 
-      {/* Select knop */}
-    {/* Select knop */}
-    <View style={styles.selectButtonWrapper}>
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() =>
-          router.push({
-            pathname: "/dedicates/chosen-dedicate-star",
-            params: {
-              name: starOptions[currentIndex].name,
-              emissive: starOptions[currentIndex].emissive.toString(),
-            },
-          })
-        }
-      >
-        <Text style={styles.buttonText}>Select star</Text>
-      </TouchableOpacity>
-    </View>
+      <View style={styles.fixedButtonWrapper}>
+        <TouchableOpacity style={styles.button} onPress={handleSelect}>
+          <Text style={styles.buttonText}>Select</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -224,5 +134,12 @@ const styles = StyleSheet.create({
     fontFamily: "Alice-Regular",
     textAlign: "center",
     color: "#000",
+  },
+  fixedButtonWrapper: {          // ← dit is de style
+    position: "absolute",
+    bottom: 100,                 // 100 px boven de onderrand (pas aan naar smaak)
+    left: 20,
+    right: 20,
+    zIndex: 2,
   },
 });

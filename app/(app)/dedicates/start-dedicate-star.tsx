@@ -1,79 +1,56 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import StarView from "@/components/stars/StarView";
 
-const { width } = Dimensions.get("window");
-
 export default function StartDedicateStar() {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [publicName, setPublicName] = useState("");
 
-  const handleCustomize = () => {
-    if (name.trim() !== "") {
-      router.push("/dedicates/color-dedicate-star");
+  const handleNext = () => {
+    if (publicName.trim()) {
+      router.push({
+        pathname: "/dedicates/color-dedicate-star",
+        params: { publicName },
+      });
     }
   };
 
   return (
     <View style={{ flex: 1 }}>
-      <LinearGradient
-        colors={["#000000", "#273166", "#000000"]}
-        style={StyleSheet.absoluteFill}
-      />
-
-      {/* Back knop */}
+      <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M15 18l-6-6 6-6"
-            stroke="#FEEDB6"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
+        <Svg width={24} height={24}><Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" /></Svg>
       </TouchableOpacity>
 
-      {/* Titel */}
       <Text style={styles.title}>Dedicate star</Text>
-
-      {/* Subtitel */}
       <Text style={styles.subtitle}>
-      Create a private star to honor someone that passed away and share it with those who matter by adding trusted accounts.
+        Create a private star to honour someone that passed away.
       </Text>
 
-      {/* 3D ster */}
       <View style={styles.canvasWrapper}>
-        <StarView emissive={0xffffff} size={300} rotate={true} />
+        <StarView emissive={0xffffff} rotate />
       </View>
 
-      {/* Naam input */}
       <TextInput
         style={styles.nameInput}
         placeholder="First- & lastname"
         placeholderTextColor="#ffffff"
-        value={name}
-        onChangeText={setName}
+        value={publicName}
+        onChangeText={setPublicName}
       />
 
-      {/* Customize knop */}
       <View style={styles.fixedButtonWrapper}>
         <TouchableOpacity
-          style={[styles.button, { opacity: name.trim() ? 1 : 0.5 }]}
-          onPress={handleCustomize}
-          disabled={!name.trim()}
+          style={[styles.button, { opacity: publicName.trim() ? 1 : 0.5 }]}
+          onPress={handleNext}
+          disabled={!publicName.trim()}
         >
-          <Text style={styles.buttonText}>Customize star</Text>
+          <Text style={styles.buttonText}>Next</Text>
         </TouchableOpacity>
       </View>
     </View>
