@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, ActivityIndicator, Pressable,
+  ScrollView, ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -24,34 +24,21 @@ export default function DedicatedStar() {
 
   const [star, setStar]     = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isPrivate, setIsPrivate] = useState(true);
-  const [menuOpen, setMenuOpen]   = useState(false);   // ← nieuw
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  /* ophalen */
+  /* ophalen detail */
   useEffect(() => {
     const fetchStar = async () => {
       try {
         const { star: s } = (await api.get(`/stars/${starId}`)).data;
         setStar(s);
-        setIsPrivate(s.isPrivate);
       } catch (e) { console.error(e); }
       finally     { setLoading(false); }
     };
     fetchStar();
   }, [starId]);
 
-  /* toggle privacy */
-  const togglePrivacy = async () => {
-    try {
-      setIsPrivate((p) => !p);
-      await api.put(`/stars/${starId}`, { isPrivate: !isPrivate });
-    } catch (e) {
-      console.error("cannot toggle", e);
-      setIsPrivate((p) => !p);
-    }
-  };
-
-  /* back */
+  /* back naar lijst */
   const goBackToList = () => router.replace("/(app)/dedicates/dedicate");
 
   /* menu actions */
@@ -66,18 +53,16 @@ export default function DedicatedStar() {
     );
   }
 
-  const icons = [/* …zelfde array als eerder… */];
-
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
 
-      {/* ← */}
+      {/* ← terug */}
       <TouchableOpacity style={styles.backBtn} onPress={goBackToList}>
         <Svg width={24} height={24}><Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2}/></Svg>
       </TouchableOpacity>
 
-      {/* ⋯ */}
+      {/* ⋯ menu knop */}
       <TouchableOpacity style={styles.moreBtn} onPress={() => setMenuOpen(!menuOpen)}>
         <MoreIcon width={24} height={24} />
       </TouchableOpacity>
@@ -97,34 +82,6 @@ export default function DedicatedStar() {
 
       <Text style={styles.title}>Dedicated star</Text>
 
-      {/* toggle */}
-      <View style={styles.toggleContainer}>
-        <Pressable
-          onPress={() => !isPrivate && togglePrivacy()}
-          style={[
-            styles.toggleButton,
-            { backgroundColor: isPrivate ? "#FEEDB6" : "#11152A",
-              borderTopLeftRadius: 12, borderBottomLeftRadius: 12 },
-          ]}
-        >
-          <Text style={[styles.toggleText, { color: isPrivate ? "#11152A" : "#fff" }]}>
-            Private
-          </Text>
-        </Pressable>
-        <Pressable
-          onPress={() => isPrivate && togglePrivacy()}
-          style={[
-            styles.toggleButton,
-            { backgroundColor: !isPrivate ? "#FEEDB6" : "#11152A",
-              borderTopRightRadius: 12, borderBottomRightRadius: 12 },
-          ]}
-        >
-          <Text style={[styles.toggleText, { color: !isPrivate ? "#11152A" : "#fff" }]}>
-            Public
-          </Text>
-        </Pressable>
-      </View>
-
       {/* ster + naam */}
       <View style={styles.canvasWrapper}>
         <StarView emissive={parseInt(star.color.replace("#", ""), 16)} rotate={false} />
@@ -133,7 +90,7 @@ export default function DedicatedStar() {
         </View>
       </View>
 
-      {/* ---------------- media icon row ---------------- */}
+      {/* media iconen */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -172,10 +129,6 @@ const styles = StyleSheet.create({
   menuText:{ fontSize:13, fontFamily:"Alice-Regular", color:"#11152A" },
 
   title:{ fontFamily:"Alice-Regular", fontSize:20, color:"#fff", textAlign:"center", marginTop:50 },
-
-  toggleContainer:{ flexDirection:"row", justifyContent:"center", marginTop:20 },
-  toggleButton:{ paddingVertical:10, paddingHorizontal:26 },
-  toggleText:{ fontFamily:"Alice-Regular", fontSize:16 },
 
   canvasWrapper:{ alignSelf:"center", marginTop:30, height:300, width:300, borderRadius:20, overflow:"hidden" },
   nameOverlay:{ position:"absolute", bottom:"4%", alignSelf:"center", paddingHorizontal:16, paddingVertical:6 },

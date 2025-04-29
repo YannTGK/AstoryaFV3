@@ -26,7 +26,7 @@ export default function ChosenDedicateStar() {
       });
       const starId = res.data._id;
       router.replace({           // replace: geen “back” meer naar deze pagina
-        pathname: "/dedicates/created-dedicates/dedicated-star-private",
+        pathname: "/(app)/dedicates/created-dedicates/dedicated-star",
         params: { starId },
       });
     } catch (err) {
