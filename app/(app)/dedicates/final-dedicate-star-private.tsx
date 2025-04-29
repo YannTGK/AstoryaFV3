@@ -24,7 +24,7 @@ import SeeMembersIcon from "@/assets/images/svg-icons/see-members.svg";
 
 const { width } = Dimensions.get("window");
 
-export default function FinalMyStarPrivate() {
+export default function FinalDedicateStarPrivate() {
   const router = useRouter();
   const { name, emissive } = useLocalSearchParams();
   const { user } = useAuthStore();
@@ -40,69 +40,6 @@ export default function FinalMyStarPrivate() {
         emissive: emissive as string,
       },
     });
-  };
-
-  const createScene = async (gl: any) => {
-    const renderer = new Renderer({ gl });
-    renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
-    renderer.setClearColor(0x000000, 0);
-    renderer.autoClear = true;
-
-    const scene = new THREE.Scene();
-    scene.background = null;
-
-    const camera = new THREE.PerspectiveCamera(75, gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 1000);
-    camera.position.z = 7;
-
-    const light = new THREE.AmbientLight(0xffffff, 1.5);
-    scene.add(light);
-
-    const loader = new GLTFLoader();
-    loader.load(
-      "https://cdn.jsdelivr.net/gh/YannTGK/GlbFIle@main/star.glb",
-      (gltf) => {
-        const star = gltf.scene;
-        star.scale.set(3.2, 3.2, 3.2);
-        star.position.set(0, 0, 0);
-        star.rotation.x = -Math.PI / 2;
-
-        const glowColor = new THREE.Color(parseInt(emissive as string));
-        star.traverse((child) => {
-          if (child instanceof THREE.Mesh && child.material) {
-            const material = child.material as THREE.MeshStandardMaterial;
-            material.color.set(0xffffff);
-            material.emissive.set(glowColor);
-            material.emissiveIntensity = 1.5;
-          }
-        });
-
-        scene.add(star);
-
-        const composer = new EffectComposer(renderer);
-        composer.addPass(new RenderPass(scene, camera));
-        composer.addPass(
-          new UnrealBloomPass(
-            new THREE.Vector2(gl.drawingBufferWidth, gl.drawingBufferHeight),
-            0.9,
-            0.3,
-            0
-          )
-        );
-
-        const animate = () => {
-          requestAnimationFrame(animate);
-          star.rotation.z += 0.005;
-          composer.render();
-          gl.endFrameEXP();
-        };
-
-        animate();
-      },
-      undefined,
-      (error) => {
-        console.error("Error loading star.glb", error);
-      }
-    );
   };
 
   const icons = [

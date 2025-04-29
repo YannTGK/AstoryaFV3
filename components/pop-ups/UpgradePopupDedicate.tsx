@@ -71,7 +71,7 @@ import {
                 </>
               ) : (
                 <>
-                  <Text style={styles.planTitle}>PREMIUM PLAN</Text>
+                  <Text style={styles.planTitle}>BUY FOR LOVED ONES</Text>
                   <Text style={styles.planPrice}>
                     € 1,99 <Text style={styles.perMonth}>/month</Text>
                   </Text>
@@ -91,9 +91,6 @@ import {
   
                   <Text style={styles.activationFee}>€9.99 activation fee</Text>
   
-                  <TouchableOpacity onPress={() => setShowBasic(true)}>
-                    <Text style={styles.secondaryLink}>See current plan</Text>
-                  </TouchableOpacity>
                 </>
               )}
             </ScrollView>
