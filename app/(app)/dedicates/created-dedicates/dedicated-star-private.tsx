@@ -1,17 +1,10 @@
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  Pressable,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
+  View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Pressable,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
-
 import StarView from "@/components/stars/StarView";
 import api from "@/services/api";
 
@@ -21,7 +14,7 @@ import AudiosIcon     from "@/assets/images/svg-icons/audios.svg";
 import DocumentsIcon  from "@/assets/images/svg-icons/documents.svg";
 import BookOfLifeIcon from "@/assets/images/svg-icons/book-of-life.svg";
 
-export default function DedicatedStarPrivate() {
+export default function DedicatedStar() {
   const router = useRouter();
   const { starId } = useLocalSearchParams<{ starId: string }>();
 
@@ -29,18 +22,15 @@ export default function DedicatedStarPrivate() {
   const [loading, setLoading] = useState(true);
   const [isPrivate, setIsPrivate] = useState(true);
 
-  /* ───────── Fetch detail ───────── */
+  /* ophalen detail */
   useEffect(() => {
-    console.log("[Detail] starId param =", starId);               // 1️⃣  komt goede id mee?
     const fetchStar = async () => {
       try {
-        const res = await api.get(`/stars/${starId}`);
-        console.log("[Detail] response data =", res.data);         // 2️⃣  hele payload
-        const { star: s } = res.data;
+        const { star: s } = (await api.get(`/stars/${starId}`)).data;
         setStar(s);
-        setIsPrivate(s.isPrivate);
+        setIsPrivate(s.isPrivate);          // initial privacy
       } catch (err) {
-        console.error("[Detail] fetch error:", err);               // 2️⃣b fout in netwerk?
+        console.error("❌ fetch star", err);
       } finally {
         setLoading(false);
       }
@@ -48,17 +38,21 @@ export default function DedicatedStarPrivate() {
     fetchStar();
   }, [starId]);
 
-  const handleToggleToPublic = () => {
-    setIsPrivate(false);
-    router.push({
-      pathname: "/dedicates/final-dedicate-star-public",
-      params: { starId },
-    });
+  /* privacy toggle – PATCH naar backend + state switch */
+  const togglePrivacy = async () => {
+    try {
+      setIsPrivate((p) => !p);
+      await api.put(`/stars/${starId}`, { isPrivate: !isPrivate });
+    } catch (e) {
+      console.error("❌ cannot toggle privacy", e);
+      setIsPrivate((p) => !p);   // rollback bij fout
+    }
   };
 
-  /* Skeleton / loader */
+  /* back → altijd naar lijstscherm */
+  const goBackToList = () => router.replace("/(app)/dedicates/dedicate");
+
   if (loading || !star) {
-    console.log("[Detail] loading =", loading, "| star =", star);  // 3️⃣ blijft hij null?
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#fff" />
@@ -66,6 +60,7 @@ export default function DedicatedStarPrivate() {
     );
   }
 
+  /* media iconen */
   const icons = [
     { label: "Photo's",      icon: <PhotosIcon     width={60} height={60} /> },
     { label: "Video’s",      icon: <VideosIcon     width={60} height={60} /> },
@@ -76,42 +71,47 @@ export default function DedicatedStarPrivate() {
 
   return (
     <View style={{ flex: 1 }}>
-      <LinearGradient
-        colors={["#000000", "#273166", "#000000"]}
-        style={StyleSheet.absoluteFill}
-      />
+      <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
 
-      {/* back */}
-      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-        </Svg>
+      {/* ← terug naar lijst */}
+      <TouchableOpacity style={styles.backBtn} onPress={goBackToList}>
+        <Svg width={24} height={24}><Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} /></Svg>
       </TouchableOpacity>
 
       <Text style={styles.title}>Dedicated star</Text>
 
-      {/* private / public toggle */}
+      {/* privacy toggle */}
       <View style={styles.toggleContainer}>
         <Pressable
+          onPress={() => !isPrivate && togglePrivacy()}
           style={[
             styles.toggleButton,
-            { backgroundColor: isPrivate ? "#FEEDB6" : "#11152A", borderTopLeftRadius: 12, borderBottomLeftRadius: 12 },
+            { backgroundColor: isPrivate ? "#FEEDB6" : "#11152A",
+              borderTopLeftRadius: 12, borderBottomLeftRadius: 12 },
           ]}
         >
-          <Text style={[styles.toggleText, { color: isPrivate ? "#11152A" : "#fff" }]}>Private</Text>
+          <Text style={[
+            styles.toggleText,
+            { color: isPrivate ? "#11152A" : "#fff" },
+          ]}>Private</Text>
         </Pressable>
+
         <Pressable
-          onPress={handleToggleToPublic}
+          onPress={() => isPrivate && togglePrivacy()}
           style={[
             styles.toggleButton,
-            { backgroundColor: !isPrivate ? "#FEEDB6" : "#11152A", borderTopRightRadius: 12, borderBottomRightRadius: 12 },
+            { backgroundColor: !isPrivate ? "#FEEDB6" : "#11152A",
+              borderTopRightRadius: 12, borderBottomRightRadius: 12 },
           ]}
         >
-          <Text style={[styles.toggleText, { color: !isPrivate ? "#11152A" : "#fff" }]}>Public</Text>
+          <Text style={[
+            styles.toggleText,
+            { color: !isPrivate ? "#11152A" : "#fff" },
+          ]}>Public</Text>
         </Pressable>
       </View>
 
-      {/* ster + publicName */}
+      {/* ster + naam */}
       <View style={styles.canvasWrapper}>
         <StarView emissive={parseInt(star.color.replace("#", ""), 16)} rotate={false} />
         <View style={styles.nameOverlay}>
@@ -119,7 +119,7 @@ export default function DedicatedStarPrivate() {
         </View>
       </View>
 
-      {/* media icons */}
+      {/* media iconen */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollRow} contentContainerStyle={{ paddingHorizontal: 20 }}>
         {icons.map((it, idx) => (
           <View key={idx} style={styles.iconItem}>
@@ -132,22 +132,22 @@ export default function DedicatedStarPrivate() {
   );
 }
 
-/* ───────── Styles ───────── */
+/* ---------- styles ---------- */
 const styles = StyleSheet.create({
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  backBtn:  { position: "absolute", top: 50, left: 20, zIndex: 10 },
+  centered:{ flex:1, justifyContent:"center", alignItems:"center" },
+  backBtn: { position:"absolute", top:50, left:20, zIndex:10 },
 
-  title: { fontFamily: "Alice-Regular", fontSize: 20, color: "#fff", textAlign: "center", marginTop: 50 },
+  title:{ fontFamily:"Alice-Regular", fontSize:20, color:"#fff", textAlign:"center", marginTop:50 },
 
-  toggleContainer: { flexDirection: "row", justifyContent: "center", marginTop: 20 },
-  toggleButton: { paddingVertical: 10, paddingHorizontal: 26 },
-  toggleText:   { fontFamily: "Alice-Regular", fontSize: 16 },
+  toggleContainer:{ flexDirection:"row", justifyContent:"center", marginTop:20 },
+  toggleButton:{ paddingVertical:10, paddingHorizontal:26 },
+  toggleText:{ fontFamily:"Alice-Regular", fontSize:16 },
 
-  canvasWrapper: { alignSelf: "center", marginTop: 30, height: 300, width: 300, borderRadius: 20, overflow: "hidden" },
-  nameOverlay:   { position: "absolute", bottom: "4%", alignSelf: "center", paddingHorizontal: 16, paddingVertical: 6, borderRadius: 6 },
-  nameText:      { fontSize: 16, fontFamily: "Alice-Regular", color: "#fff", textAlign: "center" },
+  canvasWrapper:{ alignSelf:"center", marginTop:30, height:300, width:300, borderRadius:20, overflow:"hidden" },
+  nameOverlay:{ position:"absolute", bottom:"4%", alignSelf:"center", paddingHorizontal:16, paddingVertical:6 },
+  nameText:{ fontSize:16, fontFamily:"Alice-Regular", color:"#fff", textAlign:"center" },
 
-  scrollRow: { marginTop: 40 },
-  iconItem:  { alignItems: "center", marginRight: 20 },
-  iconLabel: { color: "#fff", fontFamily: "Alice-Regular", fontSize: 12, textAlign: "center", marginTop: 4 },
+  scrollRow:{ marginTop:40 },
+  iconItem:{ alignItems:"center", marginRight:20 },
+  iconLabel:{ color:"#fff", fontFamily:"Alice-Regular", fontSize:12, textAlign:"center", marginTop:4 },
 });

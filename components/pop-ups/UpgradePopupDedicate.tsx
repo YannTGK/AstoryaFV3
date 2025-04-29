@@ -91,9 +91,6 @@ import {
   
                   <Text style={styles.activationFee}>€9.99 activation fee</Text>
   
-                  <TouchableOpacity onPress={() => setShowBasic(true)}>
-                    <Text style={styles.secondaryLink}>See current plan</Text>
-                  </TouchableOpacity>
                 </>
               )}
             </ScrollView>
