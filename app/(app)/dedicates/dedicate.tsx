@@ -44,7 +44,7 @@ export default function DedicateScreen() {
   /** Naar detail­scherm navigeren met starId */
   const handleStarPress = (star: any) => {
     router.push({
-      pathname: "/dedicates/created-dedicates/dedicated-star-private",
+      pathname: "/dedicates/created-dedicates/dedicated-star",
       params: { starId: star._id },
     });
   };

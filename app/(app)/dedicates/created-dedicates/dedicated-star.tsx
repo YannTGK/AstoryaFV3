@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Pressable,
+  View, Text, TouchableOpacity, StyleSheet,
+  ScrollView, ActivityIndicator, Pressable,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -13,44 +14,49 @@ import VideosIcon     from "@/assets/images/svg-icons/videos.svg";
 import AudiosIcon     from "@/assets/images/svg-icons/audios.svg";
 import DocumentsIcon  from "@/assets/images/svg-icons/documents.svg";
 import BookOfLifeIcon from "@/assets/images/svg-icons/book-of-life.svg";
+import MoreIcon       from "@/assets/images/svg-icons/more.svg";
+import AddPeopleIcon  from "@/assets/images/svg-icons/add-people.svg";
+import SeeMembersIcon from "@/assets/images/svg-icons/see-members.svg";
 
 export default function DedicatedStar() {
   const router = useRouter();
   const { starId } = useLocalSearchParams<{ starId: string }>();
 
-  const [star, setStar] = useState<any | null>(null);
+  const [star, setStar]     = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPrivate, setIsPrivate] = useState(true);
+  const [menuOpen, setMenuOpen]   = useState(false);   // ← nieuw
 
-  /* ophalen detail */
+  /* ophalen */
   useEffect(() => {
     const fetchStar = async () => {
       try {
         const { star: s } = (await api.get(`/stars/${starId}`)).data;
         setStar(s);
-        setIsPrivate(s.isPrivate);          // initial privacy
-      } catch (err) {
-        console.error("❌ fetch star", err);
-      } finally {
-        setLoading(false);
-      }
+        setIsPrivate(s.isPrivate);
+      } catch (e) { console.error(e); }
+      finally     { setLoading(false); }
     };
     fetchStar();
   }, [starId]);
 
-  /* privacy toggle – PATCH naar backend + state switch */
+  /* toggle privacy */
   const togglePrivacy = async () => {
     try {
       setIsPrivate((p) => !p);
       await api.put(`/stars/${starId}`, { isPrivate: !isPrivate });
     } catch (e) {
-      console.error("❌ cannot toggle privacy", e);
-      setIsPrivate((p) => !p);   // rollback bij fout
+      console.error("cannot toggle", e);
+      setIsPrivate((p) => !p);
     }
   };
 
-  /* back → altijd naar lijstscherm */
+  /* back */
   const goBackToList = () => router.replace("/(app)/dedicates/dedicate");
+
+  /* menu actions */
+  const handleAddPeople  = () => router.push("/dedicates/add-people-dedicate");
+  const handleSeeMembers = () => router.push("/dedicates/no-members-dedicate");
 
   if (loading || !star) {
     return (
@@ -60,27 +66,38 @@ export default function DedicatedStar() {
     );
   }
 
-  /* media iconen */
-  const icons = [
-    { label: "Photo's",      icon: <PhotosIcon     width={60} height={60} /> },
-    { label: "Video’s",      icon: <VideosIcon     width={60} height={60} /> },
-    { label: "Audio’s",      icon: <AudiosIcon     width={60} height={60} /> },
-    { label: "Documents",    icon: <DocumentsIcon  width={60} height={60} /> },
-    { label: "Book of Life", icon: <BookOfLifeIcon width={60} height={60} /> },
-  ];
+  const icons = [/* …zelfde array als eerder… */];
 
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
 
-      {/* ← terug naar lijst */}
+      {/* ← */}
       <TouchableOpacity style={styles.backBtn} onPress={goBackToList}>
-        <Svg width={24} height={24}><Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} /></Svg>
+        <Svg width={24} height={24}><Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2}/></Svg>
       </TouchableOpacity>
+
+      {/* ⋯ */}
+      <TouchableOpacity style={styles.moreBtn} onPress={() => setMenuOpen(!menuOpen)}>
+        <MoreIcon width={24} height={24} />
+      </TouchableOpacity>
+
+      {menuOpen && (
+        <View style={styles.menu}>
+          <TouchableOpacity style={styles.menuItem} onPress={handleAddPeople}>
+            <AddPeopleIcon width={16} height={16} />
+            <Text style={styles.menuText}>Add people</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={handleSeeMembers}>
+            <SeeMembersIcon width={16} height={16} />
+            <Text style={styles.menuText}>See members</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <Text style={styles.title}>Dedicated star</Text>
 
-      {/* privacy toggle */}
+      {/* toggle */}
       <View style={styles.toggleContainer}>
         <Pressable
           onPress={() => !isPrivate && togglePrivacy()}
@@ -90,12 +107,10 @@ export default function DedicatedStar() {
               borderTopLeftRadius: 12, borderBottomLeftRadius: 12 },
           ]}
         >
-          <Text style={[
-            styles.toggleText,
-            { color: isPrivate ? "#11152A" : "#fff" },
-          ]}>Private</Text>
+          <Text style={[styles.toggleText, { color: isPrivate ? "#11152A" : "#fff" }]}>
+            Private
+          </Text>
         </Pressable>
-
         <Pressable
           onPress={() => isPrivate && togglePrivacy()}
           style={[
@@ -104,10 +119,9 @@ export default function DedicatedStar() {
               borderTopRightRadius: 12, borderBottomRightRadius: 12 },
           ]}
         >
-          <Text style={[
-            styles.toggleText,
-            { color: !isPrivate ? "#11152A" : "#fff" },
-          ]}>Public</Text>
+          <Text style={[styles.toggleText, { color: !isPrivate ? "#11152A" : "#fff" }]}>
+            Public
+          </Text>
         </Pressable>
       </View>
 
@@ -119,12 +133,23 @@ export default function DedicatedStar() {
         </View>
       </View>
 
-      {/* media iconen */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollRow} contentContainerStyle={{ paddingHorizontal: 20 }}>
-        {icons.map((it, idx) => (
+      {/* ---------------- media icon row ---------------- */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.scrollRow}
+        contentContainerStyle={{ paddingHorizontal: 20 }}
+      >
+        {[
+          { label: "Photo's",      icon: <PhotosIcon     width={60} height={60} /> },
+          { label: "Video’s",      icon: <VideosIcon     width={60} height={60} /> },
+          { label: "Audio’s",      icon: <AudiosIcon     width={60} height={60} /> },
+          { label: "Documents",    icon: <DocumentsIcon  width={60} height={60} /> },
+          { label: "Book of Life", icon: <BookOfLifeIcon width={60} height={60} /> },
+        ].map((item, idx) => (
           <View key={idx} style={styles.iconItem}>
-            {it.icon}
-            <Text style={styles.iconLabel}>{it.label}</Text>
+            {item.icon}
+            <Text style={styles.iconLabel}>{item.label}</Text>
           </View>
         ))}
       </ScrollView>
@@ -135,7 +160,16 @@ export default function DedicatedStar() {
 /* ---------- styles ---------- */
 const styles = StyleSheet.create({
   centered:{ flex:1, justifyContent:"center", alignItems:"center" },
-  backBtn: { position:"absolute", top:50, left:20, zIndex:10 },
+  backBtn:  { position:"absolute", top:50, left:20,  zIndex:10 },
+  moreBtn:  { position:"absolute", top:50, right:20, zIndex:10 },
+
+  menu:{
+    position:"absolute", top:90, right:20, backgroundColor:"#fff",
+    borderRadius:10, padding:10, gap:8, zIndex:20,
+    shadowColor:"#000", shadowOpacity:0.15, shadowRadius:4, elevation:5,
+  },
+  menuItem:{ flexDirection:"row", alignItems:"center", gap:6 },
+  menuText:{ fontSize:13, fontFamily:"Alice-Regular", color:"#11152A" },
 
   title:{ fontFamily:"Alice-Regular", fontSize:20, color:"#fff", textAlign:"center", marginTop:50 },
 
