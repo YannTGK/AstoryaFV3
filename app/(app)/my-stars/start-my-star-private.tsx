@@ -39,7 +39,7 @@ export default function StartMyStarPrivate() {
 
           // direct naar chosen-private-star
           router.replace({
-            pathname: "/(app)/my-stars/private-star/chosen-private-star",
+            pathname: "/(app)/my-stars/private-star/final-my-star-private",
             params: {
               // id kun je optioneel meegeven als je later wilt updaten
               id:        privateStar._id,
