@@ -48,7 +48,7 @@ export default function AddMembersDedicate() {
   };
 
   const handleSendInvitation = () => {
-    router.push("/dedicates/send-invitation-dedicate"); // ✅ juiste route
+    router.push("/dedicates/created-dedicates/add-people/send-invite/send-invitation-dedicate"); // ✅ juiste route
   };
 
   const filteredUsers = users.filter(u => u.toLowerCase().includes(search.toLowerCase()));

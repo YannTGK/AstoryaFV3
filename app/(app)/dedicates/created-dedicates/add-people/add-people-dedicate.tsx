@@ -21,11 +21,11 @@ export default function AddPeopleDedicate() {
   };
 
   const handleContinue = () => {
-    router.push("/dedicates/add-selected-people-dedicate");
+    router.push("/dedicates/created-dedicates/add-people/add-selected-people-dedicate");
   };
 
   const handleAddPerson = () => {
-    router.push("/dedicates/add-members-dedicate");
+    router.push("/dedicates/created-dedicates/add-people/add-members-dedicate");
   };
 
   return (

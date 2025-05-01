@@ -30,7 +30,7 @@ export default function ColorDedicateStar() {
 
   const handleSelect = () => {
     router.push({
-      pathname: "/dedicates/chosen-dedicate-star",
+      pathname: "/dedicates/create-a-dedicate/chosen-dedicate-star",
       params: {
         publicName,
         word: option.word,

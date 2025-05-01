@@ -14,7 +14,7 @@ export default function StartDedicateStar() {
   const handleNext = () => {
     if (publicName.trim()) {
       router.push({
-        pathname: "/dedicates/color-dedicate-star",
+        pathname: "/dedicates/create-a-dedicate/color-dedicate-star",
         params: { publicName },
       });
     }

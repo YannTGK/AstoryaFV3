@@ -25,7 +25,7 @@ import {
   
     const handleTryFree = () => {
       onClose(); // Popup eerst sluiten
-      router.push("/dedicates/start-dedicate-star"); // Daarna navigeren
+      router.push("/dedicates/create-a-dedicate/start-dedicate-star"); // Daarna navigeren
     };
   
     return (
