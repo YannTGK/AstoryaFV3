@@ -42,7 +42,7 @@ export default function DedicatedStar() {
   const goBackToList = () => router.replace("/(app)/dedicates/dedicate");
 
   /* menu actions */
-  const handleAddPeople  = () => router.push("/dedicates/add-people-dedicate");
+  const handleAddPeople  = () => router.push("/dedicates/created-dedicates/add-people/add-people-dedicate");
   const handleSeeMembers = () => router.push("/dedicates/no-members-dedicate");
 
   if (loading || !star) {
