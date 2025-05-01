@@ -1,18 +1,26 @@
-// AddMembersDedicate.tsx  – UI ongewijzigd, alleen logica nieuw
+// app/(app)/dedicates/created-dedicates/add-people/AddMembersDedicate.tsx
 import React, { useState, useEffect } from "react";
 import {
-  View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView,
-  Modal, ActivityIndicator,
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  StyleSheet,
+  ScrollView,
+  Modal,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 
-import SearchIcon    from "@/assets/images/svg-icons/search.svg";
-import CloseRedIcon  from "@/assets/images/svg-icons/close-red.svg";
-import api           from "@/services/api";
+import SearchIcon   from "@/assets/images/svg-icons/search.svg";
+import CloseRedIcon from "@/assets/images/svg-icons/close-red.svg";
 
-/*──────── kleine debounce helper (300 ms) ────────*/
+import api           from "@/services/api";
+import useAuthStore  from "@/lib/store/useAuthStore";   // ← jouw auth-store
+
+/*──────────────── helper: debounce (300 ms) ────────────────*/
 const useDebounce = (value: string, delay = 300) => {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -23,17 +31,22 @@ const useDebounce = (value: string, delay = 300) => {
 };
 
 export default function AddMembersDedicate() {
-  const router = useRouter();
+  const router            = useRouter();
+  const { user }          = useAuthStore();          // { id, username, … }
+  const myId              = user?.id ?? user?._id;   // beide varianten afgedekt
+  const myUsername        = user?.username;
 
-  const [search, setSearch]         = useState("");
-  const debounced                   = useDebounce(search);
-  const [results, setResults]       = useState<any[]>([]);
-  const [loading, setLoading]       = useState(false);
+  /* ─── state ──────────────────────────────────────────────*/
+  const [search, setSearch]     = useState("");
+  const debounced               = useDebounce(search);
+  const [results, setResults]   = useState<any[]>([]);
+  const [loading, setLoading]   = useState(false);
 
-  const [selected, setSelected]     = useState<any[]>([]);
-  const [showPopup, setShowPopup]   = useState(false);
+  const [selected, setSelected] = useState<any[]>([]);
+  const [showPopup, setShowPopup] = useState(false);
+  const [busyAdd, setBusyAdd]     = useState(false);
 
-  /*───── live search naar backend ─────*/
+  /* ─── live username-search ───────────────────────────────*/
   useEffect(() => {
     const q = debounced.trim();
     if (!q) { setResults([]); return; }
@@ -42,114 +55,188 @@ export default function AddMembersDedicate() {
     (async () => {
       try {
         setLoading(true);
-        const { data } = await api.get("/users/search", { params:{ username:q }});
-        if (!cancel) setResults(data.users ?? []);
-      } catch (e) {
-        console.error("search error:", e);
+        const { data } = await api.get("/users/search", {
+          params: { username: q },
+        });
+
+        if (cancel) return;
+        let list = data.users ?? [];
+
+        /* filter jezelf weg */
+        if (myId)       list = list.filter((u: any) => (u._id ?? u.id) !== myId);
+        else if (myUsername)
+                       list = list.filter((u: any) => u.username !== myUsername);
+
+        setResults(list);
+      } catch (err) {
         !cancel && setResults([]);
+        console.error("search error:", err);
       } finally {
         !cancel && setLoading(false);
       }
     })();
-    return () => { cancel = true; };
-  }, [debounced]);
 
-  /*───── helpers ─────*/
+    return () => { cancel = true; };
+  }, [debounced, myId, myUsername]);
+
+  /* ─── helpers select / unselect ──────────────────────────*/
   const toggle = (u: any) =>
     setSelected((prev) =>
-      prev.some((s) => s._id === u._id)
-        ? prev.filter((s) => s._id !== u._id)
+      prev.some((s) => (s._id ?? s.id) === (u._id ?? u.id))
+        ? prev.filter((s) => (s._id ?? s.id) !== (u._id ?? u.id))
         : [...prev, u]
     );
+
   const unselect = (id: string) =>
-    setSelected((prev) => prev.filter((s) => s._id !== id));
+    setSelected((prev) => prev.filter((s) => (s._id ?? s.id) !== id));
 
+  /* ─── contacts toevoegen ────────────────────────────────*/
+  const addContacts = async () => {
+    if (busyAdd || !selected.length) return;
+    setBusyAdd(true);
+
+    try {
+      await Promise.all(
+        selected.map((u) =>
+          api.post(`/users/${u._id ?? u.id}/contacts`).catch((e) => e)
+        )
+      );
+      router.push("/dedicates/add-members-dedicate-status");
+    } catch (err) {
+      console.error("add-contacts error:", err);
+    } finally {
+      setBusyAdd(false);
+    }
+  };
+
+  /* ─── popup handlers ────────────────────────────────────*/
   const confirmAdd = () => setShowPopup(true);
-  const yes        = () => { setShowPopup(false); router.push("/dedicates/add-members-dedicate-status"); };
+  const yes        = () => { setShowPopup(false); addContacts(); };
   const no         = () => setShowPopup(false);
-  const invite     = () => router.push("/dedicates/created-dedicates/add-people/send-invite/send-invitation-dedicate");
+  const invite     = () =>
+    router.push(
+      "/dedicates/created-dedicates/add-people/send-invite/send-invitation-dedicate"
+    );
 
-  /*───── originele UI EXACT behouden ─────*/
+  /* ─── UI (onveranderd) ──────────────────────────────────*/
   return (
-    <View style={{ flex:1 }}>
-      <LinearGradient colors={["#000000","#273166","#000000"]} style={StyleSheet.absoluteFill} start={{x:0.5,y:0}} end={{x:0.5,y:1}}/>
+    <View style={{ flex: 1 }}>
+      <LinearGradient
+        colors={["#000000", "#273166", "#000000"]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      />
 
       {/* Back button */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Svg width={24} height={24}><Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/></Svg>
+        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M15 18l-6-6 6-6"
+            stroke="#FEEDB6"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </Svg>
       </TouchableOpacity>
 
-      {/* Send invitation button */}
+      {/* Send invitation */}
       <TouchableOpacity style={styles.invitationBtn} onPress={invite}>
         <Text style={styles.invitationText}>Send invitation</Text>
       </TouchableOpacity>
 
       <Text style={styles.title}>Add members</Text>
       <Text style={styles.subtitle}>
-        To add new people who aren’t in your contacts, enter their username to add them to your contact list or send them an invitation.
+        To add new people who aren’t in your contacts, enter their username to
+        add them to your contact list or send them an invitation.
       </Text>
 
-      {/* Search field */}
+      {/* Search */}
       <View style={styles.searchWrapper}>
-        <SearchIcon width={18} height={18} style={styles.searchIcon}/>
+        <SearchIcon width={18} height={18} style={styles.searchIcon} />
         <TextInput
           placeholder="Search"
           placeholderTextColor="#999"
+          style={styles.searchInput}
           value={search}
           onChangeText={setSearch}
-          style={styles.searchInput}
           autoCapitalize="none"
         />
       </View>
 
       {/* Body */}
-      <View style={{ flex:1 }}>
-        {/* Selected members */}
+      <View style={{ flex: 1 }}>
+        {/* selected */}
         {selected.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectedScroll} contentContainerStyle={{ paddingLeft:24 }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.selectedScroll}
+            contentContainerStyle={{ paddingLeft: 24 }}
+          >
             {selected.map((u) => (
-              <View key={u._id} style={styles.selectedUser}>
-                <View style={styles.avatarSmall}/>
+              <View key={u._id ?? u.id} style={styles.selectedUser}>
+                <View style={styles.avatarSmall} />
                 <Text style={styles.selectedUsername}>@{u.username}</Text>
-                <TouchableOpacity style={styles.removeBtn} onPress={() => unselect(u._id)}>
-                  <CloseRedIcon width={18} height={18}/>
+                <TouchableOpacity
+                  style={styles.removeBtn}
+                  onPress={() => unselect(u._id ?? u.id)}
+                >
+                  <CloseRedIcon width={18} height={18} />
                 </TouchableOpacity>
               </View>
             ))}
           </ScrollView>
         )}
 
-        {/* Results */}
+        {/* results */}
         <ScrollView style={styles.resultsScroll}>
           {loading ? (
-            <ActivityIndicator size="small" color="#fff" style={{ marginTop:12 }}/>
+            <ActivityIndicator
+              size="small"
+              color="#fff"
+              style={{ marginTop: 12 }}
+            />
           ) : (
             results.map((u) => (
               <TouchableOpacity
-                key={u._id}
+                key={u._id ?? u.id}
                 style={[
                   styles.resultItem,
-                  selected.some((s) => s._id === u._id) && styles.resultItemSelected,
+                  selected.some(
+                    (s) => (s._id ?? s.id) === (u._id ?? u.id)
+                  ) && styles.resultItemSelected,
                 ]}
                 onPress={() => toggle(u)}
               >
-                <View style={styles.avatarSmall}/>
+                <View style={styles.avatarSmall} />
                 <Text style={styles.resultText}>@{u.username}</Text>
               </TouchableOpacity>
             ))
           )}
-          <View style={{ height:150 }}/>
+          <View style={{ height: 150 }} />
         </ScrollView>
       </View>
 
       {/* Add button */}
       <View style={styles.fixedButtonWrapper}>
         <TouchableOpacity
-          style={[styles.button, selected.length === 0 && styles.buttonDisabled]}
-          disabled={selected.length === 0}
+          style={[
+            styles.button,
+            (selected.length === 0 || busyAdd) && styles.buttonDisabled,
+          ]}
+          disabled={selected.length === 0 || busyAdd}
           onPress={confirmAdd}
         >
-          <Text style={[styles.buttonText, selected.length === 0 && styles.buttonTextDisabled]}>Add</Text>
+          <Text
+            style={[
+              styles.buttonText,
+              (selected.length === 0 || busyAdd) && styles.buttonTextDisabled,
+            ]}
+          >
+            {busyAdd ? "Adding…" : "Add"}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -161,7 +248,10 @@ export default function AddMembersDedicate() {
               Are you sure you want to add a{"\n"}new person to the star?
             </Text>
             <View style={styles.popupButtons}>
-              <TouchableOpacity style={[styles.popupButton, styles.rightBorder]} onPress={yes}>
+              <TouchableOpacity
+                style={[styles.popupButton, styles.rightBorder]}
+                onPress={yes}
+              >
                 <Text style={styles.popupButtonTextYes}>Yes</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.popupButton} onPress={no}>
@@ -175,9 +265,8 @@ export default function AddMembersDedicate() {
   );
 }
 
-/* ---------- ALLE styles ongewijzigd ---------- */
+/*──────────────────────── styles – onveranderd ─────────────*/
 const styles = StyleSheet.create({
-  /* dezelfde stijl-objecten als jouw originele bestand */
   backBtn:{position:"absolute",top:50,left:20,zIndex:10},
   invitationBtn:{position:"absolute",top:95,right:20,backgroundColor:"#FEEDB6",paddingHorizontal:14,paddingVertical:10,borderRadius:8},
   invitationText:{color:"#11152A",fontFamily:"Alice-Regular",fontSize:13},
@@ -186,10 +275,7 @@ const styles = StyleSheet.create({
   searchWrapper:{flexDirection:"row",alignItems:"center",backgroundColor:"#fff",borderRadius:30,paddingHorizontal:14,marginTop:20,marginHorizontal:24,height:44},
   searchIcon:{marginRight:10},
   searchInput:{flex:1,fontFamily:"Alice-Regular",fontSize:14,color:"#11152A",marginTop:2},
-  selectedScroll: {
-    marginTop: 20,
-    maxHeight: 64,             // ← nieuw: één regel hoog
-  },
+  selectedScroll:{marginTop:20,maxHeight:64},
   selectedUser:{flexDirection:"row",alignItems:"center",backgroundColor:"#ffffff22",borderRadius:10,paddingVertical:14,paddingHorizontal:12,marginRight:10},
   avatarSmall:{width:36,height:36,borderRadius:18,backgroundColor:"#ffffff",marginRight:8},
   selectedUsername:{color:"#fff",fontFamily:"Alice-Regular",fontSize:14,marginRight:12},
