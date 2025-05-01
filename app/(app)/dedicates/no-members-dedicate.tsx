@@ -45,7 +45,7 @@ export default function NoMembersDedicate() {
       </Pressable>
 
       {/* Plus knop */}
-      <TouchableOpacity style={styles.plusBtn} onPress={() => router.push("/dedicates/add-members-dedicate")}>
+      <TouchableOpacity style={styles.plusBtn} onPress={() => router.push("/dedicates/created-dedicates/add-people/add-members-dedicate")}>
         <PlusIcon width={36} height={36} />
       </TouchableOpacity>
 
