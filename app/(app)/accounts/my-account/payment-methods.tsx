@@ -8,18 +8,26 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
+  FlatList,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
-import { Picker } from "@react-native-picker/picker";
-import { Feather } from "@expo/vector-icons";
+
+const CARD_TYPES = [
+    { label: "Debit card", value: "debit", icon: "💳" },
+    { label: "Credit card", value: "credit", icon: "💳" },
+    { label: "Mastercard", value: "mastercard", icon: "🟠" },
+    { label: "Visa", value: "visa", icon: "🔵" },
+    { label: "American Express", value: "amex", icon: "🟦" },
+  ];
+  
 
 export default function PaymentMethodsScreen() {
   const router = useRouter();
 
-  const [cardType, setCardType] = useState<string>("");
+  const [cardType, setCardType] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
   const [cardNumber, setCardNumber] = useState("");
   const [cardholderName, setCardholderName] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
@@ -27,15 +35,11 @@ export default function PaymentMethodsScreen() {
   const [showForm, setShowForm] = useState(false);
 
   const isFormComplete =
-    cardType !== "" && cardNumber && cardholderName && expiryDate && cvv;
+    cardType && cardNumber && cardholderName && expiryDate && cvv;
 
-  const handleCardScan = () => {
-    setCardType("debit");
-    setCardNumber("1662 3446 4577 2189");
-    setCardholderName("Maria Parker");
-    setExpiryDate("02/27");
-    setCvv("123");
-    Alert.alert("Card scanned", "Your card details have been filled in.");
+  const handleSelectCardType = (type: { label: string; value: string; icon: string }) => {
+      setCardType(type.label);
+      setShowDropdown(false);
   };
 
   return (
@@ -62,7 +66,10 @@ export default function PaymentMethodsScreen() {
         </Svg>
       </TouchableOpacity>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.title}>Payment methods</Text>
         <Text style={styles.subTitle}>Add card</Text>
 
@@ -72,19 +79,33 @@ export default function PaymentMethodsScreen() {
           </TouchableOpacity>
         ) : (
           <>
+            {/* Custom Dropdown */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Card</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={cardType}
-                  onValueChange={(itemValue: string) => setCardType(itemValue)}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="Select a card" value="" />
-                  <Picker.Item label="Debit card" value="debit" />
-                  <Picker.Item label="Credit card" value="credit" />
-                </Picker>
-              </View>
+              <TouchableOpacity
+                style={styles.dropdown}
+                onPress={() => setShowDropdown(!showDropdown)}
+              >
+                <Text style={styles.dropdownText}>
+                  {cardType || "Select a card type"}
+                </Text>
+              </TouchableOpacity>
+              {showDropdown && (
+                <View style={styles.dropdownList}>
+                  {CARD_TYPES.map((type) => (
+  <TouchableOpacity
+    key={type.value}
+    style={styles.dropdownItem}
+    onPress={() => handleSelectCardType(type)}
+  >
+    <Text style={styles.dropdownItemText}>
+      {type.icon} {type.label}
+    </Text>
+  </TouchableOpacity>
+))}
+
+                </View>
+              )}
             </View>
 
             <View style={styles.inputGroup}>
@@ -137,16 +158,15 @@ export default function PaymentMethodsScreen() {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.readerButton} onPress={handleCardScan}>
-              <Text style={styles.readerText}>Card reader</Text>
-            </TouchableOpacity>
-
             <TouchableOpacity
               style={[styles.confirmButton, isFormComplete && styles.confirmButtonActive]}
               disabled={!isFormComplete}
             >
               <Text
-                style={[styles.confirmButtonText, isFormComplete && styles.confirmButtonTextActive]}
+                style={[
+                  styles.confirmButtonText,
+                  isFormComplete && styles.confirmButtonTextActive,
+                ]}
               >
                 Confirm
               </Text>
@@ -213,31 +233,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#000",
   },
-  pickerContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 6,
-    height: 44,
-    justifyContent: "center",
-  },
-  picker: {
-    height: 44,
-    width: "100%",
-    color: "#000",
-  },
   row: {
     flexDirection: "row",
-  },
-  readerButton: {
-    backgroundColor: "#1E1E2F",
-    borderRadius: 6,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  readerText: {
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
   },
   confirmButton: {
     backgroundColor: "#666",
@@ -255,5 +252,34 @@ const styles = StyleSheet.create({
   },
   confirmButtonTextActive: {
     color: "#000",
+  },
+  dropdown: {
+    backgroundColor: "#fff",
+    borderRadius: 6,
+    height: 44,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+  dropdownText: {
+    fontSize: 16,
+    color: "#000",
+    fontFamily: "Alice-Regular",
+  },
+  dropdownList: {
+    backgroundColor: "#fff",
+    borderRadius: 6,
+    marginTop: 4,
+    overflow: "hidden",
+  },
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderBottomColor: "#ddd",
+    borderBottomWidth: 1,
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: "#000",
+    fontFamily: "Alice-Regular",
   },
 });
