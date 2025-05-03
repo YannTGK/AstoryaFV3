@@ -1,85 +1,165 @@
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import Svg, { Path } from "react-native-svg";
-import ArrowDropdown from "@/assets/images/svg-icons/arrow-dropdown.svg"; // ✅ correcte arrow
+
+import ArrowDropdown from "@/assets/images/svg-icons/arrow-dropdown.svg";
+import api from "@/services/api";
 
 export default function AddSelectedPeopleDedicate() {
   const router = useRouter();
+  const { starId, userId, username } = useLocalSearchParams<{
+    starId: string;
+    userId: string;
+    username: string;
+  }>();
 
-  const [status, setStatus] = useState<"Can view" | "Can edit" | "Admin">("Can view");
+  // Alleen deze twee statussen
+  const [status, setStatus] = useState<"Can view" | "Can edit">("Can view");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const selectedPerson = "Annie";
+  const [already, setAlready] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handleAddToStar = () => {
-    console.log(`Added ${selectedPerson} with status: ${status}`);
-    router.back();
+  const modeMap = {
+    "Can view": "view",
+    "Can edit": "edit",
+  } as const;
+
+  // 1) bij mount ophalen of gebruiker al rechten heeft én huidige rol bepalen
+  useEffect(() => {
+    (async () => {
+      try {
+        const { star } = (await api.get(`/stars/${starId}`)).data;
+        const isOwner   = String(star.userId) === userId;
+        const meCanEdit = star.canEdit?.includes(userId);
+        const meCanView = star.canView?.includes(userId);
+
+        if (isOwner || meCanEdit) {
+          // Owner én editors krijgen "Can edit" én disabled
+          setStatus("Can edit");
+          setAlready(true);
+        } else if (meCanView) {
+          setStatus("Can view");
+          setAlready(true);
+        } else {
+          // Nog geen rechten → mag dropdown openen, default view
+          setStatus("Can view");
+          setAlready(false);
+        }
+      } catch (e) {
+        console.error("Failed fetching star rights:", e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [starId, userId]);
+
+  const handleAddToStar = async () => {
+    if (saving || already) return;
+    setSaving(true);
+
+    try {
+      await api.patch(`/stars/${starId}/rights`, {
+        userId,
+        mode: modeMap[status],
+        action: "add",
+      });
+      Alert.alert(
+        "Toegevoegd",
+        `@${username} is toegevoegd als ${status}.`,
+        [{ text: "OK", onPress: () => router.back() }]
+      );
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? "Server error";
+      Alert.alert("Fout", msg);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleToggleDropdown = () => {
-    setDropdownOpen(!dropdownOpen);
-  };
-
-  const handleSelectStatus = (option: "Can view" | "Can edit" | "Admin") => {
-    setStatus(option);
-    setDropdownOpen(false);
-  };
+  if (loading) {
+    return (
+      <View style={[styles.centered, { flex: 1 }]}>
+        <ActivityIndicator size="large" color="#fff" />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
         colors={["#000000", "#273166", "#000000"]}
         style={StyleSheet.absoluteFill}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Back button */}
+      {/* ← Back */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        <Svg width={24} height={24} viewBox="0 0 24 24">
+          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
         </Svg>
       </TouchableOpacity>
 
       <Text style={styles.title}>Add people to star</Text>
 
-      {/* Geselecteerde persoon */}
+      {/* Persoon */}
       <View style={styles.personRow}>
         <View style={styles.avatarPlaceholder} />
-        <Text style={styles.personName}>@{selectedPerson}</Text>
+        <Text style={styles.personName}>@{username}</Text>
       </View>
 
       <Text style={styles.statusLabel}>Status</Text>
 
-      {/* Dropdown */}
-      <TouchableOpacity style={styles.dropdownButton} onPress={handleToggleDropdown}>
+      {/* Dropdown-button: disabled als already */}
+      <TouchableOpacity
+        style={styles.dropdownButton}
+        onPress={() => !already && setDropdownOpen(!dropdownOpen)}
+        disabled={already}
+      >
         <Text style={styles.dropdownButtonText}>{status}</Text>
         <ArrowDropdown width={16} height={16} />
       </TouchableOpacity>
 
-      {/* Dropdown opties */}
-      {dropdownOpen && (
+      {/* Alleen tonen als niet al toegevoegd én dropdown open */}
+      {!already && dropdownOpen && (
         <View style={styles.dropdownOptions}>
-          {["Can view", "Can edit", "Admin"].map((option) => (
+          {(["Can view", "Can edit"] as const).map((opt) => (
             <TouchableOpacity
-              key={option}
-              style={[styles.optionItem, status === option && styles.selectedOption]}
-              onPress={() => handleSelectStatus(option as any)}
+              key={opt}
+              style={[
+                styles.optionItem,
+                status === opt && styles.selectedOption,
+              ]}
+              onPress={() => {
+                setStatus(opt);
+                setDropdownOpen(false);
+              }}
             >
-              <Text style={styles.optionText}>
-                {option}
-              </Text>
+              <Text style={styles.optionText}>{opt}</Text>
             </TouchableOpacity>
           ))}
         </View>
       )}
 
-      {/* Add to star button */}
+      {/* CTA */}
       <View style={styles.fixedButtonWrapper}>
-        <TouchableOpacity style={styles.button} onPress={handleAddToStar}>
-          <Text style={styles.buttonText}>Add to star</Text>
+        <TouchableOpacity
+          style={[styles.button, (saving || already) && { opacity: 0.6 }]}
+          onPress={handleAddToStar}
+          disabled={saving || already}
+        >
+          <Text style={styles.buttonText}>
+            {already ? "Al toegevoegd" : saving ? "Bezig…" : "Add to star"}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -87,12 +167,11 @@ export default function AddSelectedPeopleDedicate() {
 }
 
 const styles = StyleSheet.create({
-  backBtn: {
-    position: "absolute",
-    top: 50,
-    left: 20,
-    zIndex: 10,
+  centered: {
+    justifyContent: "center",
+    alignItems: "center",
   },
+  backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
   title: {
     fontFamily: "Alice-Regular",
     fontSize: 20,
@@ -159,7 +238,7 @@ const styles = StyleSheet.create({
   optionText: {
     fontFamily: "Alice-Regular",
     fontSize: 14,
-    color: "#fff", // altijd wit!
+    color: "#fff",
   },
   fixedButtonWrapper: {
     position: "absolute",
