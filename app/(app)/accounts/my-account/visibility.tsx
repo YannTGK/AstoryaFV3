@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 14,
-    fontSize: 14,
+    fontSize: 16,
     color: "#000",
     fontFamily: "Alice-Regular",
     flex: 1,
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   },
   inputText: {
     color: "#fff",
-    fontSize: 18,
+    fontSize: 16,
     fontFamily: "Alice-Regular",
   },  
   circle: {
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   extraRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: -10,
+    marginTop: 8,
   },
   extraText: {
     color: "#fff",
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   confirmBtn: {
-    marginTop: 150,
+    marginTop: 260,
     marginHorizontal: 20,
     backgroundColor: "#FEEDB6",
     paddingVertical: 14,
