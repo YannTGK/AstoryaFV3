@@ -10,7 +10,6 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Svg, { Path } from "react-native-svg";
-
 import ArrowDropdown from "@/assets/images/svg-icons/arrow-dropdown.svg";
 import api from "@/services/api";
 
@@ -22,20 +21,15 @@ export default function AddSelectedPeopleDedicate() {
     username: string;
   }>();
 
-  // Alleen deze twee statussen
   const [status, setStatus] = useState<"Can view" | "Can edit">("Can view");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-
   const [already, setAlready] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const modeMap = {
-    "Can view": "view",
-    "Can edit": "edit",
-  } as const;
+  const modeMap = { "Can view": "view", "Can edit": "edit" } as const;
 
-  // 1) bij mount ophalen of gebruiker al rechten heeft én huidige rol bepalen
+  // bij mount: check bestaande rechten
   useEffect(() => {
     (async () => {
       try {
@@ -45,43 +39,41 @@ export default function AddSelectedPeopleDedicate() {
         const meCanView = star.canView?.includes(userId);
 
         if (isOwner || meCanEdit) {
-          // Owner én editors krijgen "Can edit" én disabled
           setStatus("Can edit");
           setAlready(true);
         } else if (meCanView) {
           setStatus("Can view");
           setAlready(true);
         } else {
-          // Nog geen rechten → mag dropdown openen, default view
           setStatus("Can view");
           setAlready(false);
         }
       } catch (e) {
-        console.error("Failed fetching star rights:", e);
+        console.error(e);
       } finally {
         setLoading(false);
       }
     })();
   }, [starId, userId]);
 
-  const handleAddToStar = async () => {
-    if (saving || already) return;
+  // functie om rechten toe te voegen of te verwijderen
+  const updateRights = async (action: "add" | "remove") => {
     setSaving(true);
-
     try {
       await api.patch(`/stars/${starId}/rights`, {
         userId,
         mode: modeMap[status],
-        action: "add",
+        action,
       });
       Alert.alert(
-        "Toegevoegd",
-        `@${username} is toegevoegd als ${status}.`,
+        action === "add" ? "Toegevoegd" : "Verwijderd",
+        action === "add"
+          ? `@${username} is toegevoegd als ${status}.`
+          : `@${username} is verwijderd.`,
         [{ text: "OK", onPress: () => router.back() }]
       );
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? "Server error";
-      Alert.alert("Fout", msg);
+      Alert.alert("Fout", err?.response?.data?.message ?? "Server error");
     } finally {
       setSaving(false);
     }
@@ -102,7 +94,6 @@ export default function AddSelectedPeopleDedicate() {
         style={StyleSheet.absoluteFill}
       />
 
-      {/* ← Back */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24">
           <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
@@ -111,15 +102,12 @@ export default function AddSelectedPeopleDedicate() {
 
       <Text style={styles.title}>Add people to star</Text>
 
-      {/* Persoon */}
       <View style={styles.personRow}>
         <View style={styles.avatarPlaceholder} />
         <Text style={styles.personName}>@{username}</Text>
       </View>
 
       <Text style={styles.statusLabel}>Status</Text>
-
-      {/* Dropdown-button: disabled als already */}
       <TouchableOpacity
         style={styles.dropdownButton}
         onPress={() => !already && setDropdownOpen(!dropdownOpen)}
@@ -129,7 +117,6 @@ export default function AddSelectedPeopleDedicate() {
         <ArrowDropdown width={16} height={16} />
       </TouchableOpacity>
 
-      {/* Alleen tonen als niet al toegevoegd én dropdown open */}
       {!already && dropdownOpen && (
         <View style={styles.dropdownOptions}>
           {(["Can view", "Can edit"] as const).map((opt) => (
@@ -150,27 +137,35 @@ export default function AddSelectedPeopleDedicate() {
         </View>
       )}
 
-      {/* CTA */}
       <View style={styles.fixedButtonWrapper}>
-        <TouchableOpacity
-          style={[styles.button, (saving || already) && { opacity: 0.6 }]}
-          onPress={handleAddToStar}
-          disabled={saving || already}
-        >
-          <Text style={styles.buttonText}>
-            {already ? "Al toegevoegd" : saving ? "Bezig…" : "Add to star"}
-          </Text>
-        </TouchableOpacity>
+        {already ? (
+          <TouchableOpacity
+            style={[styles.button, { opacity: saving ? 0.6 : 1 }]}
+            onPress={() => updateRights("remove")}
+            disabled={saving}
+          >
+            <Text style={styles.buttonText}>
+              {saving ? "Bezig…" : "Rechten intrekken"}
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[styles.button, saving && { opacity: 0.6 }]}
+            onPress={() => updateRights("add")}
+            disabled={saving}
+          >
+            <Text style={styles.buttonText}>
+              {saving ? "Bezig…" : "Add to star"}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  centered: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  centered: { justifyContent: "center", alignItems: "center" },
   backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
   title: {
     fontFamily: "Alice-Regular",
@@ -192,11 +187,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#5B5B5B",
     marginRight: 10,
   },
-  personName: {
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
-  },
+  personName: { color: "#fff", fontFamily: "Alice-Regular", fontSize: 16 },
   statusLabel: {
     marginTop: 30,
     marginHorizontal: 24,
