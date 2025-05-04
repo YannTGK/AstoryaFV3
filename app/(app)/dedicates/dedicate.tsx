@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Dimensions,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -65,9 +66,17 @@ export default function DedicateScreen() {
       </TouchableOpacity>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#fff" style={{ marginTop: 60 }} />
+        <ActivityIndicator
+          size="large"
+          color="#fff"
+          style={{ marginTop: 60 }}
+        />
       ) : (
-        <View style={styles.grid}>
+        <ScrollView
+        style={styles.main}
+          contentContainerStyle={styles.grid}
+          showsVerticalScrollIndicator={false}
+        >
           {dedicatedStars.map((star) => (
             <TouchableOpacity
               key={star._id}
@@ -80,7 +89,7 @@ export default function DedicateScreen() {
               </Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
       )}
 
       {showPopup && (
@@ -91,7 +100,9 @@ export default function DedicateScreen() {
 }
 
 const styles = StyleSheet.create({
-  backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
+  main: {
+    marginBottom: 80,
+  },
   title: {
     fontSize: 20,
     fontFamily: "Alice-Regular",
@@ -107,8 +118,12 @@ const styles = StyleSheet.create({
     columnGap: 20,
     rowGap: 40,
     marginTop: 60,
+    paddingBottom: 40, // so you can scroll past the last row
   },
-  starWrapper: { width: (width - 52) / 2, alignItems: "center" },
+  starWrapper: {
+    width: (width - 52) / 2,
+    alignItems: "center",
+  },
   starLabel: {
     color: "#fff",
     fontFamily: "Alice-Regular",

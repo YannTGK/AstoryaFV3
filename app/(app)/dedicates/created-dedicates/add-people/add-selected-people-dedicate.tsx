@@ -140,11 +140,22 @@ export default function AddSelectedPeopleDedicate() {
       <View style={styles.fixedButtonWrapper}>
         {already ? (
           <TouchableOpacity
-            style={[styles.button, { opacity: saving ? 0.6 : 1 }]}
+            style={[
+              styles.button,
+              {
+                backgroundColor: "#747474",
+                shadowColor: "transparent",
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0,
+                shadowRadius: 0,
+                elevation: 0,
+              },
+              saving && { opacity: 0.6 },
+            ]}
             onPress={() => updateRights("remove")}
             disabled={saving}
           >
-            <Text style={styles.buttonText}>
+            <Text style={[styles.buttonText, { color: "#F5F5F5" }]}>
               {saving ? "Bezig…" : "Rechten intrekken"}
             </Text>
           </TouchableOpacity>

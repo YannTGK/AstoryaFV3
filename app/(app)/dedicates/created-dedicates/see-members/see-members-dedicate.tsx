@@ -36,7 +36,7 @@ export default function SeeMembersDedicate() {
   }, [starId]);
 
   const goAdd = () => router.push({
-    pathname: "/dedicates/created-dedicates/add-people/add-members-dedicate",
+    pathname: "/dedicates/created-dedicates/add-people/add-people-dedicate",
     params: { starId }
   });
 
