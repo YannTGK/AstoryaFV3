@@ -14,6 +14,27 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { Image } from "react-native";
+import type { ImageSourcePropType } from "react-native";
+
+
+const isValidCardNumber = (num: string) => /^\d{16}$/.test(num.replace(/\s/g, ""));
+const isValidExpiryDate = (date: string) => {
+  if (!/^\d{2}\/\d{2}$/.test(date)) return false;
+
+  const [monthStr, yearStr] = date.split("/");
+  const month = parseInt(monthStr, 10);
+  const year = parseInt("20" + yearStr, 10); // bijv. '27' → 2027
+
+  if (month < 1 || month > 12) return false;
+
+  const now = new Date();
+  const expiry = new Date(year, month - 1, 1); // 1ste dag van maand
+  const current = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  return expiry >= current;
+};
+const isValidCVV = (cvv: string) => /^\d{3,4}$/.test(cvv);
+const isValidName = (name: string) => /^[A-Za-z\s]+$/.test(name.trim());
 
 const CARD_TYPES = [
   {
@@ -43,8 +64,12 @@ const CARD_TYPES = [
 export default function PaymentMethodsScreen() {
   const router = useRouter();
 
-  const [cardType, setCardType] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<{
+    label: string;
+    value: string;
+    icon: ImageSourcePropType;
+  } | null>(null);
+    const [showDropdown, setShowDropdown] = useState(false);
   const [cardNumber, setCardNumber] = useState("");
   const [cardholderName, setCardholderName] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
@@ -52,13 +77,32 @@ export default function PaymentMethodsScreen() {
   const [showForm, setShowForm] = useState(false);
 
   const isFormComplete =
-    cardType && cardNumber && cardholderName && expiryDate && cvv;
+  selectedCard &&
+  isValidCardNumber(cardNumber) &&
+  cardholderName.trim().length > 0 &&
+  isValidExpiryDate(expiryDate) &&
+  isValidCVV(cvv);
 
-  const handleSelectCardType = (type: { label: string; value: string; icon: string }) => {
-      setCardType(type.label);
-      setShowDropdown(false);
+  const handleSelectCardType = (type: { label: string; value: string; icon: ImageSourcePropType }) => {
+    setSelectedCard(type);
+    setShowDropdown(false);
   };
-
+  const handleExpiryInput = (text: string) => {
+    let cleaned = text.replace(/[^\d]/g, "");
+  
+    if (cleaned.length === 0) {
+      setExpiryDate("");
+    } else if (cleaned.length <= 2) {
+      setExpiryDate(cleaned);
+    } else {
+      setExpiryDate(`${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}`);
+    }
+  };
+  
+  
+  
+  
+  
   return (
     <KeyboardAvoidingView
       style={styles.wrapper}
@@ -104,7 +148,7 @@ export default function PaymentMethodsScreen() {
                 onPress={() => setShowDropdown(!showDropdown)}
               >
                 <Text style={styles.dropdownText}>
-                  {cardType || "Select a card type"}
+                {selectedCard?.label || "Select a card type"}
                 </Text>
               </TouchableOpacity>
               {showDropdown && (
@@ -128,54 +172,76 @@ export default function PaymentMethodsScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Card number</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Card number"
-                placeholderTextColor="#999"
-                value={cardNumber}
-                onChangeText={setCardNumber}
-                keyboardType="number-pad"
-              />
-            </View>
+  <Text style={styles.label}>Card number</Text>
+  <TextInput
+    style={styles.input}
+    placeholder="Card number"
+    placeholderTextColor="#999"
+    value={cardNumber}
+    onChangeText={setCardNumber}
+    keyboardType="number-pad"
+  />
+  {cardNumber.length > 0 && !isValidCardNumber(cardNumber) && (
+    <Text style={styles.errorText}>Card number must be 16 digits</Text>
+  )}
+</View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Cardholder name</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Cardholder name"
-                placeholderTextColor="#999"
-                value={cardholderName}
-                onChangeText={setCardholderName}
-              />
-            </View>
 
-            <View style={styles.row}>
-              <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                <Text style={styles.label}>Expiry date</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="MM/YY"
-                  placeholderTextColor="#999"
-                  value={expiryDate}
-                  onChangeText={setExpiryDate}
-                  keyboardType="numeric"
-                />
-              </View>
+<View style={styles.inputGroup}>
+  <Text style={styles.label}>Cardholder name</Text>
+  <TextInput
+    style={styles.input}
+    placeholder="Cardholder name"
+    placeholderTextColor="#999"
+    value={cardholderName}
+    onChangeText={setCardholderName}
+  />
+ {cardholderName.length > 0 && !isValidName(cardholderName) && (
+  <Text style={styles.errorText}>Only letters and spaces are allowed</Text>
+)}
+</View>
 
-              <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                <Text style={styles.label}>CVV</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="CVV"
-                  placeholderTextColor="#999"
-                  value={cvv}
-                  onChangeText={setCvv}
-                  secureTextEntry
-                  keyboardType="number-pad"
-                />
-              </View>
-            </View>
+
+<View style={styles.row}>
+  <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+    <Text style={styles.label}>Expiry date</Text>
+    <TextInput
+  style={styles.input}
+  placeholder="MM/YY"
+  placeholderTextColor="#999"
+  value={expiryDate}
+  onChangeText={handleExpiryInput}
+  keyboardType="number-pad"
+  maxLength={5}
+/>
+{expiryDate.length === 5 && !isValidExpiryDate(expiryDate) && (
+  <Text style={styles.errorText}>Enter a valid future date (MM/YY)</Text>
+)}
+
+
+
+
+    {expiryDate.length > 0 && !isValidExpiryDate(expiryDate) && (
+      <Text style={styles.errorText}>Use MM/YY format</Text>
+    )}
+  </View>
+
+  <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+    <Text style={styles.label}>CVV</Text>
+    <TextInput
+      style={styles.input}
+      placeholder="CVV"
+      placeholderTextColor="#999"
+      value={cvv}
+      onChangeText={setCvv}
+      secureTextEntry
+      keyboardType="number-pad"
+    />
+    {cvv.length > 0 && !isValidCVV(cvv) && (
+      <Text style={styles.errorText}>CVV must be 3 or 4 digits</Text>
+    )}
+  </View>
+</View>
 
             <TouchableOpacity
               style={[styles.confirmButton, isFormComplete && styles.confirmButtonActive]}
@@ -311,4 +377,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#000",
   },
+  errorText: {
+    color: "#FF7466",
+    fontSize: 12,
+    fontFamily: "Alice-Regular",
+    marginTop: 4,
+  },
+  
+  
 });
