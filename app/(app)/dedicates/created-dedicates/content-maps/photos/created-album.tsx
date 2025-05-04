@@ -13,7 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import * as ImagePicker from "expo-image-picker";
 import ImageViewer from "react-native-image-zoom-viewer";
-import { Feather, MaterialIcons, Entypo } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 
 export default function AlbumPage() {
   const [images, setImages] = useState<string[]>([]);
@@ -62,12 +62,20 @@ export default function AlbumPage() {
           <Text style={styles.headerTitle}>Photo’s</Text>
         </View>
         <Text style={styles.albumTitle}>{albumName || "Album"}</Text>
-        <TouchableOpacity style={styles.menuDots} onPress={() => setMenuOpen(!menuOpen)}>
+
+        <TouchableOpacity
+          style={styles.menuDots}
+          onPress={() => setMenuOpen(!menuOpen)}
+        >
           <Text style={styles.menuDotsText}>⋮</Text>
         </TouchableOpacity>
+
         {menuOpen && (
           <View style={styles.menuBox}>
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => router.push("/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/add-people/AddPeoplePage")}
+            >
               <Feather name="user-plus" size={16} color="#11152A" />
               <Text style={styles.menuText}>Add people</Text>
             </TouchableOpacity>
@@ -91,7 +99,7 @@ export default function AlbumPage() {
         )}
       </View>
 
-      {/* FLATLIST GRID */}
+      {/* GRID */}
       <FlatList
         data={images}
         keyExtractor={(item, index) => item + index}
@@ -126,13 +134,14 @@ export default function AlbumPage() {
               style={{ width: 130, height: 130 }}
             />
             <Text style={styles.noMemoriesText}>
-              Every story starts with a moment.{"\n"}Upload your first memory now.
+              Every story starts with a moment.{"\n"}Upload your first memory
+              now.
             </Text>
           </View>
         }
       />
 
-      {/* FULLSCREEN ZOOM VIEWER */}
+      {/* IMAGE MODAL */}
       <Modal visible={modalVisible} transparent={true}>
         <ImageViewer
           imageUrls={imageViewerData}
