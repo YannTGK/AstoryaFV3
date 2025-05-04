@@ -20,6 +20,9 @@ import CloseRedIcon from "@/assets/images/svg-icons/close-red.svg";
 import api           from "@/services/api";
 import useAuthStore  from "@/lib/store/useAuthStore";   // ← jouw auth-store
 
+import { useLocalSearchParams } from "expo-router";
+
+
 /*──────────────── helper: debounce (300 ms) ────────────────*/
 const useDebounce = (value: string, delay = 300) => {
   const [debounced, setDebounced] = useState(value);
@@ -35,6 +38,8 @@ export default function AddMembersDedicate() {
   const { user }          = useAuthStore();          // { id, username, … }
   const myId              = user?.id ?? user?._id;   // beide varianten afgedekt
   const myUsername        = user?.username;
+
+  const { starId } = useLocalSearchParams<{ starId: string }>();
 
   /* ─── state ──────────────────────────────────────────────*/
   const [search, setSearch]     = useState("");
@@ -101,7 +106,13 @@ export default function AddMembersDedicate() {
           api.post(`/users/${u._id ?? u.id}/contacts`).catch((e) => e)
         )
       );
-      router.push("/dedicates/add-members-dedicate-status");
+
+      // ✅ Navigate back with starId parameter
+      router.replace({
+        pathname: "/(app)/dedicates/created-dedicates/add-people/add-people-dedicate",
+        params: { starId },
+      });
+
     } catch (err) {
       console.error("add-contacts error:", err);
     } finally {
@@ -248,14 +259,14 @@ export default function AddMembersDedicate() {
               Are you sure you want to add a{"\n"}new person to the star?
             </Text>
             <View style={styles.popupButtons}>
+              <TouchableOpacity style={styles.popupButton} onPress={no}>
+                <Text style={styles.popupButtonTextNo}>No</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.popupButton, styles.rightBorder]}
                 onPress={yes}
               >
                 <Text style={styles.popupButtonTextYes}>Yes</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.popupButton} onPress={no}>
-                <Text style={styles.popupButtonTextNo}>No</Text>
               </TouchableOpacity>
             </View>
           </View>
