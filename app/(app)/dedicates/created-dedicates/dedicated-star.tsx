@@ -26,6 +26,8 @@ export default function DedicatedStar() {
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
 
+
+  
   /* ophalen detail */
   useEffect(() => {
     const fetchStar = async () => {
@@ -45,6 +47,10 @@ export default function DedicatedStar() {
   const handleAddPeople  = () => router.push("/dedicates/created-dedicates/add-people/add-people-dedicate");
   const handleSeeMembers = () => router.push("/dedicates/no-members-dedicate");
 
+  const handlePhotosPress = () => {
+    router.push("/dedicates/created-dedicates/content-maps/photos");
+  }; // ← sluit deze functie netjes af!
+  
   if (loading || !star) {
     return (
       <View style={styles.centered}>
@@ -92,24 +98,37 @@ export default function DedicatedStar() {
 
       {/* media iconen */}
       <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.scrollRow}
-        contentContainerStyle={{ paddingHorizontal: 20 }}
-      >
-        {[
-          { label: "Photo's",      icon: <PhotosIcon     width={60} height={60} /> },
-          { label: "Video’s",      icon: <VideosIcon     width={60} height={60} /> },
-          { label: "Audio’s",      icon: <AudiosIcon     width={60} height={60} /> },
-          { label: "Documents",    icon: <DocumentsIcon  width={60} height={60} /> },
-          { label: "Book of Life", icon: <BookOfLifeIcon width={60} height={60} /> },
-        ].map((item, idx) => (
-          <View key={idx} style={styles.iconItem}>
-            {item.icon}
-            <Text style={styles.iconLabel}>{item.label}</Text>
-          </View>
-        ))}
-      </ScrollView>
+  horizontal
+  showsHorizontalScrollIndicator={false}
+  style={styles.scrollRow}
+  contentContainerStyle={{ paddingHorizontal: 20 }}
+>
+  {[
+    { label: "Photo's", icon: <PhotosIcon width={60} height={60} />, onPress: handlePhotosPress },
+    { label: "Video’s", icon: <VideosIcon width={60} height={60} /> },
+    { label: "Audio’s", icon: <AudiosIcon width={60} height={60} /> },
+    { label: "Documents", icon: <DocumentsIcon width={60} height={60} /> },
+    { label: "Book of Life", icon: <BookOfLifeIcon width={60} height={60} /> },
+  ].map((item, idx) => {
+    const content = (
+      <View style={styles.iconItem}>
+        {item.icon}
+        <Text style={styles.iconLabel}>{item.label}</Text>
+      </View>
+    );
+
+    return item.onPress ? (
+      <TouchableOpacity key={idx} onPress={item.onPress}>
+        {content}
+      </TouchableOpacity>
+    ) : (
+      <View key={idx}>
+        {content}
+      </View>
+    );
+  })}
+</ScrollView>
+
     </View>
   );
 }
