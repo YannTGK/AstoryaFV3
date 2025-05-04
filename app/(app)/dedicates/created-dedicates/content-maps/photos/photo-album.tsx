@@ -45,18 +45,24 @@ export default function PhotosPage() {
   placeholderTextColor="#999"
   style={styles.input}
 />
-      <View style={styles.modalButtons}>
-        <TouchableOpacity onPress={() => setShowModal(false)}>
-          <Text style={styles.modalCancel}>Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => {
-          // hier kun je een API call of album-actie toevoegen
-          console.log("Album aangemaakt:", albumName);
-          setShowModal(false);
-        }}>
-          <Text style={styles.modalCreate}>Create</Text>
-        </TouchableOpacity>
-      </View>
+<View style={styles.modalButtons}>
+  <TouchableOpacity onPress={() => setShowModal(false)}>
+    <Text style={styles.modalCancel}>Cancel</Text>
+  </TouchableOpacity>
+  <View style={styles.buttonDivider} />
+  <TouchableOpacity onPress={() => {
+  if (!albumName.trim()) return; // alleen doorgaan als er iets is ingevuld
+
+  // stel dat je albums opslaat of doorgeeft via params:
+  const encodedName = encodeURIComponent(albumName.trim());
+
+  setShowModal(false);
+  router.push({ pathname: "/dedicates/created-dedicates/content-maps/photos/created-album", params: { albumName: encodedName } });
+}}
+>
+    <Text style={styles.modalCreate}>Create</Text>
+  </TouchableOpacity>
+</View>
     </View>
   </View>
 )}
@@ -146,19 +152,30 @@ elevation: 10,
     flexDirection: "row",
     justifyContent: "space-between",
     width: "100%",
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
     marginTop: 10,
   },
   modalCancel: {
     color: "#007AFF",
     fontSize: 16,
+    fontFamily: "Alice-Regular",
+    padding: 16,
     flex: 1,
     textAlign: "center",
   },
+  
   modalCreate: {
     color: "#007AFF",
     fontSize: 16,
+    fontFamily: "Alice-Regular",
+    padding: 16,
     flex: 1,
     textAlign: "center",
-  }
-  
+  },
+  buttonDivider: {
+    width: 1,
+    height: "100%",
+    backgroundColor: "#eee",
+  },  
 });

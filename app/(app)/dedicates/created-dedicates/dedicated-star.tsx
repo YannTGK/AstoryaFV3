@@ -48,7 +48,7 @@ export default function DedicatedStar() {
   const handleSeeMembers = () => router.push("/dedicates/no-members-dedicate");
 
   const handlePhotosPress = () => {
-    router.push("/dedicates/created-dedicates/content-maps/photos");
+    router.push("/dedicates/created-dedicates/content-maps/photos/photo-album");
   }; // ← sluit deze functie netjes af!
   
   if (loading || !star) {
