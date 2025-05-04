@@ -51,7 +51,7 @@ export default function DedicatedStar() {
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname:"/dedicates/created-dedicates/add-people/add-people-dedicate", params:{ starId } })}>
             <AddPeopleIcon width={16} height={16}/><Text style={styles.menuText}>Add people</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname:"/dedicates/see-members-dedicate", params:{ starId } })}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push({ pathname:"/(app)/dedicates/created-dedicates/see-members/see-members-dedicate", params:{ starId } })}>
             <SeeMembersIcon width={16} height={16}/><Text style={styles.menuText}>See members</Text>
           </TouchableOpacity>
         </View>

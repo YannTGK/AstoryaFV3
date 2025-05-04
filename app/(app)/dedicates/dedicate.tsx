@@ -55,18 +55,6 @@ export default function DedicateScreen() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M15 18l-6-6 6-6"
-            stroke="#FEEDB6"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
-      </TouchableOpacity>
-
       <Text style={styles.title}>Dedicated stars</Text>
 
       <TouchableOpacity
