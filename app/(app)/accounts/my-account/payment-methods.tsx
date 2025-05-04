@@ -13,14 +13,31 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
+import { Image } from "react-native";
 
 const CARD_TYPES = [
-    { label: "Debit card", value: "debit", icon: "💳" },
-    { label: "Credit card", value: "credit", icon: "💳" },
-    { label: "Mastercard", value: "mastercard", icon: "🟠" },
-    { label: "Visa", value: "visa", icon: "🔵" },
-    { label: "American Express", value: "amex", icon: "🟦" },
-  ];
+  {
+    label: "Debit card",
+    value: "Debit",
+    icon: require("@/assets/images/payment-cards/maestro.png"),
+  },
+  {
+    label: "Mastercard",
+    value: "mastercard",
+    icon: require("@/assets/images/payment-cards/mastercard.png"),
+  },
+  {
+    label: "Visa",
+    value: "visa",
+    icon: require("@/assets/images/payment-cards/visa.png"),
+  },
+  {
+    label: "American Express",
+    value: "amex",
+    icon: require("@/assets/images/payment-cards/amex.png"),
+  },
+];
+
   
 
 export default function PaymentMethodsScreen() {
@@ -98,11 +115,13 @@ export default function PaymentMethodsScreen() {
     style={styles.dropdownItem}
     onPress={() => handleSelectCardType(type)}
   >
-    <Text style={styles.dropdownItemText}>
-      {type.icon} {type.label}
-    </Text>
+    <View style={styles.dropdownItemContent}>
+      <Image source={type.icon} style={styles.cardIcon} />
+      <Text style={styles.dropdownItemText}>{type.label}</Text>
+    </View>
   </TouchableOpacity>
 ))}
+
 
                 </View>
               )}
@@ -272,14 +291,24 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   dropdownItem: {
-    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
     paddingHorizontal: 12,
-    borderBottomColor: "#ddd",
-    borderBottomWidth: 1,
+  },
+  dropdownItemContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  cardIcon: {
+    width: 24,
+    height: 16,
+    resizeMode: "contain",
+    marginRight: 8,
   },
   dropdownItemText: {
+    fontFamily: "Alice-Regular",
     fontSize: 16,
     color: "#000",
-    fontFamily: "Alice-Regular",
   },
 });
