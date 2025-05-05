@@ -81,7 +81,7 @@ export default function AlbumPage() {
             </TouchableOpacity>
             <TouchableOpacity
   style={styles.menuItem}
-  onPress={() => router.push("/dedicates/created-dedicates/content-maps/photos/three-dots/see-members/SeeMembersPhoto")}
+  onPress={() => router.push("/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/see-members/SeeMembersPhoto")}
 >
   <Feather name="users" size={16} color="#11152A" />
   <Text style={styles.menuText}>See members</Text>

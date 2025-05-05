@@ -1,30 +1,25 @@
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { useState } from "react";
-import { LinearGradient } from "expo-linear-gradient";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
-import ArrowDropdown from "@/assets/images/svg-icons/arrow-dropdown.svg"; // ✅ correcte arrow
+import PlusIcon from "@/assets/images/svg-icons/plus3.svg";
 
-export default function AddSelectedPeopleDedicate() {
+const members = [
+  { name: "You" },
+  { name: "@Elisabeth_251" },
+  { name: "@AnnieJohn" },
+  { name: "@William_Rodri" },
+];
+
+export default function SeeMembersDedicate() {
   const router = useRouter();
 
-  const [status, setStatus] = useState<"Can view" | "Can edit" | "Admin">("Can view");
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-
-  const selectedPerson = "Annie";
-
-  const handleAddToStar = () => {
-    console.log(`Added ${selectedPerson} with status: ${status}`);
-    router.back();
-  };
-
-  const handleToggleDropdown = () => {
-    setDropdownOpen(!dropdownOpen);
-  };
-
-  const handleSelectStatus = (option: "Can view" | "Can edit" | "Admin") => {
-    setStatus(option);
-    setDropdownOpen(false);
+  const handleMemberPress = (memberName: string) => {
+    if (memberName === "You") {
+      router.push("/dedicates/you-members-status-dedicate-if-admin"); //you-members-status-dedicate-if-viewer   of  you-members-status-dedicate-if-editer
+    } else {
+      router.push("/dedicates/account-members-status-dedicate");
+    }
   };
 
   return (
@@ -39,49 +34,33 @@ export default function AddSelectedPeopleDedicate() {
       {/* Back button */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          <Path
+            d="M15 18l-6-6 6-6"
+            stroke="#FEEDB6"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </Svg>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Add people to star</Text>
+      {/* Titel */}
+      <Text style={styles.title}>Members</Text>
 
-      {/* Geselecteerde persoon */}
-      <View style={styles.personRow}>
-        <View style={styles.avatarPlaceholder} />
-        <Text style={styles.personName}>@{selectedPerson}</Text>
-      </View>
-
-      <Text style={styles.statusLabel}>Status</Text>
-
-      {/* Dropdown */}
-      <TouchableOpacity style={styles.dropdownButton} onPress={handleToggleDropdown}>
-        <Text style={styles.dropdownButtonText}>{status}</Text>
-        <ArrowDropdown width={16} height={16} />
+      {/* Plus knop */}
+      <TouchableOpacity style={styles.plusBtn} onPress={() => router.push("/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/add-people/AddMorePeople")}>
+        <PlusIcon width={36} height={36} />
       </TouchableOpacity>
 
-      {/* Dropdown opties */}
-      {dropdownOpen && (
-        <View style={styles.dropdownOptions}>
-          {["Can view", "Can edit", "Admin"].map((option) => (
-            <TouchableOpacity
-              key={option}
-              style={[styles.optionItem, status === option && styles.selectedOption]}
-              onPress={() => handleSelectStatus(option as any)}
-            >
-              <Text style={styles.optionText}>
-                {option}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
-      {/* Add to star button */}
-      <View style={styles.fixedButtonWrapper}>
-        <TouchableOpacity style={styles.button} onPress={handleAddToStar}>
-          <Text style={styles.buttonText}>Add to star</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Members lijst */}
+      <ScrollView style={styles.listWrapper} contentContainerStyle={{ paddingBottom: 100 }}>
+        {members.map((member, idx) => (
+          <TouchableOpacity key={idx} style={styles.memberItem} onPress={() => handleMemberPress(member.name)}>
+            <View style={styles.avatar} />
+            <Text style={styles.memberName}>{member.name}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
     </View>
   );
 }
@@ -100,87 +79,37 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 50,
   },
-  personRow: {
+  plusBtn: {
+    position: "absolute",
+    top: 85,
+    right: 24,
+    zIndex: 20,
+  },
+  listWrapper: {
+    marginTop: 60,
+    paddingHorizontal: 16,
+  },
+  memberItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 60,
-    marginHorizontal: 24,
+    backgroundColor: "#ffffff",
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
-  avatarPlaceholder: {
+  avatar: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#5B5B5B",
-    marginRight: 10,
+    backgroundColor: "#ffffff",
+    marginRight: 12,
+    borderWidth: 0.5,
+    borderColor: "#999",
   },
-  personName: {
-    color: "#fff",
+  memberName: {
     fontFamily: "Alice-Regular",
     fontSize: 16,
-  },
-  statusLabel: {
-    marginTop: 30,
-    marginHorizontal: 24,
-    fontFamily: "Alice-Regular",
-    color: "#fff",
-    fontSize: 16,
-  },
-  dropdownButton: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    marginTop: 10,
-    marginHorizontal: 24,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  dropdownButtonText: {
-    fontFamily: "Alice-Regular",
-    fontSize: 14,
     color: "#11152A",
-  },
-  dropdownOptions: {
-    marginTop: 10,
-    marginHorizontal: 24,
-  },
-  optionItem: {
-    backgroundColor: "#ffffff22",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginBottom: 10,
-    borderRadius: 10,
-  },
-  selectedOption: {
-    borderWidth: 1.5,
-    borderColor: "#FEEDB6",
-  },
-  optionText: {
-    fontFamily: "Alice-Regular",
-    fontSize: 14,
-    color: "#fff", // altijd wit!
-  },
-  fixedButtonWrapper: {
-    position: "absolute",
-    bottom: 100,
-    left: 20,
-    right: 20,
-  },
-  button: {
-    backgroundColor: "#FEEDB6",
-    paddingVertical: 14,
-    borderRadius: 12,
-    shadowColor: "#FEEDB6",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.8,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  buttonText: {
-    color: "#11152A",
-    fontSize: 16,
-    fontFamily: "Alice-Regular",
-    textAlign: "center",
   },
 });

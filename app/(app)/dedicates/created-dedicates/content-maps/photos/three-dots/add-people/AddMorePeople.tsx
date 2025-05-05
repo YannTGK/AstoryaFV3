@@ -48,7 +48,7 @@ export default function AddMembersDedicate() {
 
   const invite = () =>
     router.push(
-      "/dedicates/created-dedicates/add-people/send-invite/send-invitation-dedicate"
+      "/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/add-people/send-invitation-photos"
     );
 
   useEffect(() => {
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   },
   invitationBtn: {
     position: "absolute",
-    top: 95,
+    top: 105,
     right: 20,
     backgroundColor: "#FEEDB6",
     paddingHorizontal: 14,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   invitationText: {
     color: "#11152A",
     fontFamily: "Alice-Regular",
-    fontSize: 13,
+    fontSize: 14,
   },
   title: {
     fontFamily: "Alice-Regular",
@@ -300,21 +300,22 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
   subtitle: {
-    marginTop: 75,
-    marginHorizontal: 24,
+    marginTop: 85,
+    marginHorizontal: 16,
     fontFamily: "Alice-Regular",
-    fontSize: 14,
+    fontSize: 16,
     color: "#fff",
-    textAlign: "center",
+    textAlign: "left",
+    lineHeight: 24,
   },
   searchWrapper: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
     borderRadius: 30,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     marginTop: 20,
-    marginHorizontal: 24,
+    marginHorizontal: 16,
     height: 44,
   },
   searchIcon: {
@@ -323,7 +324,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontFamily: "Alice-Regular",
-    fontSize: 14,
+    fontSize: 16,
     color: "#11152A",
     marginTop: 2,
   },
@@ -335,8 +336,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#ffffff22",
-    borderRadius: 10,
-    paddingVertical: 14,
+    borderRadius: 8,
+    paddingVertical: 12,
     paddingHorizontal: 12,
     marginRight: 10,
   },
@@ -350,29 +351,39 @@ const styles = StyleSheet.create({
   selectedUsername: {
     color: "#fff",
     fontFamily: "Alice-Regular",
-    fontSize: 14,
+    fontSize: 16,
     marginRight: 12,
   },
   removeBtn: {
     width: 18,
     height: 18,
-    borderRadius: 9,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 2,
   },
-  resultsScroll: { marginTop: 20, marginHorizontal: 24 },
+  resultsScroll: { 
+    marginTop: 20, 
+    marginHorizontal: 24 
+  },
   resultItem: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#ffffff22",
-    borderRadius: 10,
+    borderRadius: 8,
     paddingVertical: 14,
     paddingHorizontal: 20,
     marginBottom: 12,
   },
-  resultItemSelected: { borderColor: "#FEEDB6", borderWidth: 1.5 },
-  resultText: { fontFamily: "Alice-Regular", fontSize: 16, color: "#fff" },
+  resultItemSelected: { 
+    borderColor: "#FEEDB6", 
+    borderWidth: 1.5 
+  },
+  resultText: { 
+    fontFamily: "Alice-Regular", 
+    fontSize: 16, 
+    color: "#fff" 
+  },
   fixedButtonWrapper: {
     position: "absolute",
     bottom: 100,
@@ -424,8 +435,15 @@ const styles = StyleSheet.create({
     borderTopColor: "#eee",
     width: "100%",
   },
-  popupButton: { flex: 1, paddingVertical: 12, alignItems: "center" },
-  rightBorder: { borderRightWidth: 1, borderRightColor: "#eee" },
+  popupButton: { 
+    flex: 1, 
+    paddingVertical: 12, 
+    alignItems: "center" 
+  },
+  rightBorder: { 
+    borderRightWidth: 1, 
+    borderRightColor: "#eee" 
+  },
   popupButtonTextYes: {
     fontFamily: "Alice-Regular",
     fontSize: 16,
@@ -465,5 +483,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 22,
   },
-  
 });
