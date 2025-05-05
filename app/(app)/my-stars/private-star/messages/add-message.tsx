@@ -93,7 +93,10 @@ export default function AddMessage() {
 
         {menuOpen && (
           <View style={styles.menu}>
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => router.push("/(app)/my-stars/private-star/messages/delete-message")}
+              >
               <DeleteIcon width={16} height={16} />
               <Text style={styles.menuText}>Delete</Text>
             </TouchableOpacity>
