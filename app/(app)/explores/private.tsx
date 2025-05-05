@@ -12,9 +12,9 @@ import { Raycaster, Vector2 } from 'three';
 import JoystickHandler from '@/components/joystick/JoystickHandler';
 import { setupControls } from '@/components/three/setupControls';
 import StarsManager from '@/components/stars/StarManager';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { useLayoutStore } from '@/lib/store/layoutStore';
 
 import PhotosIcon from '@/assets/images/svg-icons/photos.svg';
