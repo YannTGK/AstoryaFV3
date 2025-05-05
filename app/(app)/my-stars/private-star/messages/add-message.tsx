@@ -148,7 +148,7 @@ export default function AddMessage() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.menuItem}
-                onPress={() => router.push("/(app)/my-stars/private-star/messages/download-message")}
+                onPress={() => router.push("/(app)/my-stars/private-star/messages/edit-message")}
               >
                 <EditIcon width={16} height={16} />
                 <Text style={styles.menuText}>Edit</Text>
