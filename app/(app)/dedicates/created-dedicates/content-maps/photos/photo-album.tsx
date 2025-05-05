@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import { TextInput } from "react-native";
+import PlusIcon from "@/assets/images/svg-icons/plus.svg";
 
 export default function PhotosPage() {
   const router = useRouter();
@@ -29,9 +30,14 @@ export default function PhotosPage() {
         <Text style={styles.noAlbumText}>No photo album found</Text>
       </View>
 
-      <TouchableOpacity style={styles.addButton} onPress={() => setShowModal(true)}>
-        <Text style={styles.plus}>＋</Text>
-      </TouchableOpacity>
+      {/* Plus-knop */}
+      <View style={styles.plusWrapper}>
+  <TouchableOpacity onPress={() => setShowModal(true)}>
+    <PlusIcon width={50} height={50} />
+  </TouchableOpacity>
+</View>
+
+
 
       {showModal && (
   <View style={styles.modalOverlay}>
@@ -94,9 +100,13 @@ const styles = StyleSheet.create({
         alignItems: "center",
         zIndex: 10, // 👈 toevoegen
       },
-      
-  plus: { fontSize: 48, color: "#11152A" },
-
+      plusWrapper: {
+        position: "absolute",
+        bottom: 100,
+        width: "100%",
+        alignItems: "center",
+        zIndex: 10,
+      },
   modalOverlay: {
     position: "absolute",
     top: 0, left: 0, right: 0, bottom: 0,

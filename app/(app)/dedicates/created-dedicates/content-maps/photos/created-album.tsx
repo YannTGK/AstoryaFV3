@@ -83,17 +83,10 @@ export default function AlbumPage() {
               <Feather name="users" size={16} color="#11152A" />
               <Text style={styles.menuText}>See members</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem}>
-              <Feather name="upload" size={16} color="#11152A" />
-              <Text style={styles.menuText}>Uploaden</Text>
-            </TouchableOpacity>
+            
             <TouchableOpacity style={styles.menuItem}>
               <Feather name="edit" size={16} color="#11152A" />
               <Text style={styles.menuText}>Edit</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem}>
-              <Feather name="download" size={16} color="#11152A" />
-              <Text style={styles.menuText}>Download</Text>
             </TouchableOpacity>
           </View>
         )}

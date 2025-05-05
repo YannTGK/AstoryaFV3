@@ -15,6 +15,8 @@ const mockUsers = ["Annie", "Mary", "Louis", "Noah", "James"];
 export default function AddPeoplePage() {
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>([]);
+  const [showPopup, setShowPopup] = useState(false);
+
 
   const toggleSelect = (name: string) => {
     setSelected((prev) =>
@@ -65,12 +67,27 @@ export default function AddPeoplePage() {
         }}
       />
 
-      <TouchableOpacity
-        style={[styles.submitBtn, selected.length === 0 && { opacity: 0.4 }]}
-        disabled={selected.length === 0}
-      >
-        <Text style={styles.submitText}>Add to photo’s</Text>
-      </TouchableOpacity>
+<TouchableOpacity
+  style={[styles.submitBtn, selected.length === 0 && { opacity: 0.4 }]}
+  disabled={selected.length === 0}
+  onPress={() => {
+    setShowPopup(true);
+    setTimeout(() => {
+      setShowPopup(false);
+      router.back(); // of gebruik router.push() als je een specifieke pagina wil
+    }, 12000); // 12 seconden
+  }}
+>
+  <Text style={styles.submitText}>Add to photo’s</Text>
+</TouchableOpacity>
+{showPopup && (
+  <View style={styles.popup}>
+    <Text style={styles.popupText}>
+      New people are added to the album. Click on the three dots to see the new members.
+    </Text>
+  </View>
+)}
+
     </View>
   );
 }
@@ -146,4 +163,28 @@ const styles = StyleSheet.create({
     fontSize: 18,
     textAlign: "center",
   },
+  popup: {
+    position: "absolute",
+    bottom: 410,
+    left: 40,
+    right: 40,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 10,
+    alignItems: "center",
+    zIndex: 100,
+  },
+  popupText: {
+    color: "#11152A",
+    fontFamily: "Alice-Regular",
+    fontSize: 18,
+    textAlign: "center",
+    lineHeight: 24,
+  },
+  
 });
