@@ -58,88 +58,99 @@ const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
 
       {/* HEADER */}
       <View style={styles.headerContainer}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Svg width={24} height={24}>
-              <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
-            </Svg>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Photo’s</Text>
-        </View>
-        <View style={styles.albumTitleRow}>
-  <Text style={styles.albumTitle}>{albumName || "Album"}</Text>
+  <View style={styles.headerRow}>
+    <TouchableOpacity onPress={() => router.back()}>
+      <Svg width={24} height={24}>
+        <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
+      </Svg>
+    </TouchableOpacity>
+    <Text style={styles.headerTitle}>Photo’s</Text>
+  </View>
+
+  {/* Titel + Select All */}
+  <View style={styles.albumTitleRow}>
+  <Text style={styles.albumTitle}>{albumName || "Our memories"}</Text>
   {isDeleteMode && (
     <TouchableOpacity
+      style={styles.selectAllBtn}
       onPress={() => {
         if (selectedPhotos.length === images.length) {
-          setSelectedPhotos([]); // deselect all
+          setSelectedPhotos([]);
         } else {
-          setSelectedPhotos(images); // select all
+          setSelectedPhotos(images);
         }
       }}
     >
+      <View
+        style={[
+          styles.selectAllCircle,
+          selectedPhotos.length === images.length &&
+            styles.selectAllCircleActive,
+        ]}
+      />
       <Text style={styles.selectAllText}>All</Text>
     </TouchableOpacity>
   )}
 </View>
 
-        <TouchableOpacity
-          style={styles.menuDots}
-          onPress={() => setMenuOpen(!menuOpen)}
-        >
-          <Text style={styles.menuDotsText}>⋮</Text>
-        </TouchableOpacity>
 
-        {menuOpen && (
-          <View style={styles.menuBox}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() =>
-                router.push(
-                  "/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/add-people/AddPeoplePage"
-                )
-              }
-            >
-              <Feather name="user-plus" size={16} color="#11152A" />
-              <Text style={styles.menuText}>Add people</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() =>
-                router.push(
-                  "/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/see-members/SeeMembersPhoto"
-                )
-              }
-            >
-              <Feather name="users" size={16} color="#11152A" />
-              <Text style={styles.menuText}>See members</Text>
-            </TouchableOpacity>
+  {/* Menu (enkel als je niet in deleteMode bent) */}
+  {!isDeleteMode && (
+    <TouchableOpacity
+      style={styles.menuDots}
+      onPress={() => setMenuOpen(!menuOpen)}
+    >
+      <Text style={styles.menuDotsText}>⋮</Text>
+    </TouchableOpacity>
+  )}
 
-            <TouchableOpacity
-  style={styles.menuItem}
-  onPress={() => {
-    setMenuOpen(false);
-    setIsDeleteMode(true);
-    setSelectedPhotos([]);
-  }}
->
-  <Feather name="trash-2" size={16} color="#11152A" />
-  <Text style={styles.menuText}>Delete</Text>
-</TouchableOpacity>
+  {menuOpen && (
+    <View style={styles.menuBox}>
+      <TouchableOpacity
+        style={styles.menuItem}
+        onPress={() =>
+          router.push(
+            "/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/add-people/AddPeoplePage"
+          )
+        }
+      >
+        <Feather name="user-plus" size={16} color="#11152A" />
+        <Text style={styles.menuText}>Add people</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.menuItem}
+        onPress={() =>
+          router.push(
+            "/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/see-members/SeeMembersPhoto"
+          )
+        }
+      >
+        <Feather name="users" size={16} color="#11152A" />
+        <Text style={styles.menuText}>See members</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.menuItem}
+        onPress={() => {
+          setMenuOpen(false);
+          setIsDeleteMode(true);
+          setSelectedPhotos([]);
+        }}
+      >
+        <Feather name="trash-2" size={16} color="#11152A" />
+        <Text style={styles.menuText}>Delete</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.menuItem}>
+        <Feather name="copy" size={16} color="#11152A" />
+        <Text style={styles.menuText}>Copy to album</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.menuItem}>
+        <Feather name="folder-plus" size={16} color="#11152A" />
+        <Text style={styles.menuText}>Move to album</Text>
+      </TouchableOpacity>
+    </View>
+  )}
+</View>
 
-
-            <TouchableOpacity style={styles.menuItem}>
-              <Feather name="copy" size={16} color="#11152A" />
-              <Text style={styles.menuText}>Copy to album</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.menuItem}>
-              <Feather name="folder-plus" size={16} color="#11152A" />
-              <Text style={styles.menuText}>Move to album</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
 
       {/* GRID */}
       <FlatList
@@ -214,21 +225,15 @@ const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
 
 {isDeleteMode && (
   <View style={styles.deleteBar}>
-    <TouchableOpacity
-      style={styles.deleteBarBtn}
-      onPress={() => {
-        setImages((prev) => prev.filter((img) => !selectedPhotos.includes(img)));
-        setSelectedPhotos([]);
-        setIsDeleteMode(false);
-      }}
-    >
-      <Feather name="trash-2" size={18} color="#fff" />
+    <View style={styles.deleteBarBtn}>
+      <Feather name="trash" size={20} color="#fff" />
       <Text style={styles.deleteBarText}>
-      {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? "’s" : ""} selected
+        {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? "’s" : ""} selected
       </Text>
-    </TouchableOpacity>
+    </View>
   </View>
 )}
+
   
       {/* IMAGE MODAL */}
       <Modal visible={modalVisible} transparent={true}>
@@ -248,9 +253,12 @@ const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
       </Modal>
 
       {/* ADD BUTTON */}
-      <TouchableOpacity style={styles.addButton} onPress={pickImage}>
-        <Text style={styles.plus}>＋</Text>
-      </TouchableOpacity>
+      {!isDeleteMode && (
+  <TouchableOpacity style={styles.addButton} onPress={pickImage}>
+    <Text style={styles.plus}>＋</Text>
+  </TouchableOpacity>
+)}
+
     </View>
   );
 }
@@ -293,18 +301,35 @@ const styles = StyleSheet.create({
   },
   albumTitleRow: {
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
     marginTop: 32,
-    marginBottom: 4,
+    marginHorizontal: 20,
+    position: "relative",
   },
+  
+  selectAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    position: "absolute",
+    right: 20,
+  },  
+  selectAllCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: "#fff",
+    backgroundColor: "transparent",
+  },
+  selectAllCircleActive: {
+    backgroundColor: "#FEEDB6",
+  },  
   selectAllText: {
     fontFamily: "Alice-Regular",
     color: "#fff",
     fontSize: 14,
-    marginLeft: 16,
+    marginLeft: 10,
   },
-  
   menuBox: {
     position: "absolute",
     top: 105,
@@ -332,7 +357,7 @@ const styles = StyleSheet.create({
     color: "#11152A",
   },
   gridContainer: {
-    paddingBottom: 140,
+    paddingBottom: 180,
     paddingTop: 32,
   },
   gridImage: {
@@ -387,13 +412,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: "#11152A",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     borderTopWidth: 1,
     borderTopColor: "#2D2D2D",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 999,
+    elevation: 20,
   },
   deleteBarBtn: {
     flexDirection: "row",
@@ -404,7 +431,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontFamily: "Alice-Regular",
     fontSize: 14,
-    marginLeft: 6,
-  }, 
+  },
+  
   
 });
