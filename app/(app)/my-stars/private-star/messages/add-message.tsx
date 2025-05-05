@@ -1,3 +1,5 @@
+// add-message.tsx
+
 import { useEffect, useState } from "react";
 import {
   View,
@@ -22,6 +24,7 @@ import CloseIcon from "@/assets/images/svg-icons/close-icon.svg";
 import AddPeopleIcon from "@/assets/images/svg-icons/add-people.svg";
 import SeeMembersIcon from "@/assets/images/svg-icons/see-members.svg";
 
+import StarLoader from "@/components/loaders/StarLoader";
 import { useMessageStore } from "@/lib/store/useMessageStore";
 
 const { width } = Dimensions.get("window");
@@ -35,6 +38,9 @@ export default function AddMessage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [popupMenuOpen, setPopupMenuOpen] = useState(false);
   const [activeMessage, setActiveMessage] = useState<any | null>(null);
+  const [showDownloadPopup, setShowDownloadPopup] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     if (
@@ -44,21 +50,36 @@ export default function AddMessage() {
       typeof to === "string" &&
       typeof from === "string" &&
       typeof message === "string" &&
-      !messages.some(
-        (msg) => msg.to === to && msg.from === from && msg.message === message
-      )
+      !messages.some((msg) => msg.to === to && msg.from === from && msg.message === message)
     ) {
-      addMessage({
-        id: Date.now(),
-        to,
-        from,
-        message,
-      });
+      addMessage({ id: Date.now(), to, from, message });
     }
   }, [to, from, message]);
 
   const addNewMessage = () => {
     router.push("/(app)/my-stars/private-star/messages/write-message");
+  };
+
+  const handleDownloadPress = () => {
+    setShowDownloadPopup(true);
+    setMenuOpen(false);
+  };
+
+  const startDownload = () => {
+    setShowDownloadPopup(false);
+    setIsDownloading(true);
+    setProgress(0);
+
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setTimeout(() => setIsDownloading(false), 500);
+          return 100;
+        }
+        return prev + 5;
+      });
+    }, 200);
   };
 
   const renderMessageCard = ({ item }: any) => (
@@ -81,7 +102,6 @@ export default function AddMessage() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Back button */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
           <Path
@@ -94,7 +114,6 @@ export default function AddMessage() {
         </Svg>
       </TouchableOpacity>
 
-      {/* Main 3-dots menu */}
       <View style={styles.moreWrapper}>
         <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)}>
           <MoreIcon width={24} height={24} />
@@ -106,7 +125,7 @@ export default function AddMessage() {
               <DeleteIcon width={16} height={16} />
               <Text style={styles.menuText}>Delete</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem}>
+            <TouchableOpacity style={styles.menuItem} onPress={handleDownloadPress}>
               <DownloadIcon width={16} height={16} />
               <Text style={styles.menuText}>Download</Text>
             </TouchableOpacity>
@@ -130,11 +149,9 @@ export default function AddMessage() {
         </TouchableOpacity>
       </View>
 
-      {/* Modal met extra 3-dots */}
+      {/* Brief openen */}
       <Modal visible={!!activeMessage} transparent animationType="fade">
         <View style={styles.overlay}>
-
-          {/* Extra menu boven de witte kaart */}
           <TouchableOpacity
             style={styles.modalMoreWrapper}
             onPress={() => setPopupMenuOpen(!popupMenuOpen)}
@@ -169,29 +186,47 @@ export default function AddMessage() {
             >
               <CloseIcon width={20} height={20} />
             </TouchableOpacity>
-
             <Text style={styles.popupBody}>{activeMessage?.message}</Text>
           </View>
         </View>
       </Modal>
+
+      {/* Download bevestiging */}
+      <Modal visible={showDownloadPopup} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalText}>
+              Are you sure you want to download the letter?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.rightBorder]}
+                onPress={() => setShowDownloadPopup(false)}
+              >
+                <Text style={styles.modalButtonTextNo}>No</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalButton} onPress={startDownload}>
+                <Text style={styles.modalButtonTextYes}>Yes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Loader zoals in documents.tsx */}
+      {isDownloading && (
+        <View style={styles.loaderOverlay}>
+          <StarLoader progress={progress} />
+          <Text style={styles.loaderText}>Download...</Text>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  backBtn: {
-    position: "absolute",
-    top: 50,
-    left: 20,
-    zIndex: 10,
-  },
-  moreWrapper: {
-    position: "absolute",
-    top: 55,
-    right: 20,
-    zIndex: 20,
-    alignItems: "flex-end",
-  },
+  backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
+  moreWrapper: { position: "absolute", top: 55, right: 20, zIndex: 20, alignItems: "flex-end" },
   menu: {
     marginTop: 10,
     backgroundColor: "#fff",
@@ -218,22 +253,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  modalMoreWrapper: {
-    position: "absolute",
-    top: 55,
-    right: 20,
-    zIndex: 24,
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  menuText: {
-    fontSize: 13,
-    fontFamily: "Alice-Regular",
-    color: "#11152A",
-  },
+  modalMoreWrapper: { position: "absolute", top: 55, right: 20, zIndex: 24 },
+  menuItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+  menuText: { fontSize: 13, fontFamily: "Alice-Regular", color: "#11152A" },
   title: {
     fontSize: 20,
     fontFamily: "Alice-Regular",
@@ -242,23 +264,10 @@ const styles = StyleSheet.create({
     marginTop: 50,
     marginBottom: 20,
   },
-  list: {
-    paddingHorizontal: 16,
-    paddingBottom: 140,
-  },
-  cardWrapper: {
-    width: CARD_WIDTH,
-    margin: 8,
-    alignItems: "center",
-  },
-  cardContent: {
-    position: "relative",
-    alignItems: "center",
-    width: "100%",
-  },
-  letterSvg: {
-    zIndex: 1,
-  },
+  list: { paddingHorizontal: 16, paddingBottom: 140 },
+  cardWrapper: { width: CARD_WIDTH, margin: 8, alignItems: "center" },
+  cardContent: { position: "relative", alignItems: "center", width: "100%" },
+  letterSvg: { zIndex: 1 },
   forText: {
     fontFamily: "Alice-Regular",
     fontSize: 13,
@@ -301,4 +310,67 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginTop: 30,
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "#00000088",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalBox: {
+    width: 280,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    alignItems: "center",
+  },
+  modalText: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+    color: "#11152A",
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    width: "100%",
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  rightBorder: {
+    borderRightWidth: 1,
+    borderRightColor: "#eee",
+  },
+  modalButtonTextYes: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+    color: "#0A84FF",
+  },
+  modalButtonTextNo: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+    color: "#0A84FF",
+  },
+  loaderOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 30,
+  },
+  loaderText: {
+    fontFamily: "Alice-Regular",
+    fontSize: 18,
+    color: "#FEEDB6",
+    marginTop: 12,
+  },  
 });
