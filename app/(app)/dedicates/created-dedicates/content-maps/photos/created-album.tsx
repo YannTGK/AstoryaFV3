@@ -74,7 +74,7 @@ export default function AlbumPage() {
           <View style={styles.menuBox}>
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => router.push("/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/add-people/AddPeoplePage")}
+              onPress={() => router.push("/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/add-people/add-people-page")}
             >
               <Feather name="user-plus" size={16} color="#11152A" />
               <Text style={styles.menuText}>Add people</Text>

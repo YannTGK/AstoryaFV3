@@ -41,7 +41,7 @@ export default function AddPeoplePage() {
 
       <TouchableOpacity
   style={styles.addNewBtn}
-  onPress={() => router.push("/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/add-people/AddMorePeople")}
+  onPress={() => router.push("/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/add-people/add-more-people")}
 >
   <Text style={styles.plus}>＋</Text>
 </TouchableOpacity>
