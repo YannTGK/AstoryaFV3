@@ -39,9 +39,12 @@ export default function AddPeoplePage() {
 
       <Text style={styles.title}>Add people to album</Text>
 
-      <TouchableOpacity style={styles.addNewBtn}>
-        <Text style={styles.plus}>＋</Text>
-      </TouchableOpacity>
+      <TouchableOpacity
+  style={styles.addNewBtn}
+  onPress={() => router.push("/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/add-people/AddMorePeople")}
+>
+  <Text style={styles.plus}>＋</Text>
+</TouchableOpacity>
 
       <Text style={styles.subtitle}>
         Select contacts to add to the album. Tap the plus icon to add someone new.
