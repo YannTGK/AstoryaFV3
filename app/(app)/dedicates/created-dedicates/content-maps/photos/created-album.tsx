@@ -23,8 +23,13 @@ export default function AlbumPage() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
+
+
   const pickImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
       alert("Permission to access media library is required!");
       return;
@@ -61,7 +66,22 @@ export default function AlbumPage() {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Photo’s</Text>
         </View>
-        <Text style={styles.albumTitle}>{albumName || "Album"}</Text>
+        <View style={styles.albumTitleRow}>
+  <Text style={styles.albumTitle}>{albumName || "Album"}</Text>
+  {isDeleteMode && (
+    <TouchableOpacity
+      onPress={() => {
+        if (selectedPhotos.length === images.length) {
+          setSelectedPhotos([]); // deselect all
+        } else {
+          setSelectedPhotos(images); // select all
+        }
+      }}
+    >
+      <Text style={styles.selectAllText}>All</Text>
+    </TouchableOpacity>
+  )}
+</View>
 
         <TouchableOpacity
           style={styles.menuDots}
@@ -74,22 +94,48 @@ export default function AlbumPage() {
           <View style={styles.menuBox}>
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => router.push("/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/add-people/AddPeoplePage")}
+              onPress={() =>
+                router.push(
+                  "/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/add-people/AddPeoplePage"
+                )
+              }
             >
               <Feather name="user-plus" size={16} color="#11152A" />
               <Text style={styles.menuText}>Add people</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() =>
+                router.push(
+                  "/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/see-members/SeeMembersPhoto"
+                )
+              }
+            >
+              <Feather name="users" size={16} color="#11152A" />
+              <Text style={styles.menuText}>See members</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
   style={styles.menuItem}
-  onPress={() => router.push("/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/see-members/SeeMembersPhoto")}
+  onPress={() => {
+    setMenuOpen(false);
+    setIsDeleteMode(true);
+    setSelectedPhotos([]);
+  }}
 >
-  <Feather name="users" size={16} color="#11152A" />
-  <Text style={styles.menuText}>See members</Text>
+  <Feather name="trash-2" size={16} color="#11152A" />
+  <Text style={styles.menuText}>Delete</Text>
 </TouchableOpacity>
 
+
             <TouchableOpacity style={styles.menuItem}>
-              <Feather name="edit" size={16} color="#11152A" />
-              <Text style={styles.menuText}>Edit</Text>
+              <Feather name="copy" size={16} color="#11152A" />
+              <Text style={styles.menuText}>Copy to album</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.menuItem}>
+              <Feather name="folder-plus" size={16} color="#11152A" />
+              <Text style={styles.menuText}>Move to album</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -103,26 +149,55 @@ export default function AlbumPage() {
         contentContainerStyle={styles.gridContainer}
         renderItem={({ item, index }) => {
           const isFirstInRow = index % 3 === 0;
+          const isSelected = selectedPhotos.includes(item);
+        
           return (
             <TouchableOpacity
               onPress={() => {
-                setSelectedIndex(index);
-                setModalVisible(true);
+                if (isDeleteMode) {
+                  setSelectedPhotos((prev) =>
+                    prev.includes(item)
+                      ? prev.filter((uri) => uri !== item)
+                      : [...prev, item]
+                  );
+                } else {
+                  setSelectedIndex(index);
+                  setModalVisible(true);
+                }
               }}
             >
-              <Image
-                source={{ uri: item }}
-                style={[
-                  styles.gridImage,
-                  {
-                    marginLeft: isFirstInRow ? 16 : 8,
-                    marginRight: 8,
-                  },
-                ]}
-              />
-            </TouchableOpacity>
-          );
+              <View style={{ position: "relative" }}>
+                <Image
+                  source={{ uri: item }}
+                  style={[
+                    styles.gridImage,
+                    {
+                      marginLeft: isFirstInRow ? 16 : 8,
+                      marginRight: 8,
+                      opacity: isDeleteMode && !isSelected ? 0.6 : 1,
+                    },
+                  ]}
+                />
+                {isDeleteMode && (
+          <View
+            style={{
+              position: "absolute",
+              top: 6,
+              right: 12,
+              width: 18,
+              height: 18,
+              borderRadius: 9,
+              borderWidth: 2,
+              borderColor: "#fff",
+              backgroundColor: isSelected ? "#FEEDB6" : "transparent",
+            }}
+          />
+        )}
+                </View>
+              </TouchableOpacity>
+            );
         }}
+        
         ListEmptyComponent={
           <View style={styles.emptyStateWrapper}>
             <Image
@@ -137,6 +212,24 @@ export default function AlbumPage() {
         }
       />
 
+{isDeleteMode && (
+  <View style={styles.deleteBar}>
+    <TouchableOpacity
+      style={styles.deleteBarBtn}
+      onPress={() => {
+        setImages((prev) => prev.filter((img) => !selectedPhotos.includes(img)));
+        setSelectedPhotos([]);
+        setIsDeleteMode(false);
+      }}
+    >
+      <Feather name="trash-2" size={18} color="#fff" />
+      <Text style={styles.deleteBarText}>
+      {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? "’s" : ""} selected
+      </Text>
+    </TouchableOpacity>
+  </View>
+)}
+  
       {/* IMAGE MODAL */}
       <Modal visible={modalVisible} transparent={true}>
         <ImageViewer
@@ -198,6 +291,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 32,
   },
+  albumTitleRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 32,
+    marginBottom: 4,
+  },
+  selectAllText: {
+    fontFamily: "Alice-Regular",
+    color: "#fff",
+    fontSize: 14,
+    marginLeft: 16,
+  },
+  
   menuBox: {
     position: "absolute",
     top: 105,
@@ -274,4 +381,30 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 32,
   },
+  deleteBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#11152A",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderTopWidth: 1,
+    borderTopColor: "#2D2D2D",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteBarBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  deleteBarText: {
+    color: "#fff",
+    fontFamily: "Alice-Regular",
+    fontSize: 14,
+    marginLeft: 6,
+  }, 
+  
 });
