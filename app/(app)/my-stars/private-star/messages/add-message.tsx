@@ -19,6 +19,8 @@ import DeleteIcon from "@/assets/images/svg-icons/delete.svg";
 import DownloadIcon from "@/assets/images/svg-icons/download.svg";
 import MoreIcon from "@/assets/images/svg-icons/more.svg";
 import CloseIcon from "@/assets/images/svg-icons/close-icon.svg";
+import AddPeopleIcon from "@/assets/images/svg-icons/add-people.svg";
+import SeeMembersIcon from "@/assets/images/svg-icons/see-members.svg";
 
 import { useMessageStore } from "@/lib/store/useMessageStore";
 
@@ -31,6 +33,7 @@ export default function AddMessage() {
   const { messages, addMessage } = useMessageStore();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [popupMenuOpen, setPopupMenuOpen] = useState(false);
   const [activeMessage, setActiveMessage] = useState<any | null>(null);
 
   useEffect(() => {
@@ -42,10 +45,7 @@ export default function AddMessage() {
       typeof from === "string" &&
       typeof message === "string" &&
       !messages.some(
-        (msg) =>
-          msg.to === to &&
-          msg.from === from &&
-          msg.message === message
+        (msg) => msg.to === to && msg.from === from && msg.message === message
       )
     ) {
       addMessage({
@@ -81,6 +81,7 @@ export default function AddMessage() {
         end={{ x: 0.5, y: 1 }}
       />
 
+      {/* Back button */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
           <Path
@@ -93,6 +94,7 @@ export default function AddMessage() {
         </Svg>
       </TouchableOpacity>
 
+      {/* Main 3-dots menu */}
       <View style={styles.moreWrapper}>
         <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)}>
           <MoreIcon width={24} height={24} />
@@ -100,10 +102,6 @@ export default function AddMessage() {
 
         {menuOpen && (
           <View style={styles.menu}>
-            <TouchableOpacity style={styles.menuItem}>
-              <EditIcon width={16} height={16} />
-              <Text style={styles.menuText}>Edit</Text>
-            </TouchableOpacity>
             <TouchableOpacity style={styles.menuItem}>
               <DeleteIcon width={16} height={16} />
               <Text style={styles.menuText}>Delete</Text>
@@ -132,15 +130,46 @@ export default function AddMessage() {
         </TouchableOpacity>
       </View>
 
+      {/* Modal met extra 3-dots */}
       <Modal visible={!!activeMessage} transparent animationType="fade">
         <View style={styles.overlay}>
+
+          {/* Extra menu boven de witte kaart */}
+          <TouchableOpacity
+            style={styles.modalMoreWrapper}
+            onPress={() => setPopupMenuOpen(!popupMenuOpen)}
+          >
+            <MoreIcon width={24} height={24} />
+          </TouchableOpacity>
+
+          {popupMenuOpen && (
+            <View style={styles.modalMenu}>
+              <TouchableOpacity style={styles.menuItem}>
+                <AddPeopleIcon width={16} height={16} />
+                <Text style={styles.menuText}>Add people</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.menuItem}>
+                <SeeMembersIcon width={16} height={16} />
+                <Text style={styles.menuText}>See members</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.menuItem}>
+                <EditIcon width={16} height={16} />
+                <Text style={styles.menuText}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           <View style={styles.letterPopup}>
             <TouchableOpacity
               style={styles.closeBtn}
-              onPress={() => setActiveMessage(null)}
+              onPress={() => {
+                setActiveMessage(null);
+                setPopupMenuOpen(false);
+              }}
             >
               <CloseIcon width={20} height={20} />
             </TouchableOpacity>
+
             <Text style={styles.popupBody}>{activeMessage?.message}</Text>
           </View>
         </View>
@@ -174,6 +203,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     zIndex: 21,
+  },
+  modalMenu: {
+    position: "absolute",
+    top: 90,
+    right: 20,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 10,
+    gap: 8,
+    zIndex: 25,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalMoreWrapper: {
+    position: "absolute",
+    top: 55,
+    right: 20,
+    zIndex: 24,
   },
   menuItem: {
     flexDirection: "row",
@@ -245,15 +294,11 @@ const styles = StyleSheet.create({
     right: 14,
     zIndex: 10,
   },
-  popupText: {
-    fontFamily: "Alice-Regular",
-    fontSize: 15,
-    marginBottom: 10,
-  },
   popupBody: {
     fontFamily: "Alice-Regular",
     fontSize: 14,
     color: "#111",
     lineHeight: 22,
+    marginTop: 30,
   },
 });
