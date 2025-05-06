@@ -428,43 +428,43 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   confirmOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  confirmBox: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    width: 280,
-    alignItems: "center",
-  },
-  confirmText: {
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
-    textAlign: "center",
-    color: "#11152A",
-    marginBottom: 20,
-  },
-  confirmButtons: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    borderColor: "#ccc",
-    width: "100%",
-  },
-  confirmBtn: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 12,
-    borderRightWidth: 0.5,
-    borderColor: "#ccc",
-  },
-  confirmBtnText: {
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
-  },
-  
+  flex: 1,
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: "rgba(0,0,0,0.5)",
+},
+confirmBox: {
+  backgroundColor: "#fff",
+  borderRadius: 16,
+  paddingVertical: 20,
+  paddingHorizontal: 20,
+  width: 280,
+  alignItems: "center",
+},
+confirmText: {
+  fontFamily: "Alice-Regular",
+  fontSize: 16,
+  textAlign: "center",
+  color: "#11152A",
+  marginBottom: 20,
+},
+confirmButtons: {
+  flexDirection: "row",
+  borderTopWidth: 1,
+  borderColor: "#ccc",
+  width: "100%",
+},
+confirmBtn: {
+  flex: 1,
+  alignItems: "center",
+  paddingVertical: 12,
+  borderRightWidth: 0.5,
+  borderColor: "#ccc",
+},
+confirmBtnText: {
+  fontFamily: "Alice-Regular",
+  fontSize: 16,
+},
+
   
 });
