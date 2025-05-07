@@ -4,9 +4,15 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
 import NoAudiosIcon from "@/assets/images/svg-icons/no-audios.svg"; 
+import UploadIcon from "@/assets/images/svg-icons/upload-icon.svg";
 
 export default function NoAudios() {
   const router = useRouter();
+
+  
+  const handleUploadPress = () => {
+    //setShowPopup(true);
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -29,6 +35,11 @@ export default function NoAudios() {
           />
         </Svg>
       </TouchableOpacity>
+
+      {/* Upload button rechtsboven */}
+      <TouchableOpacity style={styles.uploadBtn} onPress={handleUploadPress}>
+        <UploadIcon width={30} height={30} />
+      </TouchableOpacity>      
 
       {/* Titel */}
       <Text style={styles.title}>Audio's</Text>
@@ -54,6 +65,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 50,
     left: 20,
+    zIndex: 10,
+  },
+  uploadBtn: {
+    position: "absolute",
+    top: 50,
+    right: 20,
     zIndex: 10,
   },
   title: {

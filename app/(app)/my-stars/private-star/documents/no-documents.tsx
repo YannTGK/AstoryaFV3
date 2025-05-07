@@ -3,16 +3,11 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import NoDocumentsIcon from "@/assets/images/svg-icons/no-documents.svg";
-import UploadIcon from "@/assets/images/svg-icons/upload-icon.svg";
 import { useState } from "react";
 
 export default function NoDocuments() {
   const router = useRouter();
   const [showPopup, setShowPopup] = useState(false);
-
-  const handleUploadPress = () => {
-    setShowPopup(true);
-  };
 
   const handleConfirm = () => {
     setShowPopup(false);
@@ -43,11 +38,6 @@ export default function NoDocuments() {
             strokeLinejoin="round"
           />
         </Svg>
-      </TouchableOpacity>
-
-      {/* Upload button rechtsboven */}
-      <TouchableOpacity style={styles.uploadBtn} onPress={handleUploadPress}>
-        <UploadIcon width={30} height={30} />
       </TouchableOpacity>
 
       {/* Titel */}
@@ -92,12 +82,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 50,
     left: 20,
-    zIndex: 10,
-  },
-  uploadBtn: {
-    position: "absolute",
-    top: 50,
-    right: 20,
     zIndex: 10,
   },
   title: {
