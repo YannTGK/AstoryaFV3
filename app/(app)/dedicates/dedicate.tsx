@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+// app/(app)/dedicates/dedicate/index.tsx
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,9 +9,8 @@ import {
   ActivityIndicator,
   ScrollView,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Path } from "react-native-svg";
 
 import StarIcon from "@/assets/images/svg-icons/star.svg";
 import PlusIcon from "@/assets/images/svg-icons/plus3.svg";
@@ -21,29 +21,36 @@ const { width } = Dimensions.get("window");
 
 export default function DedicateScreen() {
   const router = useRouter();
-  const [showPopup, setShowPopup] = useState(false);
+
+  const [showPopup,      setShowPopup]      = useState(false);
   const [dedicatedStars, setDedicatedStars] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading,        setLoading]        = useState(true);
 
   const fetchDedicatedStars = async () => {
+    setLoading(true);
     try {
       const res = await api.get("/stars/dedicate");
       setDedicatedStars(res.data.stars || res.data);
     } catch (err) {
-      console.error("Kon sterren niet laden:", err);
+      console.error("❌ Kon sterren niet laden:", err);
+      setDedicatedStars([]);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchDedicatedStars();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => { if (active) await fetchDedicatedStars(); })();
+      return () => { active = false; };
+    }, [])
+  );
 
   const handleStarPress = (star: any) => {
     router.push({
       pathname: "/dedicates/created-dedicates/dedicated-star",
-      params: { starId: star._id },
+      params:   { starId: star._id },
     });
   };
 
@@ -52,28 +59,25 @@ export default function DedicateScreen() {
       <LinearGradient
         colors={["#000000", "#273166", "#000000"]}
         style={StyleSheet.absoluteFill}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
       />
 
       <Text style={styles.title}>Dedicated stars</Text>
 
-      <TouchableOpacity
-        style={styles.plusBtn}
-        onPress={() => setShowPopup(true)}
-      >
+      <TouchableOpacity style={styles.plusBtn} onPress={() => setShowPopup(true)}>
         <PlusIcon width={36} height={36} />
       </TouchableOpacity>
 
       {loading ? (
-        <ActivityIndicator
-          size="large"
-          color="#fff"
-          style={{ marginTop: 60 }}
-        />
+        <ActivityIndicator size="large" color="#fff" style={{ marginTop: 60 }} />
+      ) : dedicatedStars.length === 0 ? (
+        /*  ⬇︎ oude lege‑staat ⬇︎  */
+        <View style={styles.oldEmptyWrapper}>
+          <StarIcon width={160} height={160} />
+          <Text style={styles.oldEmptyText}>No dedicated stars yet</Text>
+        </View>
       ) : (
         <ScrollView
-        style={styles.main}
+          style={styles.main}
           contentContainerStyle={styles.grid}
           showsVerticalScrollIndicator={false}
         >
@@ -92,17 +96,14 @@ export default function DedicateScreen() {
         </ScrollView>
       )}
 
-      {showPopup && (
-        <UpgradePopupDedicate onClose={() => setShowPopup(false)} />
-      )}
+      {showPopup && <UpgradePopupDedicate onClose={() => setShowPopup(false)} />}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  main: {
-    marginBottom: 80,
-  },
+  main:      { marginBottom: 80 },
+  plusBtn:   { position: "absolute", top: 85, right: 24, zIndex: 10 },
   title: {
     fontSize: 20,
     fontFamily: "Alice-Regular",
@@ -110,7 +111,8 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 50,
   },
-  plusBtn: { position: "absolute", top: 85, right: 24, zIndex: 10 },
+
+  /* grid */
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -118,17 +120,23 @@ const styles = StyleSheet.create({
     columnGap: 20,
     rowGap: 40,
     marginTop: 60,
-    paddingBottom: 40, // so you can scroll past the last row
+    paddingBottom: 40,
   },
-  starWrapper: {
-    width: (width - 52) / 2,
-    alignItems: "center",
-  },
+  starWrapper: { width: (width - 52) / 2, alignItems: "center" },
   starLabel: {
     color: "#fff",
     fontFamily: "Alice-Regular",
     fontSize: 14,
     marginTop: 6,
     textAlign: "center",
+  },
+
+  /* oude lege‑staat */
+  oldEmptyWrapper: { flex: 1, justifyContent: "center", alignItems: "center" },
+  oldEmptyText: {
+    marginTop: 18,
+    color: "#fff",
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
   },
 });
