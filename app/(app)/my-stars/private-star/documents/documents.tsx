@@ -7,13 +7,14 @@ import Svg, { Path } from "react-native-svg";
 import PdfIcon from "@/assets/images/svg-icons/pdf-image.svg";
 import WordIcon from "@/assets/images/svg-icons/word-image.svg";
 import MoreIcon from "@/assets/images/svg-icons/more.svg";
-import UploadIcon from "@/assets/images/svg-icons/upload-icon.svg";
 import AddPeopleIcon from "@/assets/images/svg-icons/add-people.svg";
 import DeleteIcon from "@/assets/images/svg-icons/delete.svg";
 import SeeMembersIcon from "@/assets/images/svg-icons/see-members.svg";
 import DownloadIcon from "@/assets/images/svg-icons/download.svg";
+import EditIcon from "@/assets/images/svg-icons/edit2.svg";
+import PlusIcon from "@/assets/images/svg-icons/plus.svg";
 
-import StarLoader from "@/components/loaders/StarLoader"; // ✅ loader component!
+import StarLoader from "@/components/loaders/StarLoader";
 
 export default function Documents() {
   const router = useRouter();
@@ -42,12 +43,11 @@ export default function Documents() {
     setIsDownloading(true);
     setProgress(0);
 
-    // Simuleer download progress
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
-          setTimeout(() => setIsDownloading(false), 500); // na voltooiing sluiten
+          setTimeout(() => setIsDownloading(false), 500);
           return 100;
         }
         return prev + 5;
@@ -71,15 +71,15 @@ export default function Documents() {
         </Svg>
       </TouchableOpacity>
 
-      {/* Upload-button */}
-      <TouchableOpacity style={styles.uploadBtn}>
-        <UploadIcon width={30} height={30} />
+      {/* Edit-button rechtsboven */}
+      <TouchableOpacity style={styles.editBtn}>
+        <EditIcon width={30} height={30} />
       </TouchableOpacity>
 
       {/* Titel */}
       <Text style={styles.title}>Documenten</Text>
 
-      {/* Download loader */}
+      {/* Loader bij download */}
       {isDownloading ? (
         <View style={styles.loaderContainer}>
           <StarLoader progress={progress} />
@@ -102,7 +102,6 @@ export default function Documents() {
                 <MoreIcon width={20} height={20} />
               </TouchableOpacity>
 
-              {/* Menu */}
               {openMenuIndex === index && (
                 <View style={styles.menu}>
                   <TouchableOpacity style={styles.menuItem}>
@@ -128,7 +127,14 @@ export default function Documents() {
         </ScrollView>
       )}
 
-      {/* Popup bevestiging */}
+      {/* Gele plus-knop onderaan */}
+      <View style={styles.plusWrapper}>
+        <TouchableOpacity onPress={() => console.log("Plus pressed")}>
+          <PlusIcon width={50} height={50} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Download bevestiging */}
       <Modal visible={showDownloadPopup} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
@@ -155,7 +161,7 @@ const styles = StyleSheet.create({
     left: 20,
     zIndex: 10,
   },
-  uploadBtn: {
+  editBtn: {
     position: "absolute",
     top: 50,
     right: 20,
@@ -279,5 +285,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#FEEDB6",
     marginTop: 12,
+  },
+  plusWrapper: {
+    position: "absolute",
+    bottom: 100,
+    width: "100%",
+    alignItems: "center",
+    zIndex: 10,
   },
 });

@@ -3,11 +3,16 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import NoDocumentsIcon from "@/assets/images/svg-icons/no-documents.svg";
+import PlusIcon from "@/assets/images/svg-icons/plus.svg";
 import { useState } from "react";
 
 export default function NoDocuments() {
   const router = useRouter();
   const [showPopup, setShowPopup] = useState(false);
+
+  const handleUploadPress = () => {
+    setShowPopup(true);
+  };
 
   const handleConfirm = () => {
     setShowPopup(false);
@@ -49,13 +54,23 @@ export default function NoDocuments() {
         <Text style={styles.messageText}>No documents found</Text>
       </View>
 
+      {/* Plus-knop onderaan */}
+      <View style={styles.plusWrapper}>
+        <TouchableOpacity onPress={handleUploadPress}>
+          <PlusIcon width={50} height={50} />
+        </TouchableOpacity>
+      </View>
+
       {/* Popup */}
       <Modal transparent visible={showPopup} animationType="fade">
         <View style={styles.popupOverlay}>
           <View style={styles.popupBox}>
             <Text style={styles.popupText}>Open documents</Text>
             <View style={styles.popupButtons}>
-              <TouchableOpacity style={[styles.popupButton, styles.rightBorder]} onPress={handleYes}>
+              <TouchableOpacity
+                style={[styles.popupButton, styles.rightBorder]}
+                onPress={handleYes}
+              >
                 <Text style={styles.popupButtonTextYes}>Yes</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.popupButton} onPress={handleNo}>
@@ -102,6 +117,13 @@ const styles = StyleSheet.create({
     fontFamily: "Alice-Regular",
     fontSize: 14,
     marginTop: 0,
+  },
+  plusWrapper: {
+    position: "absolute",
+    bottom: 100,
+    width: "100%",
+    alignItems: "center",
+    zIndex: 10,
   },
   popupOverlay: {
     flex: 1,
