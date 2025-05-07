@@ -26,6 +26,10 @@ export default function Documents() {
     setOpenMenuIndex(openMenuIndex === index ? null : index);
   };
 
+  const handleEditPress = () => {
+    router.push("/(app)/my-stars/private-star/documents/delete-document");
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
@@ -43,7 +47,7 @@ export default function Documents() {
       </TouchableOpacity>
 
       {/* Edit-button rechtsboven */}
-      <TouchableOpacity style={styles.editBtn}>
+      <TouchableOpacity style={styles.editBtn} onPress={handleEditPress}>
         <EditIcon width={30} height={30} />
       </TouchableOpacity>
 
