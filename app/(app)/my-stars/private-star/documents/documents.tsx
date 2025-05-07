@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
@@ -8,20 +8,13 @@ import PdfIcon from "@/assets/images/svg-icons/pdf-image.svg";
 import WordIcon from "@/assets/images/svg-icons/word-image.svg";
 import MoreIcon from "@/assets/images/svg-icons/more.svg";
 import AddPeopleIcon from "@/assets/images/svg-icons/add-people.svg";
-import DeleteIcon from "@/assets/images/svg-icons/delete.svg";
 import SeeMembersIcon from "@/assets/images/svg-icons/see-members.svg";
-import DownloadIcon from "@/assets/images/svg-icons/download.svg";
 import EditIcon from "@/assets/images/svg-icons/edit2.svg";
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
-
-import StarLoader from "@/components/loaders/StarLoader";
 
 export default function Documents() {
   const router = useRouter();
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null);
-  const [showDownloadPopup, setShowDownloadPopup] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [progress, setProgress] = useState(0);
 
   const documents = [
     { name: "My_secret_recipe.pdf", date: "02/01/2025", type: "pdf" },
@@ -31,28 +24,6 @@ export default function Documents() {
 
   const toggleMenu = (index: number) => {
     setOpenMenuIndex(openMenuIndex === index ? null : index);
-  };
-
-  const handleDownloadPress = () => {
-    setShowDownloadPopup(true);
-    setOpenMenuIndex(null);
-  };
-
-  const startDownload = () => {
-    setShowDownloadPopup(false);
-    setIsDownloading(true);
-    setProgress(0);
-
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => setIsDownloading(false), 500);
-          return 100;
-        }
-        return prev + 5;
-      });
-    }, 200);
   };
 
   return (
@@ -79,53 +50,38 @@ export default function Documents() {
       {/* Titel */}
       <Text style={styles.title}>Documenten</Text>
 
-      {/* Loader bij download */}
-      {isDownloading ? (
-        <View style={styles.loaderContainer}>
-          <StarLoader progress={progress} />
-          <Text style={styles.loaderText}>Download...</Text>
-        </View>
-      ) : (
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {documents.map((doc, index) => (
-            <View key={index} style={styles.documentRow}>
-              {doc.type === "pdf" ? (
-                <PdfIcon width={40} height={40} />
-              ) : (
-                <WordIcon width={40} height={40} />
-              )}
-              <View style={styles.documentInfo}>
-                <Text style={styles.documentName}>{doc.name}</Text>
-                <Text style={styles.documentDate}>{doc.date}</Text>
-              </View>
-              <TouchableOpacity style={styles.moreButton} onPress={() => toggleMenu(index)}>
-                <MoreIcon width={20} height={20} />
-              </TouchableOpacity>
-
-              {openMenuIndex === index && (
-                <View style={styles.menu}>
-                  <TouchableOpacity style={styles.menuItem}>
-                    <AddPeopleIcon width={16} height={16} />
-                    <Text style={styles.menuText}>Add people</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.menuItem}>
-                    <DeleteIcon width={16} height={16} />
-                    <Text style={styles.menuText}>Delete</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.menuItem}>
-                    <SeeMembersIcon width={16} height={16} />
-                    <Text style={styles.menuText}>See members</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.menuItem} onPress={handleDownloadPress}>
-                    <DownloadIcon width={16} height={16} />
-                    <Text style={styles.menuText}>Download</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+      {/* Documentlijst */}
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        {documents.map((doc, index) => (
+          <View key={index} style={styles.documentRow}>
+            {doc.type === "pdf" ? (
+              <PdfIcon width={40} height={40} />
+            ) : (
+              <WordIcon width={40} height={40} />
+            )}
+            <View style={styles.documentInfo}>
+              <Text style={styles.documentName}>{doc.name}</Text>
+              <Text style={styles.documentDate}>{doc.date}</Text>
             </View>
-          ))}
-        </ScrollView>
-      )}
+            <TouchableOpacity style={styles.moreButton} onPress={() => toggleMenu(index)}>
+              <MoreIcon width={20} height={20} />
+            </TouchableOpacity>
+
+            {openMenuIndex === index && (
+              <View style={styles.menu}>
+                <TouchableOpacity style={styles.menuItem}>
+                  <AddPeopleIcon width={16} height={16} />
+                  <Text style={styles.menuText}>Add people</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem}>
+                  <SeeMembersIcon width={16} height={16} />
+                  <Text style={styles.menuText}>See members</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        ))}
+      </ScrollView>
 
       {/* Gele plus-knop onderaan */}
       <View style={styles.plusWrapper}>
@@ -133,23 +89,6 @@ export default function Documents() {
           <PlusIcon width={50} height={50} />
         </TouchableOpacity>
       </View>
-
-      {/* Download bevestiging */}
-      <Modal visible={showDownloadPopup} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalText}>Are you sure you want to download the document?</Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity style={[styles.modalButton, styles.rightBorder]} onPress={() => setShowDownloadPopup(false)}>
-                <Text style={styles.modalButtonTextNo}>No</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.modalButton} onPress={startDownload}>
-                <Text style={styles.modalButtonTextYes}>Yes</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -227,64 +166,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Alice-Regular",
     color: "#11152A",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "#00000088",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalBox: {
-    width: 280,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    alignItems: "center",
-  },
-  modalText: {
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
-    color: "#11152A",
-    textAlign: "center",
-    marginBottom: 24,
-  },
-  modalButtons: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    width: "100%",
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  rightBorder: {
-    borderRightWidth: 1,
-    borderRightColor: "#eee",
-  },
-  modalButtonTextYes: {
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
-    color: "#0A84FF",
-  },
-  modalButtonTextNo: {
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
-    color: "#0A84FF",
-  },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 75,
-  },
-  loaderText: {
-    fontFamily: "Alice-Regular",
-    fontSize: 18,
-    color: "#FEEDB6",
-    marginTop: 12,
   },
   plusWrapper: {
     position: "absolute",
