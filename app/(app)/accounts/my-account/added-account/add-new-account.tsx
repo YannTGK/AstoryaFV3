@@ -23,9 +23,7 @@ export default function AddAccountScreen() {
   const [search, setSearch] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<{ id: string; username: string }[]>([]);
 
-  const filteredUsers = MOCK_USERS.filter((user) =>
-    user.username.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredUsers = search.length > 0 ? MOCK_USERS : [];
 
   const isSelected = (user: { id: string; username: string }) =>
     selectedUsers.find((u) => u.id === user.id);
@@ -77,6 +75,8 @@ export default function AddAccountScreen() {
         <Feather name="search" size={20} color="#666" style={styles.searchIcon} />
       </View>
 
+      <View style={styles.separator} />
+
       {selectedUsers.length > 0 && (
         <View style={styles.selectedContainer}>
           {selectedUsers.map((user) => (
@@ -91,7 +91,7 @@ export default function AddAccountScreen() {
                     )
                   }
                 >
-                  <Feather name="x" size={12} color="#000" />
+                  <Feather name="x" size={12} color="#fff" />
                 </TouchableOpacity>
               </View>
               <Text style={styles.selectedUsername}>{user.username}</Text>
@@ -100,23 +100,26 @@ export default function AddAccountScreen() {
         </View>
       )}
 
-      <FlatList
-        data={filteredUsers}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => {
-          const selected = isSelected(item);
-          return (
-            <TouchableOpacity
-              style={[styles.userItem, selected && styles.userItemSelected]}
-              onPress={() => toggleSelectUser(item)}
-            >
-              <View style={styles.avatar} />
-              <Text style={styles.username}>{item.username}</Text>
-              {selected && <Feather name="check" size={16} color="#006F45" />}
-            </TouchableOpacity>
-          );
-        }}
-      />
+{search.length > 0 && (
+  <FlatList
+    data={filteredUsers}
+    keyExtractor={(item) => item.id}
+    renderItem={({ item }) => {
+      const selected = isSelected(item);
+      return (
+        <TouchableOpacity
+          style={[styles.userItem, selected && styles.userItemSelected]}
+          onPress={() => toggleSelectUser(item)}
+        >
+          <View style={styles.avatar} />
+          <Text style={styles.username}>{item.username}</Text>
+          {selected && <Feather name="check" size={16} color="#006F45" />}
+        </TouchableOpacity>
+      );
+    }}
+  />
+)}
+
 
       <TouchableOpacity
         disabled={selectedUsers.length === 0}
@@ -124,6 +127,14 @@ export default function AddAccountScreen() {
           styles.addButton,
           selectedUsers.length > 0 && styles.addButtonActive,
         ]}
+        onPress={() => {
+          router.push({
+            pathname: "/accounts/my-account/added-account/group-members",
+            params: {
+              users: JSON.stringify(selectedUsers), // stuur de data als string
+            },
+          });
+        }}
       >
         <Text
           style={[
@@ -131,7 +142,7 @@ export default function AddAccountScreen() {
             selectedUsers.length > 0 && styles.addButtonTextActive,
           ]}
         >
-          Add
+          Add {selectedUsers.length} {selectedUsers.length > 1 ? "people" : "person"}
         </Text>
       </TouchableOpacity>
     </View>
@@ -159,10 +170,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     paddingHorizontal: 16,
     textAlign: "left",
-    marginBottom: 20,
+    marginTop: 32,
+    marginBottom: 24,
   },
   searchWrapper: {
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#fff",
@@ -178,19 +190,26 @@ const styles = StyleSheet.create({
     color: "#000",
   },
   searchIcon: {
-    marginLeft: 8,
+    marginLeft: 16,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: "#999",
+    marginHorizontal: 0,
+    marginTop: 24,
+    marginBottom: 24,
   },
   selectedContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     paddingHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 16,
-    gap: 12,
+    marginTop: 24,
+    marginBottom: 24,
+    gap: 32,
   },
   selectedItem: {
     alignItems: "center",
-    width: 80,
+    width: 42,
   },
   profileWrapper: {
     position: "relative",
@@ -210,7 +229,7 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: "#fff",
+    backgroundColor: "#FF7466",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
@@ -220,7 +239,7 @@ const styles = StyleSheet.create({
   },
   selectedUsername: {
     fontFamily: "Alice-Regular",
-    fontSize: 13,
+    fontSize: 12,
     color: "#fff",
     marginTop: 8,
     textAlign: "center",
@@ -230,7 +249,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#fff",
     marginHorizontal: 16,
-    padding: 12,
+    padding: 8,
     borderRadius: 8,
     marginBottom: 16,
   },
@@ -251,13 +270,16 @@ const styles = StyleSheet.create({
     color: "#000",
   },
   addButton: {
-    marginHorizontal: 16,
+    position: "absolute",
+    left: 16,
+    right: 16,
+    bottom: 105, 
     backgroundColor: "#ccc",
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",
-    marginBottom: 100,
   },
+  
   addButtonActive: {
     backgroundColor: "#FEEDB6",
   },

@@ -115,7 +115,9 @@ export default function FinalMyStarPrivate() {
   ];
 
   const handlePress = (label: string) => {
-    if (label === "Messages") {
+    if (label === "Photo's") {
+      router.push("/(app)/my-stars/private-star/photos/photo-private-star");
+    } else if (label === "Messages") {
       router.push("/(app)/my-stars/private-star/messages/no-messages");
     } else if (label === "Documents") {
       router.push("/(app)/my-stars/private-star/documents/no-documents");
@@ -123,6 +125,8 @@ export default function FinalMyStarPrivate() {
       router.push("/(app)/my-stars/private-star/audios/no-audios");
     }
   };
+  
+  
 
   return (
     <View style={{ flex: 1 }}>
