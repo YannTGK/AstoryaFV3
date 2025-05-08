@@ -1,92 +1,73 @@
-import React from "react";
+// --- PhotoSelectScreen.tsx ---
+import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  Image,
-  Dimensions,
+  View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Dimensions
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Path } from "react-native-svg";
 import { Feather } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
-
-const { albumName, selected } = useLocalSearchParams();
-const selectedPhotos = selected ? JSON.parse(selected as string) : [];
 
 const { width } = Dimensions.get("window");
+const IMAGE_SIZE = (width - 48) / 3;
 
-const currentAlbum = albumName as string;
-
-const albums = [
-  { name: "Our memories", count: 7, image: require("@/assets/images/private-star-images/img-1.png") },
-  { name: "Summer ‘24", count: 24, image: require("@/assets/images/private-star-images/img-2.png") },
-  { name: "Thailand 2016", count: 36, image: require("@/assets/images/private-star-images/img-3.png") },
-  { name: "3 of us", count: 28, image: require("@/assets/images/private-star-images/img-4.png") },
-  { name: "Empty", count: 0, image: null },
+const mockImages = [
+  require("@/assets/images/private-star-images/img-1.png"),
+  require("@/assets/images/private-star-images/img-2.png"),
+  require("@/assets/images/private-star-images/img-3.png"),
+  require("@/assets/images/private-star-images/img-4.png"),
 ];
 
-export default function PhotoAlbumsScreen() {
+export default function PhotoSelectScreen() {
   const router = useRouter();
+  const [selected, setSelected] = useState<number[]>([]);
+
+  const toggleSelect = (index: number) => {
+    setSelected(prev =>
+      prev.includes(index)
+        ? prev.filter(i => i !== index)
+        : [...prev, index]
+    );
+  };
 
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
 
-      {/* Terugknop */}
-      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Svg width={24} height={24}>
-          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
-        </Svg>
-      </TouchableOpacity>
+      <Text style={styles.title}>Select photo(s)</Text>
 
-      {/* Titel */}
-      <Text style={styles.title}>Photo albums</Text>
-
-      {/* Bewerken-icoon */}
-      <TouchableOpacity style={styles.editIcon}>
-        <Feather name="edit" size={20} color="#fff" />
-      </TouchableOpacity>
-
-      {/* Albumgrid */}
       <FlatList
-        data={albums}
-        keyExtractor={(item) => item.name}
-        numColumns={2}
+        data={mockImages}
+        keyExtractor={(item, index) => index.toString()}
+        numColumns={3}
         contentContainerStyle={styles.grid}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.albumCard}>
-            {item.image ? (
-              <Image source={item.image} style={styles.albumImage} />
-            ) : (
-              <View style={[styles.albumImage, { backgroundColor: "#999", opacity: 0.2 }]} />
-            )}
-            <Text style={styles.albumTitle}>{item.name}</Text>
-            <Text style={styles.albumCount}>{item.count}</Text>
-          </TouchableOpacity>
-        )}
+        renderItem={({ item, index }) => {
+          const isSelected = selected.includes(index);
+          return (
+            <TouchableOpacity onPress={() => toggleSelect(index)}>
+              <Image source={item} style={[styles.image, isSelected && { opacity: 0.5 }]} />
+              {isSelected && <View style={styles.checkmark} />}
+            </TouchableOpacity>
+          );
+        }}
       />
 
-      {/* Plusknop */}
-      <TouchableOpacity style={styles.fab}>
-        <Text style={styles.fabPlus}>＋</Text>
-      </TouchableOpacity>
+      {selected.length > 0 && (
+        <TouchableOpacity
+          style={styles.footerBar}
+          onPress={() => router.push({
+            pathname: "/my-stars/private-star/photos/three-dots/copy-album/selected-album",
+            params: { selected: JSON.stringify(selected) }
+          })}
+        >
+          <Feather name="copy" size={20} color="#fff" style={{ marginRight: 10 }} />
+          <Text style={styles.footerText}>Copy to {selected.length} photo{selected.length !== 1 ? "'s" : ""}</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
 
-const CARD_SIZE = (width - 60) / 2;
-
 const styles = StyleSheet.create({
-  backBtn: {
-    position: "absolute",
-    top: 50,
-    left: 20,
-    zIndex: 10,
-  },
   title: {
     textAlign: "center",
     marginTop: 50,
@@ -94,55 +75,40 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontFamily: "Alice-Regular",
   },
-  editIcon: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    zIndex: 10,
-  },
   grid: {
-    paddingTop: 100,
-    paddingHorizontal: 20,
+    padding: 16,
     paddingBottom: 120,
   },
-  albumCard: {
-    width: CARD_SIZE,
-    marginBottom: 20,
-    marginHorizontal: 10,
-    alignItems: "center",
+  image: {
+    width: IMAGE_SIZE,
+    height: IMAGE_SIZE,
+    margin: 4,
+    borderRadius: 8,
   },
-  albumImage: {
-    width: CARD_SIZE,
-    height: CARD_SIZE,
-    borderRadius: 12,
-    marginBottom: 6,
-  },
-  albumTitle: {
-    fontSize: 14,
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-  },
-  albumCount: {
-    fontSize: 12,
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-    opacity: 0.7,
-  },
-  fab: {
+  checkmark: {
     position: "absolute",
-    bottom: 40,
-    alignSelf: "center",
+    top: 10,
+    right: 10,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: "#FEEDB6",
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 10,
+    borderWidth: 1,
+    borderColor: "#fff",
   },
-  fabPlus: {
-    fontSize: 36,
-    color: "#11152A",
-    marginBottom: 2,
+  footerBar: {
+    position: "absolute",
+    bottom: 80,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    left: 0,
+    right: 0,
+    padding: 20,
+  },
+  footerText: {
+    color: "#fff",
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
   },
 });

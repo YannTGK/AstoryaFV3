@@ -23,10 +23,10 @@ export default function AlbumPage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
-
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
   const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
+  const [showCopyButton, setShowCopyButton] = useState(false);
 
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -96,49 +96,48 @@ export default function AlbumPage() {
           <View style={styles.menuBox}>
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => router.push("/(app)/my-stars/private-star/photos/three-dots/add-people/AddPeoplePage")}
+              onPress={() =>
+                router.push("/(app)/my-stars/private-star/photos/three-dots/add-people/AddPeoplePage")
+              }
             >
               <Feather name="user-plus" size={16} color="#11152A" />
               <Text style={styles.menuText}>Add people</Text>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => router.push("/(app)/my-stars/private-star/photos/three-dots/see-members/SeeMembersPhoto")}
+              onPress={() =>
+                router.push("/(app)/my-stars/private-star/photos/three-dots/see-members/SeeMembersPhoto")
+              }
             >
               <Feather name="users" size={16} color="#11152A" />
               <Text style={styles.menuText}>See members</Text>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => {
                 setMenuOpen(false);
                 setIsDeleteMode(true);
                 setSelectedPhotos([]);
+                setShowCopyButton(false);
               }}
             >
               <Feather name="trash-2" size={16} color="#11152A" />
               <Text style={styles.menuText}>Delete</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-  style={styles.menuItem}
-  onPress={() => {
-    setMenuOpen(false);
-    router.push({
-      pathname: "/my-stars/private-star/photos/three-dots/copy-album/copy-album",
-      params: {
-        albumName: encodeURIComponent(currentAlbum),
-        selected: JSON.stringify(selectedPhotos), // ← geef mee welke foto's
-      },
-    });
-  }}
->
-  <Feather name="copy" size={16} color="#11152A" />
-  <Text style={styles.menuText}>Copy to album</Text>
-</TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem}>
-              <Feather name="folder-plus" size={16} color="#11152A" />
-              <Text style={styles.menuText}>Move to album</Text>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuOpen(false);
+                setIsDeleteMode(true);
+                setSelectedPhotos([]);
+                setShowCopyButton(true);
+              }}
+            >
+              <Feather name="copy" size={16} color="#11152A" />
+              <Text style={styles.menuText}>Copy to album</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -217,6 +216,28 @@ export default function AlbumPage() {
             <Feather name="trash" size={20} color="#fff" />
             <Text style={styles.deleteBarText}>
               {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? "’s" : ""} selected
+            </Text>
+          </View>
+        </TouchableOpacity>
+      )}
+
+      {showCopyButton && selectedPhotos.length > 0 && (
+        <TouchableOpacity
+          style={styles.deleteBar}
+          onPress={() => {
+            router.push({
+              pathname: "/my-stars/private-star/photos/three-dots/copy-album/selected-album",
+              params: {
+                albumName: encodeURIComponent(currentAlbum),
+                selected: JSON.stringify(selectedPhotos),
+              },
+            });
+          }}
+        >
+          <View style={styles.deleteBarBtn}>
+            <Feather name="copy" size={20} color="#fff" />
+            <Text style={styles.deleteBarText}>
+              Copy to {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? "'s" : ""}
             </Text>
           </View>
         </TouchableOpacity>
