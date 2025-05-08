@@ -19,18 +19,20 @@ export default function AlbumPage() {
   const router = useRouter();
   const { albumName } = useLocalSearchParams();
   const currentAlbum = albumName as string;
+
   const [images, setImages] = useState<string[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
-  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
   const [showCopyButton, setShowCopyButton] = useState(false);
+  const [showMoveButton, setShowMoveButton] = useState(false);
+  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
 
   const pickImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
       alert("Permission to access media library is required!");
       return;
     }
@@ -49,6 +51,39 @@ export default function AlbumPage() {
 
   const imageViewerData = images.map((uri) => ({ url: uri }));
 
+  const handlePhotoPress = (item: string, index: number) => {
+    if (isDeleteMode) {
+      setSelectedPhotos((prev) =>
+        prev.includes(item)
+          ? prev.filter((uri) => uri !== item)
+          : [...prev, item]
+      );
+    } else {
+      setSelectedIndex(index);
+      setModalVisible(true);
+    }
+  };
+
+  const handleDelete = () => {
+    setImages(images.filter((img) => !selectedPhotos.includes(img)));
+    setSelectedPhotos([]);
+    setIsDeleteMode(false);
+    setConfirmDeleteVisible(false);
+  };
+
+  const handleCopyOrMove = (type: "copy" | "move") => {
+    router.push({
+      pathname:
+        type === "copy"
+          ? "/my-stars/private-star/photos/three-dots/copy-album/selected-album"
+          : "/my-stars/private-star/photos/three-dots/move-album/move-album",
+      params: {
+        albumName: encodeURIComponent(currentAlbum),
+        selected: JSON.stringify(selectedPhotos),
+      },
+    });
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
@@ -64,22 +99,20 @@ export default function AlbumPage() {
           <Text style={styles.headerTitle}>Photo’s</Text>
         </View>
 
-        {/* Titel + Select All */}
         <View style={styles.albumTitleRow}>
-          <Text style={styles.albumTitle}>{albumName || "Our memories"}</Text>
+          <Text style={styles.albumTitle}>{albumName}</Text>
           {isDeleteMode && (
             <TouchableOpacity
               style={styles.selectAllBtn}
-              onPress={() => {
-                if (selectedPhotos.length === images.length) {
-                  setSelectedPhotos([]);
-                } else {
-                  setSelectedPhotos(images);
-                }
-              }}
+              onPress={() =>
+                setSelectedPhotos(selectedPhotos.length === images.length ? [] : images)
+              }
             >
               <View
-                style={[styles.selectAllCircle, selectedPhotos.length === images.length && styles.selectAllCircleActive]}
+                style={[
+                  styles.selectAllCircle,
+                  selectedPhotos.length === images.length && styles.selectAllCircleActive,
+                ]}
               />
               <Text style={styles.selectAllText}>All</Text>
             </TouchableOpacity>
@@ -96,9 +129,7 @@ export default function AlbumPage() {
           <View style={styles.menuBox}>
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() =>
-                router.push("/(app)/my-stars/private-star/photos/three-dots/add-people/AddPeoplePage")
-              }
+              onPress={() => router.push("/(app)/my-stars/private-star/photos/three-dots/add-people/AddPeoplePage")}
             >
               <Feather name="user-plus" size={16} color="#11152A" />
               <Text style={styles.menuText}>Add people</Text>
@@ -106,39 +137,28 @@ export default function AlbumPage() {
 
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() =>
-                router.push("/(app)/my-stars/private-star/photos/three-dots/see-members/SeeMembersPhoto")
-              }
+              onPress={() => router.push("/(app)/my-stars/private-star/photos/three-dots/see-members/SeeMembersPhoto")}
             >
               <Feather name="users" size={16} color="#11152A" />
               <Text style={styles.menuText}>See members</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setMenuOpen(false);
-                setIsDeleteMode(true);
-                setSelectedPhotos([]);
-                setShowCopyButton(false);
-              }}
-            >
-              <Feather name="trash-2" size={16} color="#11152A" />
-              <Text style={styles.menuText}>Delete</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setMenuOpen(false);
-                setIsDeleteMode(true);
-                setSelectedPhotos([]);
-                setShowCopyButton(true);
-              }}
-            >
-              <Feather name="copy" size={16} color="#11152A" />
-              <Text style={styles.menuText}>Copy to album</Text>
-            </TouchableOpacity>
+            {["Delete", "Copy to album", "Move to album"].map((action, idx) => (
+              <TouchableOpacity
+                key={action}
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuOpen(false);
+                  setIsDeleteMode(true);
+                  setSelectedPhotos([]);
+                  setShowCopyButton(action === "Copy to album");
+                  setShowMoveButton(action === "Move to album");
+                }}
+              >
+                <Feather name={["trash-2", "copy", "folder-minus"][idx] as any} size={16} color="#11152A" />
+                <Text style={styles.menuText}>{action}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         )}
       </View>
@@ -154,18 +174,7 @@ export default function AlbumPage() {
           const isSelected = selectedPhotos.includes(item);
 
           return (
-            <TouchableOpacity
-              onPress={() => {
-                if (isDeleteMode) {
-                  setSelectedPhotos((prev) =>
-                    prev.includes(item) ? prev.filter((uri) => uri !== item) : [...prev, item]
-                  );
-                } else {
-                  setSelectedIndex(index);
-                  setModalVisible(true);
-                }
-              }}
-            >
+            <TouchableOpacity onPress={() => handlePhotoPress(item, index)}>
               <View style={{ position: "relative" }}>
                 <Image
                   source={{ uri: item }}
@@ -210,10 +219,11 @@ export default function AlbumPage() {
         }
       />
 
-      {isDeleteMode && (
+      {/* FOOTER ACTION BARS */}
+      {isDeleteMode && selectedPhotos.length > 0 && (
         <TouchableOpacity style={styles.deleteBar} onPress={() => setConfirmDeleteVisible(true)}>
           <View style={styles.deleteBarBtn}>
-            <Feather name="trash" size={20} color="#fff" />
+            <Feather name="trash-2" size={20} color="#fff" />
             <Text style={styles.deleteBarText}>
               {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? "’s" : ""} selected
             </Text>
@@ -222,22 +232,22 @@ export default function AlbumPage() {
       )}
 
       {showCopyButton && selectedPhotos.length > 0 && (
-        <TouchableOpacity
-          style={styles.deleteBar}
-          onPress={() => {
-            router.push({
-              pathname: "/my-stars/private-star/photos/three-dots/copy-album/selected-album",
-              params: {
-                albumName: encodeURIComponent(currentAlbum),
-                selected: JSON.stringify(selectedPhotos),
-              },
-            });
-          }}
-        >
+        <TouchableOpacity style={styles.deleteBar} onPress={() => handleCopyOrMove("copy")}>
           <View style={styles.deleteBarBtn}>
             <Feather name="copy" size={20} color="#fff" />
             <Text style={styles.deleteBarText}>
-              Copy to {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? "'s" : ""}
+              Copy {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? "'s" : ""} to album
+            </Text>
+          </View>
+        </TouchableOpacity>
+      )}
+
+      {showMoveButton && selectedPhotos.length > 0 && (
+        <TouchableOpacity style={styles.deleteBar} onPress={() => handleCopyOrMove("move")}>
+          <View style={styles.deleteBarBtn}>
+            <Feather name="folder-minus" size={20} color="#fff" />
+            <Text style={styles.deleteBarText}>
+              Move {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? "'s" : ""} to album
             </Text>
           </View>
         </TouchableOpacity>
@@ -273,15 +283,7 @@ export default function AlbumPage() {
               <TouchableOpacity onPress={() => setConfirmDeleteVisible(false)} style={styles.confirmBtn}>
                 <Text style={[styles.confirmBtnText, { color: "#007AFF" }]}>No</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  setImages(images.filter((img) => !selectedPhotos.includes(img)));
-                  setSelectedPhotos([]);
-                  setIsDeleteMode(false);
-                  setConfirmDeleteVisible(false);
-                }}
-                style={styles.confirmBtn}
-              >
+              <TouchableOpacity onPress={handleDelete} style={styles.confirmBtn}>
                 <Text style={[styles.confirmBtnText, { color: "#007AFF" }]}>Yes</Text>
               </TouchableOpacity>
             </View>
@@ -291,6 +293,7 @@ export default function AlbumPage() {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   headerContainer: {

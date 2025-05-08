@@ -7,9 +7,8 @@ import {
   FlatList,
   Image,
   Dimensions,
-  Modal,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
@@ -17,10 +16,11 @@ import { Feather } from "@expo/vector-icons";
 const { width } = Dimensions.get("window");
 const CARD_SIZE = (width - 64) / 3;
 
-export default function EditAlbumScreen() {
+export default function SelectAlbumScreen() {
   const router = useRouter();
+  const { selected } = useLocalSearchParams();
   const [selectedAlbums, setSelectedAlbums] = useState<string[]>([]);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [confirmVisible, setConfirmVisible] = useState(false);
   const [albums, setAlbums] = useState([
     { name: "Our memories", count: 7, image: require("@/assets/images/private-star-images/img-1.png") },
     { name: "Summer ‘24", count: 24, image: require("@/assets/images/private-star-images/img-2.png") },
@@ -29,29 +29,19 @@ export default function EditAlbumScreen() {
     { name: "Empty", count: 0, image: null },
   ]);
 
-  const toggleAlbum = (name: string) => {
-    setSelectedAlbums((prev) =>
-      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
-    );
-  };
-
-  const deleteSelected = () => {
-    setAlbums((prev) => prev.filter((album) => !selectedAlbums.includes(album.name)));
-    setSelectedAlbums([]);
-    setShowDeleteModal(false);
-  };
-
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
 
+      {/* Terugknop */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24}>
           <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
         </Svg>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Photo Albums</Text>
+      <Text style={styles.title}>Photo albums</Text>
+      <Text style={styles.allText}>All</Text>
 
       <FlatList
         data={albums}
@@ -63,7 +53,13 @@ export default function EditAlbumScreen() {
           return (
             <TouchableOpacity
               style={styles.albumCard}
-              onPress={() => toggleAlbum(item.name)}
+              onPress={() => {
+                setSelectedAlbums((prev) =>
+                  prev.includes(item.name)
+                    ? prev.filter((name) => name !== item.name)
+                    : [...prev, item.name]
+                );
+              }}
             >
               {item.image ? (
                 <Image source={item.image} style={styles.albumImage} />
@@ -83,30 +79,61 @@ export default function EditAlbumScreen() {
         }}
       />
 
+      {/* Footerbalk */}
       {selectedAlbums.length > 0 && (
-        <TouchableOpacity style={styles.footerBar} onPress={() => setShowDeleteModal(true)}>
-          <Feather name="trash-2" size={20} color="#fff" style={{ marginRight: 10 }} />
+        <TouchableOpacity
+          style={styles.footerBar}
+          onPress={() => setConfirmVisible(true)}
+        >
+          <Feather name="copy" size={20} color="#fff" style={{ marginRight: 10 }} />
           <Text style={styles.footerText}>
-            {selectedAlbums.length} photo{selectedAlbums.length !== 1 ? "’s" : ""} selected
+            Copy to {selectedAlbums.length} album{selectedAlbums.length !== 1 ? "s" : ""}
           </Text>
         </TouchableOpacity>
       )}
 
-      <Modal visible={showDeleteModal} transparent animationType="fade">
+      {/* Bevestigingspopup */}
+      {confirmVisible && (
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalText}>Are you sure you want to delete these photos?</Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity onPress={() => setShowDeleteModal(false)} style={styles.modalBtn}>
-                <Text style={styles.modalCancel}>Cancel</Text>
+            <Text style={styles.modalText}>
+              Copy to {selectedAlbums.length} album{selectedAlbums.length !== 1 ? "s" : ""}?
+            </Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity onPress={() => setConfirmVisible(false)} style={styles.modalBtn}>
+                <Text style={[styles.modalBtnText, { color: "#007AFF" }]}>No</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={deleteSelected} style={styles.modalBtn}>
-                <Text style={styles.modalDelete}>Delete</Text>
+              <View style={styles.modalDivider} />
+              <TouchableOpacity
+                onPress={() => {
+                  const photosToCopy = JSON.parse(selected as string);
+
+                  const updatedAlbums = albums.map((album) =>
+                    selectedAlbums.includes(album.name)
+                      ? { ...album, count: album.count + photosToCopy.length }
+                      : album
+                  );
+
+                  setAlbums(updatedAlbums);
+                  setSelectedAlbums([]);
+                  setConfirmVisible(false);
+
+                  router.push({
+                    pathname: "/my-stars/private-star/photos/created-album",
+                    params: {
+                      selected: selected,
+                      targetAlbums: JSON.stringify(selectedAlbums),
+                    },
+                  });
+                }}
+                style={styles.modalBtn}
+              >
+                <Text style={[styles.modalBtnText, { color: "#007AFF" }]}>Yes</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-      </Modal>
+      )}
     </View>
   );
 }
@@ -117,6 +144,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 50,
     fontSize: 20,
+    color: "#fff",
+    fontFamily: "Alice-Regular",
+  },
+  allText: {
+    position: "absolute",
+    top: 100,
+    right: 20,
     color: "#fff",
     fontFamily: "Alice-Regular",
   },
@@ -172,6 +206,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 20,
+    backgroundColor: "transparent",
   },
   footerText: {
     color: "#fff",
@@ -179,44 +214,47 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   modalOverlay: {
-    flex: 1,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.4)",
+    zIndex: 100,
   },
   modalBox: {
-    width: 280,
     backgroundColor: "#fff",
     borderRadius: 16,
     padding: 20,
+    width: 280,
     alignItems: "center",
   },
   modalText: {
     fontFamily: "Alice-Regular",
     fontSize: 16,
     color: "#11152A",
-    marginBottom: 20,
     textAlign: "center",
+    marginBottom: 20,
   },
-  modalButtons: {
+  modalActions: {
     flexDirection: "row",
     borderTopWidth: 1,
-    borderTopColor: "#eee",
+    borderColor: "#ccc",
     width: "100%",
   },
   modalBtn: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: 14,
+    paddingVertical: 12,
   },
-  modalCancel: {
-    color: "#007AFF",
-    fontSize: 16,
+  modalBtnText: {
     fontFamily: "Alice-Regular",
+    fontSize: 16,
   },
-  modalDelete: {
-    color: "#FF3B30",
-    fontSize: 16,
-    fontFamily: "Alice-Regular",
+  modalDivider: {
+    width: 1,
+    backgroundColor: "#ccc",
   },
 });

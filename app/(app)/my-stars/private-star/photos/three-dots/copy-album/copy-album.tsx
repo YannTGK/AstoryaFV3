@@ -1,4 +1,3 @@
-// --- PhotoSelectScreen.tsx ---
 import React, { useState } from "react";
 import {
   View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Dimensions

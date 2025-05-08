@@ -85,7 +85,7 @@ export default function EditAlbumScreen() {
 
       {selectedAlbums.length > 0 && (
         <TouchableOpacity style={styles.footerBar} onPress={() => setShowDeleteModal(true)}>
-          <Feather name="trash-2" size={20} color="#fff" style={{ marginRight: 10 }} />
+          <Feather name="trash" size={20} color="#fff" style={{ marginRight: 10 }} />
           <Text style={styles.footerText}>
             {selectedAlbums.length} photo{selectedAlbums.length !== 1 ? "’s" : ""} selected
           </Text>
