@@ -100,7 +100,7 @@ export default function WriteMessage() {
           disabled={!allFieldsFilled}
           activeOpacity={allFieldsFilled ? 0.8 : 1}
         >
-          <Text style={styles.addText}>Add</Text>
+          <Text style={styles.addText}>Save</Text>
         </TouchableOpacity>
       </View>
     </View>
