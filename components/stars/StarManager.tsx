@@ -1,186 +1,111 @@
-/*  Starmanager.tsx
-    – alle sterren draaien nu automatisch rond hun Z‑as         */
+import { useEffect, useRef } from "react";
+import { THREE } from "expo-three";
+import ThreeGLTFLoader from "@/Loaders/GLTFLoaderWrapper";
 
-    import { useEffect, useRef } from 'react';
-    import { THREE } from 'expo-three';
-    import ThreeGLTFLoader from '@/Loaders/GLTFLoaderWrapper';
-    
-    /* ------------------------------------------------------------------ */
-    /*  Palette                                                            */
-    /* ------------------------------------------------------------------ */
-    
-    const starOptions = [
-      { name: 'PEACE',        color: 0xffffff, emissive: 0xffffff }, // white–white
-      { name: 'HOPE',         color: 0xffffff, emissive: 0xffedaa }, // soft yellow
-      { name: 'SUCCESS',      color: 0xffffff, emissive: 0xffb3b3 }, // pastel red
-      { name: 'WEALTH',       color: 0xffffff, emissive: 0xffc9aa }, // pastel orange
-      { name: 'HEALTH',       color: 0xffffff, emissive: 0xd8ffd8 }, // pastel green
-      { name: 'OPPORTUNITY',  color: 0xffffff, emissive: 0xaacfff }, // pastel blue
-      { name: 'INSPIRATION',  color: 0xffffff, emissive: 0xe3d1ff }, // pastel purple
-      { name: 'REMEMBRANCE',  color: 0xffffff, emissive: 0xffc1e6 }, // pastel pink
-    ] as const;
-    
-    /* ------------------------------------------------------------------ */
-    /*  Helpers                                                            */
-    /* ------------------------------------------------------------------ */
-    
-    function seededRandom(seed: number) {
-      const x = Math.sin(seed) * 10_001;
-      return x - Math.floor(x);
-    }
-    
-    /* ------------------------------------------------------------------ */
-    /*  Star class                                                         */
-    /* ------------------------------------------------------------------ */
-    
-    type StarProps = {
-      position?: [number, number, number];
-      size?: [number, number, number];
-      id: string;
-      color: THREE.Color;
-      emissive: THREE.Color;
-    };
-    
-    class Star extends THREE.Object3D {
-      constructor({
-        position = [0, 0, 0],
-        size = [1, 1, 1],
-        id,
-        color,
-        emissive,
-      }: StarProps) {
-        super();
-    
-        this.position.set(...position);
-        this.userData = { id, color, emissive };
-    
-        // Make the star face “up” (Expo‑Three loads +Z forward)
-        this.rotation.x = -Math.PI / 2;
-    
-        this.loadModel(size).catch((err) =>
-          console.error('❌ GLB loading exception:', err)
-        );
-      }
-    
-      /** Loads the GLB, applies base‑white + emissive tint, then adds it. */
-      private async loadModel(size: [number, number, number]) {
-        const loader = new ThreeGLTFLoader();
-        const glbUrl =
-          'https://cdn.jsdelivr.net/gh/YannTGK/GlbFIle@main/star.glb';
-    
-        loader.load(
-          glbUrl,
-          (gltf) => {
-            const model = gltf.scene;
-            model.scale.set(...size);
-    
-            const { color, emissive } = this.userData as {
-              color: THREE.Color;
-              emissive: THREE.Color;
+/* ─── Star class ────────────────────────────────────────── */
+type StarProps = {
+  position: [number, number, number];
+  size: [number, number, number];
+  id: string;
+  color: THREE.Color;
+  emissive: THREE.Color;
+};
+
+class Star extends THREE.Object3D {
+  constructor({ position, size, id, color, emissive }: StarProps) {
+    super();
+    this.position.set(...position);
+    this.rotation.x = -Math.PI / 2;
+    this.userData = { id, color, emissive };
+    this.loadModel(size).catch(console.error);
+  }
+
+  private async loadModel(size: [number, number, number]) {
+    const loader = new ThreeGLTFLoader();
+    const url =
+      "https://cdn.jsdelivr.net/gh/YannTGK/GlbFIle@main/star.glb";
+
+    loader.load(
+      url,
+      (gltf) => {
+        const model = gltf.scene;
+        model.scale.set(...size);
+
+        const { color, emissive } = this.userData as {
+          color: THREE.Color;
+          emissive: THREE.Color;
+        };
+
+        model.traverse((child) => {
+          const mesh = child as THREE.Mesh;
+          if (mesh.isMesh && mesh.material) {
+            const apply = (m: THREE.MeshStandardMaterial) => {
+              m.color.copy(color);
+              m.emissive.copy(emissive);
+              m.emissiveIntensity = 0.3;
+              m.needsUpdate = true;
+              return m;
             };
-    
-            model.traverse((child) => {
-              const mesh = child as THREE.Mesh;
-              if (mesh.isMesh && mesh.material) {
-                mesh.material = Array.isArray(mesh.material)
-                  ? mesh.material.map((mat) => {
-                      const m = mat.clone() as THREE.MeshStandardMaterial;
-                      m.color.copy(color);
-                      m.emissive.copy(emissive);
-                      m.emissiveIntensity = 1;
-                      m.needsUpdate = true;
-                      return m;
-                    })
-                  : (() => {
-                      const m = mesh.material.clone() as THREE.MeshStandardMaterial;
-                      m.color.copy(color);
-                      m.emissive.copy(emissive);
-                      m.emissiveIntensity = 0.3;
-                      m.needsUpdate = true;
-                      return m;
-                    })();
-              }
-    
-              // ✅ userData doorkopiëren naar child nodes (voor raycasting)
-              child.userData = { ...child.userData, ...this.userData };
-            });
-    
-            this.add(model);
-          },
-          undefined,
-          (error) => console.error('❌ Error loading remote GLB:', error)
-        );
-      }
-    }
-    
-    /* ------------------------------------------------------------------ */
-    /*  StarsManager component                                             */
-    /* ------------------------------------------------------------------ */
-    
-    type StarsManagerProps = {
-      scene: THREE.Scene;
+            mesh.material = Array.isArray(mesh.material)
+              ? mesh.material.map((mat) => apply(mat.clone()))
+              : apply(mesh.material.clone());
+          }
+          child.userData = { ...child.userData, ...this.userData };
+        });
+
+        this.add(model);
+      },
+      undefined,
+      (e) => console.error("GLB load error:", e)
+    );
+  }
+}
+
+/* ─── Manager ───────────────────────────────────────────── */
+type StarsManagerProps = {
+  scene : THREE.Scene;
+  stars : Array<{
+    _id: string;
+    x:number; y:number; z:number;
+    color:string;
+    publicName?:string;
+  }>;
+};
+
+export default function StarsManager({ scene, stars }: StarsManagerProps) {
+  const starsRef = useRef<Star[]>([]);
+
+  /* build & clean up whenever stars[] verandert */
+  useEffect(() => {
+    // toevoegen
+    stars.forEach((s) => {
+      const star = new Star({
+        position: [s.x, s.y, s.z],
+        size: [3, 3, 3],
+        id: s._id,
+        color: new THREE.Color(s.color),
+        emissive: new THREE.Color(s.color), // zelfde kleur
+      });
+      star.userData.rotationSpeed = 0.008;
+      scene.add(star);
+      starsRef.current.push(star);
+    });
+
+    // simpele spin‑animatie
+    let frame = 0;
+    const spin = () => {
+      starsRef.current.forEach((st) => (st.rotation.z += st.userData.rotationSpeed));
+      frame = requestAnimationFrame(spin);
     };
-    
-    export default function StarsManager({ scene }: StarsManagerProps) {
-      const starsRef = useRef<Star[]>([]);
-      const seed = 42;
-    
-      useEffect(() => {
-        const numStars = 40;
-        const sizeRange: [number, number] = [2.5, 3.5];
-        const positionRange = 500;
-    
-        for (let i = 0; i < numStars; i++) {
-          const uniqueSeed = seed + i;
-    
-          const sizeVal =
-            seededRandom(uniqueSeed) * (sizeRange[1] - sizeRange[0]) +
-            sizeRange[0];
-          const size: [number, number, number] = [sizeVal, sizeVal, sizeVal];
-    
-          const position: [number, number, number] = [
-            (seededRandom(uniqueSeed * 1.1) - 0.5) * positionRange * 2,
-            (seededRandom(uniqueSeed * 1.2) - 0.5) * positionRange * 2,
-            (seededRandom(uniqueSeed * 1.3) - 0.5) * positionRange * 2,
-          ];
-    
-          const option = starOptions[i % starOptions.length];
-          const star = new Star({
-            position,
-            size,
-            id: `star_${i}`,
-            color: new THREE.Color(option.color),
-            emissive: new THREE.Color(option.emissive),
-          });
-    
-          // ✅ Extra data voor interactie
-          star.userData.name = option.name;
-          star.userData.content = true; // ✅ belangrijk voor raycasting
-          star.userData.rotationSpeed =
-            seededRandom(uniqueSeed * 99) * 0.010 + 0.025;
-    
-          starsRef.current.push(star);
-          scene.add(star);
-        }
-    
-        let frameId: number;
-        const spin = () => {
-          starsRef.current.forEach(
-            (s) => (s.rotation.z += s.userData.rotationSpeed ?? 0.005)
-          );
-          frameId = requestAnimationFrame(spin);
-        };
-        spin();
-    
-        return () => {
-          frameId && cancelAnimationFrame(frameId);
-          starsRef.current.forEach((s) => scene.remove(s));
-          starsRef.current = [];
-        };
-      }, [scene]);
-    
-      return null;
-    }
-    
-    export { Star };
-    
+    spin();
+
+    // clean‑up bij unmount / nieuwe lijst
+    return () => {
+      cancelAnimationFrame(frame);
+      starsRef.current.forEach((st) => scene.remove(st));
+      starsRef.current = [];
+    };
+  }, [scene, stars]);
+
+  return null;
+}
