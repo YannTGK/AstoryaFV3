@@ -50,6 +50,7 @@ class Star extends THREE.Object3D {
               ? mesh.material.map((mat) => apply(mat.clone()))
               : apply(mesh.material.clone());
           }
+          /* userData (id, color, emissive, content) doorkopiëren */
           child.userData = { ...child.userData, ...this.userData };
         });
 
@@ -75,31 +76,35 @@ type StarsManagerProps = {
 export default function StarsManager({ scene, stars }: StarsManagerProps) {
   const starsRef = useRef<Star[]>([]);
 
-  /* build & clean up whenever stars[] verandert */
   useEffect(() => {
-    // toevoegen
+    /* ── opbouwen ─────────────────────────────────────── */
     stars.forEach((s) => {
       const star = new Star({
         position: [s.x, s.y, s.z],
         size: [3, 3, 3],
         id: s._id,
         color: new THREE.Color(s.color),
-        emissive: new THREE.Color(s.color), // zelfde kleur
+        emissive: new THREE.Color(s.color),
       });
+
       star.userData.rotationSpeed = 0.008;
+      star.userData.content       = true;   //  ←  BELANGRIJK: maakt ster klikbaar
+
       scene.add(star);
       starsRef.current.push(star);
     });
 
-    // simpele spin‑animatie
+    /* ── eenvoudige spin‑animatie ─────────────────────── */
     let frame = 0;
     const spin = () => {
-      starsRef.current.forEach((st) => (st.rotation.z += st.userData.rotationSpeed));
+      starsRef.current.forEach(
+        (st) => (st.rotation.z += st.userData.rotationSpeed)
+      );
       frame = requestAnimationFrame(spin);
     };
     spin();
 
-    // clean‑up bij unmount / nieuwe lijst
+    /* ── clean‑up ──────────────────────────────────────── */
     return () => {
       cancelAnimationFrame(frame);
       starsRef.current.forEach((st) => scene.remove(st));

@@ -1,210 +1,184 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   StyleSheet,
   Dimensions,
   Text,
-} from 'react-native';
-import { GLView } from 'expo-gl';
-import { Renderer } from 'expo-three';
-import * as THREE from 'three';
-import { Raycaster, Vector2 } from 'three';
-import JoystickHandler from '@/components/joystick/JoystickHandler';
-import { setupControls } from '@/components/three/setupControls';
-import StarsManager from '@/components/stars/StarManager';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { useLayoutStore } from '@/lib/store/layoutStore';
+  ActivityIndicator,
+} from "react-native";
+import { GLView } from "expo-gl";
+import { Renderer } from "expo-three";
+import * as THREE from "three";
+import { Raycaster, Vector2 } from "three";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
 
-import PhotosIcon from '@/assets/images/svg-icons/photos.svg';
-import VideosIcon from '@/assets/images/svg-icons/videos.svg';
-import AudiosIcon from '@/assets/images/svg-icons/audios.svg';
-import MessagesIcon from '@/assets/images/svg-icons/messages.svg';
-import DocumentsIcon from '@/assets/images/svg-icons/documents.svg';
-import BookIcon from '@/assets/images/svg-icons/book-of-life.svg';
-import VRIcon from '@/assets/images/svg-icons/3D-VR-space.svg';
+import JoystickHandler   from "@/components/joystick/JoystickHandler";
+import { setupControls } from "@/components/three/setupControls";
+import StarsManager      from "@/components/stars/StarManager";
+import api               from "@/services/api";
+import { useLayoutStore }from "@/lib/store/layoutStore";
 
-const { width, height } = Dimensions.get('window');
+/* iconen */
+import PhotosIcon    from "@/assets/images/svg-icons/photos.svg";
+import VideosIcon    from "@/assets/images/svg-icons/videos.svg";
+import AudiosIcon    from "@/assets/images/svg-icons/audios.svg";
+import MessagesIcon  from "@/assets/images/svg-icons/messages.svg";
+import DocumentsIcon from "@/assets/images/svg-icons/documents.svg";
+import BookIcon      from "@/assets/images/svg-icons/book-of-life.svg";
+import VRIcon        from "@/assets/images/svg-icons/3D-VR-space.svg";
 
-export default function PublicScreen() {
+const { width, height } = Dimensions.get("window");
+
+/* ------------------------------------------------------- */
+export default function PrivateScreen() {
+  /* camera ------------------------------------------------ */
   const cameraRotation = useRef({ x: 0, y: 0 });
   const cameraPosition = useRef({ x: 0, y: 0, z: 10 });
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const rendererRef = useRef<any>(null);
-  const [scene, setScene] = useState<THREE.Scene | null>(null);
-  const [selectedStarName, setSelectedStarName] = useState<string | null>(null);
-  const [iconPositions, setIconPositions] = useState<{ x: number; y: number }[]>([]);
-  const [isStarSelected, setIsStarSelected] = useState(false);
-  const [joystickKey, setJoystickKey] = useState(0);
-  const [activeStarId, setActiveStarId] = useState<string | null>(null);
-  const [originalScale, setOriginalScale] = useState<THREE.Vector3 | null>(null);
-  const previousCameraPosition = useRef<THREE.Vector3>(new THREE.Vector3());
+  const cameraRef      = useRef<THREE.PerspectiveCamera|null>(null);
 
-  const setIsSearching = useLayoutStore((state) => state.setIsSearching);
+  /* scene & data ----------------------------------------- */
+  const [scene, setScene]   = useState<THREE.Scene|null>(null);
+  const [stars, setStars]   = useState<any[]>([]);
+  const [loading,setLoading]= useState(true);
 
-  const raycaster = new Raycaster();
-  const touchPosition = new Vector2();
-  const panResponder = useRef(setupControls({ cameraPosition, cameraRotation })).current;
+  /* overlay‑state ---------------------------------------- */
+  const [selectedStarName, setSelectedStarName] = useState<string|null>(null);
+  const [iconPos, setIconPos]  = useState<{x:number;y:number}[]>([]);
+  const [isStarSelected,setIsStarSelected] = useState(false);
+  const [joystickKey,setJoystickKey] = useState(0);
+  const [activeId,setActiveId] = useState<string|null>(null);
+  const [originalScale,setOriginalScale] = useState<THREE.Vector3|null>(null);
 
-  const isCameraLocked = useRef(false);
-  const targetCameraPosition = useRef(new THREE.Vector3(0, 0, 10));
+  const prevCamPos   = useRef(new THREE.Vector3());
+  const targetPos    = useRef(new THREE.Vector3(0,0,10));
+  const camLocked    = useRef(false);
 
-  const [bloomSettings] = useState({
-    threshold: 0,
-    strength: 3,
-    radius: 1,
-    exposure: 1,
-  });
+  const setIsSearching = useLayoutStore(s=>s.setIsSearching);
 
-  const iconSize = 65;
-  const iconOffset = iconSize / 2;
-
-  const iconComponents = [
-    <PhotosIcon key="photos" width={iconSize} height={iconSize} />,
-    <VideosIcon key="videos" width={iconSize} height={iconSize} />,
-    <AudiosIcon key="audios" width={iconSize} height={iconSize} />,
-    <MessagesIcon key="messages" width={iconSize} height={iconSize} />,
-    <DocumentsIcon key="docs" width={iconSize} height={iconSize} />,
-    <BookIcon key="book" width={iconSize} height={iconSize} />,
-    <VRIcon key="vr" width={iconSize} height={iconSize} />,
+  /* icons ------------------------------------------------- */
+  const iconSize=65, iconOffset=iconSize/2;
+  const icons=[
+    <PhotosIcon    key="p" width={iconSize} height={iconSize}/>,
+    <VideosIcon    key="v" width={iconSize} height={iconSize}/>,
+    <AudiosIcon    key="a" width={iconSize} height={iconSize}/>,
+    <MessagesIcon  key="m" width={iconSize} height={iconSize}/>,
+    <DocumentsIcon key="d" width={iconSize} height={iconSize}/>,
+    <BookIcon      key="b" width={iconSize} height={iconSize}/>,
+    <VRIcon        key="vr"width={iconSize} height={iconSize}/>,
   ];
 
-  const handleTouch = (event: any) => {
-    if (!scene || !cameraRef.current) return;
-    const { locationX, locationY } = event;
-    touchPosition.x = (locationX / width) * 2 - 1;
-    touchPosition.y = -(locationY / height) * 2 + 1;
-    raycaster.setFromCamera(touchPosition, cameraRef.current);
-    const intersects = raycaster.intersectObjects(scene.children, true);
+  /* fetch private + dedicate stars ----------------------- */
+  useEffect(()=>{(async()=>{
+    try{
+      const { stars } = (await api.get("/stars/private")).data;
+      setStars(stars);                       // [{ _id,x,y,z,color,publicName }]
+    }catch(e){console.error("private stars:",e);}
+    finally{setLoading(false);}
+  })();},[]);
 
-    if (intersects.length > 0) {
-      let obj = intersects[0].object;
-      while (obj && !obj.userData?.id && obj.parent) {
-        obj = obj.parent;
-      }
+  /* controls & raycast ----------------------------------- */
+  const panResponder = useRef(
+    setupControls({ cameraPosition,cameraRotation })
+  ).current;
 
-      const data = obj.userData;
+  const raycaster = new Raycaster();
+  const touch     = new Vector2();
 
-      if (data?.id && data?.content) {
-        if (data.id === activeStarId) {
-          if (originalScale) obj.scale.copy(originalScale);
-          setSelectedStarName(null);
-          setIconPositions([]);
-          setIsStarSelected(false);
-          setJoystickKey((prev) => prev + 1);
-          setActiveStarId(null);
-          setOriginalScale(null);
-          isCameraLocked.current = true;
-          targetCameraPosition.current.copy(previousCameraPosition.current);
-          setIsSearching(false);
-        } else {
-          previousCameraPosition.current.copy(cameraRef.current.position);
-          setSelectedStarName('Voor- & Achternaam');
-          setIsStarSelected(true);
-          setActiveStarId(data.id);
-          setOriginalScale(obj.scale.clone());
-          setIsSearching(false);
+  const handleTouch = (e:any)=>{
+    if(!scene||!cameraRef.current) return;
+    const {locationX,locationY}=e;
+    touch.x=(locationX/width)*2-1;
+    touch.y=-(locationY/height)*2+1;
+    raycaster.setFromCamera(touch,cameraRef.current);
+    const hits=raycaster.intersectObjects(scene.children,true);
+    if(!hits.length) return;
 
-          const starWorldPos = obj.getWorldPosition(new THREE.Vector3());
-          const offset = new THREE.Vector3(0, -1, 10);
-          targetCameraPosition.current.copy(starWorldPos.clone().add(offset));
-          isCameraLocked.current = true;
+    let obj=hits[0].object;
+    while(obj && !obj.userData?.id && obj.parent) obj=obj.parent;
+    const id=obj.userData?.id;
+    if(!id) return;
 
-          obj.scale.setScalar(obj.scale.x * 0.7);
-
-          const yOffset = -40; // naar boven verplaatsen
-          const r = 140;
-          const positions = Array.from({ length: 7 }, (_, i) => {
-            const angle = (i / 7) * 2 * Math.PI;
-            return {
-              x: width / 2 + r * Math.cos(angle),
-              y: height / 2 + yOffset + r * Math.sin(angle),
-            };
-          });
-          
-          setIconPositions(positions);
-        }
-      }
+    /* — sluit overlay als je dezelfde ster opnieuw tikt — */
+    if(id===activeId){
+      originalScale && obj.scale.copy(originalScale);
+      setSelectedStarName(null); setIconPos([]);
+      setIsStarSelected(false);  setJoystickKey(k=>k+1);
+      setActiveId(null);         setOriginalScale(null);
+      camLocked.current=true;    targetPos.current.copy(prevCamPos.current);
+      setIsSearching(false);
+      return;
     }
+
+    /* — open overlay — */
+    const star=stars.find(s=>s._id===id);
+    prevCamPos.current.copy(cameraRef.current.position);
+
+    setSelectedStarName(star?.publicName ?? "Naam ontbreekt");
+    setIsStarSelected(true);     setActiveId(id);
+    setOriginalScale(obj.scale.clone()); setIsSearching(false);
+
+    const worldPos=obj.getWorldPosition(new THREE.Vector3());
+    targetPos.current.copy(worldPos.add(new THREE.Vector3(0,-1,10)));
+    camLocked.current=true;
+    obj.scale.setScalar(obj.scale.x*0.7);
+
+    const yOff=-40, r=140;
+    setIconPos(Array.from({length:7},(_,i)=>({
+      x:width/2 + r*Math.cos((i/7)*2*Math.PI),
+      y:height/2+yOff + r*Math.sin((i/7)*2*Math.PI)
+    })));
   };
 
-  const createScene = async (gl: any) => {
-    const renderer = new Renderer({ gl, preserveDrawingBuffer: true });
-    renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
-    renderer.setClearColor(0x000000, 0);
-    renderer.toneMapping = THREE.ReinhardToneMapping;
-    renderer.toneMappingExposure = bloomSettings.exposure;
-    rendererRef.current = renderer;
+  /* Three init ------------------------------------------- */
+  const createScene = async(gl:any)=>{
+    const renderer = new Renderer({gl,preserveDrawingBuffer:true});
+    renderer.setSize(gl.drawingBufferWidth,gl.drawingBufferHeight);
 
     const newScene = new THREE.Scene();
-    newScene.background = null;
-    setScene(newScene);
+    newScene.background=null;    setScene(newScene);
 
     const camera = new THREE.PerspectiveCamera(
-      75,
-      gl.drawingBufferWidth / gl.drawingBufferHeight,
-      0.1,
-      10000
-    );
-    camera.position.z = cameraPosition.current.z;
-    cameraRef.current = camera;
+      75,gl.drawingBufferWidth/gl.drawingBufferHeight,0.1,10000);
+    camera.position.z=cameraPosition.current.z;  cameraRef.current=camera;
 
-    const composer = new EffectComposer(renderer);
-    composer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
-    composer.addPass(new RenderPass(newScene, camera));
+    const composer=new EffectComposer(renderer);
+    composer.addPass(new RenderPass(newScene,camera));
     composer.addPass(
-      new UnrealBloomPass(
-        new THREE.Vector2(gl.drawingBufferWidth, gl.drawingBufferHeight),
-        bloomSettings.strength,
-        bloomSettings.radius,
-        bloomSettings.threshold
-      )
+      new UnrealBloomPass(new THREE.Vector2(gl.drawingBufferWidth,gl.drawingBufferHeight),3,1,0)
     );
 
-    const render = () => {
-      requestAnimationFrame(render);
-
-      if (isCameraLocked.current && cameraRef.current) {
-        camera.position.lerp(targetCameraPosition.current, 0.1);
-      
-        // Check of camera dichtbij genoeg is om te stoppen met lock
-        const distance = camera.position.distanceTo(targetCameraPosition.current);
-        if (distance < 0.01) {
-          isCameraLocked.current = false;
-          // Update manual position so joystick resumes from correct spot
-          cameraPosition.current.x = camera.position.x;
-          cameraPosition.current.y = camera.position.y;
-          cameraPosition.current.z = camera.position.z;
+    const loop=()=>{requestAnimationFrame(loop);
+      if(camLocked.current){
+        camera.position.lerp(targetPos.current,0.1);
+        if(camera.position.distanceTo(targetPos.current)<0.01){
+          camLocked.current=false;
+          cameraPosition.current.x=camera.position.x;
+          cameraPosition.current.y=camera.position.y;
+          cameraPosition.current.z=camera.position.z;
         }
-      } else {
-        camera.position.set(
-          cameraPosition.current.x,
-          cameraPosition.current.y,
-          cameraPosition.current.z
-        );
-      }      
-
-      camera.rotation.x = cameraRotation.current.x;
-      camera.rotation.y = cameraRotation.current.y;
-      composer.render();
-      gl.endFrameEXP();
-    };
-
-    render();
+      }else{
+        camera.position.set(cameraPosition.current.x,cameraPosition.current.y,cameraPosition.current.z);
+      }
+      camera.rotation.x=cameraRotation.current.x;
+      camera.rotation.y=cameraRotation.current.y;
+      composer.render(); gl.endFrameEXP();
+    }; loop();
   };
 
-  return (
-    <View style={styles.container}>
+  /* render ----------------------------------------------- */
+  return(
+    <View style={styles.c}>
       <GLView
-        style={styles.glView}
+        style={styles.gl}
         onContextCreate={createScene}
-        onTouchEnd={(e) => handleTouch(e.nativeEvent)}
+        onTouchEnd={e=>handleTouch(e.nativeEvent)}
         {...(!isStarSelected && panResponder.panHandlers)}
       />
-      <View style={styles.crosshairContainer}>
-        <Text style={styles.crosshair}>+</Text>
-      </View>
+
+      {/* richtkruis */}
+      <View style={styles.cross}><Text style={styles.x}>+</Text></View>
 
       {!isStarSelected && (
         <JoystickHandler
@@ -214,54 +188,39 @@ export default function PublicScreen() {
         />
       )}
 
-      {scene && <StarsManager scene={scene} />}
+      {(loading||!scene) && (
+        <ActivityIndicator style={styles.spin} size="large" color="#fff"/>
+      )}
+
+      {scene && stars.length>0 && (
+        <StarsManager scene={scene} stars={stars}/>
+      )}
 
       {selectedStarName && (
-        <View style={styles.nameOverlay}>
-          <Text style={styles.nameText}>{selectedStarName}</Text>
+        <View style={styles.nameWrap}>
+          <Text style={styles.name}>{selectedStarName}</Text>
         </View>
       )}
 
-      {iconPositions.map((pos, index) => (
-        <View
-          key={index}
-          style={[styles.iconOverlay, { top: pos.y - iconOffset, left: pos.x - iconOffset }]}
-        >
-          {iconComponents[index]}
+      {iconPos.map((p,i)=>(
+        <View key={i} style={[styles.icon,{top:p.y-iconOffset,left:p.x-iconOffset}]}>
+          {icons[i]}
         </View>
       ))}
     </View>
   );
 }
 
+/* --------------------------- styles -------------------- */
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'white' },
-  glView: { position: 'absolute', width, height, top: 0, left: 0 },
-  crosshairContainer: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: [{ translateX: -10 }, { translateY: -10 }],
-    zIndex: 10,
-  },
-  crosshair: { fontSize: 24, color: 'white', textAlign: 'center' },
-  nameOverlay: {
-    position: 'absolute',
-    top: height / 2 + 135,
-    left: width / 2 - 100,
-    width: 200,
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  nameText: {
-    color: '#fff',
-    fontFamily: 'Alice-Regular',
-    fontSize: 16,
-  },
-  iconOverlay: {
-    position: 'absolute',
-    zIndex: 99,
-  },
+  c:{flex:1,backgroundColor:"#000"},
+  gl:{position:"absolute",width,height,top:0,left:0},
+  cross:{position:"absolute",top:"50%",left:"50%",
+         transform:[{translateX:-10},{translateY:-10}],zIndex:10},
+  x:{fontSize:24,color:"#fff"},
+  spin:{position:"absolute",top:"50%",left:"50%",marginLeft:-15,marginTop:-15},
+  nameWrap:{position:"absolute",top:height/2+135,left:width/2-100,
+            width:200,alignItems:"center"},
+  name:{color:"#fff",fontFamily:"Alice-Regular",fontSize:16},
+  icon:{position:"absolute",zIndex:99},
 });
