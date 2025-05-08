@@ -13,6 +13,7 @@ import Svg, { Path } from "react-native-svg";
 import StarView from "@/components/stars/StarView";
 import useAuthStore from "@/lib/store/useAuthStore";
 import api from "@/services/api";
+import UpgradePopup from "@/components/pop-ups/UpgradePopup";
 
 export default function StartMyStarPrivate() {
   const router = useRouter();
