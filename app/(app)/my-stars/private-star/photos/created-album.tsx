@@ -16,9 +16,10 @@ import ImageViewer from "react-native-image-zoom-viewer";
 import { Feather } from "@expo/vector-icons";
 
 export default function AlbumPage() {
-  const [images, setImages] = useState<string[]>([]);
   const router = useRouter();
   const { albumName } = useLocalSearchParams();
+  const currentAlbum = albumName as string;
+  const [images, setImages] = useState<string[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -118,10 +119,23 @@ export default function AlbumPage() {
               <Feather name="trash-2" size={16} color="#11152A" />
               <Text style={styles.menuText}>Delete</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem}>
-              <Feather name="copy" size={16} color="#11152A" />
-              <Text style={styles.menuText}>Copy to album</Text>
-            </TouchableOpacity>
+            <TouchableOpacity
+  style={styles.menuItem}
+  onPress={() => {
+    setMenuOpen(false);
+    router.push({
+      pathname: "/my-stars/private-star/photos/three-dots/copy-album/copy-album",
+      params: {
+        albumName: encodeURIComponent(currentAlbum),
+        selected: JSON.stringify(selectedPhotos), // ← geef mee welke foto's
+      },
+    });
+  }}
+>
+  <Feather name="copy" size={16} color="#11152A" />
+  <Text style={styles.menuText}>Copy to album</Text>
+</TouchableOpacity>
+
             <TouchableOpacity style={styles.menuItem}>
               <Feather name="folder-plus" size={16} color="#11152A" />
               <Text style={styles.menuText}>Move to album</Text>
@@ -298,7 +312,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 32,
+    marginTop: 16,
     marginHorizontal: 20,
     position: "relative",
   },
