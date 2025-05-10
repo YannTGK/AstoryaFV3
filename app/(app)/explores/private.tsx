@@ -10,9 +10,9 @@ import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
 import * as THREE from "three";
 import { Raycaster, Vector2 } from "three";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 
 import JoystickHandler   from "@/components/joystick/JoystickHandler";
 import { setupControls } from "@/components/three/setupControls";
@@ -69,7 +69,7 @@ export default function PrivateScreen() {
     <VRIcon        key="vr"width={iconSize} height={iconSize}/>,
   ];
 
-  /* fetch private + dedicate stars ----------------------- */
+  /* fetch private stars ---------------------------------- */
   useEffect(()=>{(async()=>{
     try{
       const { stars } = (await api.get("/stars/private")).data;
@@ -77,6 +77,29 @@ export default function PrivateScreen() {
     }catch(e){console.error("private stars:",e);}
     finally{setLoading(false);}
   })();},[]);
+
+/* ─── ✨ spawn direct voor een willekeurige ster ✨ ─────── */
+useEffect(() => {
+  if (!cameraRef.current || stars.length === 0) return;
+
+  /* 1️⃣ kies willekeurige ster */
+  const randIndex      = Math.floor(Math.random() * stars.length);
+  const { x, y, z }    = stars[randIndex];
+
+  /* 2️⃣ camera 20 units vóór de ster op de z‑as */
+  cameraPosition.current.x = x;
+  cameraPosition.current.y = y;
+  cameraPosition.current.z = z + 20;
+
+  /* 3️⃣ echte camera verplaatsen & laten kijken */
+  const cam = cameraRef.current;
+  cam.position.set(
+    cameraPosition.current.x,
+    cameraPosition.current.y,
+    cameraPosition.current.z
+  );
+  cam.lookAt(new THREE.Vector3(x, y, z));
+}, [stars]);               // ⇢ wordt één keer uitgevoerd als stars er zijn
 
   /* controls & raycast ----------------------------------- */
   const panResponder = useRef(
