@@ -11,6 +11,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { Feather } from "@expo/vector-icons";
+import { useLocalSearchParams } from "expo-router";
+import { useEffect } from "react";
 
 const initialMembers = [
   { id: "1", username: "You" },
@@ -19,10 +21,28 @@ const initialMembers = [
 
 export default function GroupMembers() {
   const router = useRouter();
+  const { users } = useLocalSearchParams();
   const [members, setMembers] = useState(initialMembers);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedMember, setSelectedMember] = useState<{ id: string; username: string } | null>(null);
 
+  useEffect(() => {
+    if (users) {
+      try {
+        const parsed = JSON.parse(users as string);
+        const newMembers = parsed.filter(
+          (newUser: any) => !members.some((m) => m.id === newUser.id)
+        );
+        if (newMembers.length > 0) {
+          setMembers((prev) => [...prev, ...newMembers]);
+        }
+      } catch (err) {
+        console.warn("Failed to parse users param:", err);
+      }
+    }
+  }, [users]);
+  
+  
   const confirmDelete = () => {
     if (selectedMember) {
       setMembers((prev) => prev.filter((m) => m.id !== selectedMember.id));
@@ -39,6 +59,7 @@ export default function GroupMembers() {
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
       />
+
 
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">

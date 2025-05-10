@@ -5,10 +5,10 @@ import Svg, { Path } from "react-native-svg";
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { useState } from "react";
 import useAuthStore from "@/lib/store/useAuthStore";
 import StarView from "@/components/stars/StarView";
@@ -115,7 +115,9 @@ export default function FinalMyStarPrivate() {
   ];
 
   const handlePress = (label: string) => {
-    if (label === "Messages") {
+    if (label === "Photo's") {
+      router.push("/(app)/my-stars/private-star/photos/photo-private-star");
+    } else if (label === "Messages") {
       router.push("/(app)/my-stars/private-star/messages/no-messages");
     } else if (label === "Documents") {
       router.push("/(app)/my-stars/private-star/documents/no-documents");
@@ -123,6 +125,8 @@ export default function FinalMyStarPrivate() {
       router.push("/(app)/my-stars/private-star/audios/no-audios");
     }
   };
+  
+  
 
   return (
     <View style={{ flex: 1 }}>

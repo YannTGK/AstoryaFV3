@@ -48,7 +48,7 @@ export default function SeeMembersDedicate() {
       <Text style={styles.title}>Members</Text>
 
       {/* Plus knop */}
-      <TouchableOpacity style={styles.plusBtn} onPress={() => router.push("/dedicates/add-members-dedicate")}>
+      <TouchableOpacity style={styles.plusBtn} onPress={() => router.push("/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/add-people/AddMorePeople")}>
         <PlusIcon width={36} height={36} />
       </TouchableOpacity>
 
@@ -81,19 +81,19 @@ const styles = StyleSheet.create({
   },
   plusBtn: {
     position: "absolute",
-    top: 85,
-    right: 24,
+    top: 95,
+    right: 16,
     zIndex: 20,
   },
   listWrapper: {
-    marginTop: 60,
+    marginTop: 88,
     paddingHorizontal: 16,
   },
   memberItem: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#ffffff",
-    borderRadius: 10,
+    borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginBottom: 16,

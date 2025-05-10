@@ -2,7 +2,6 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Keyboa
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
-import Plus2Icon from "@/assets/images/svg-icons/plus2.svg";
 import { useState } from "react";
 
 export default function WriteMessage() {
@@ -62,14 +61,11 @@ export default function WriteMessage() {
           <View style={styles.inputWithIcon}>
             <TextInput
               style={styles.inputWithPadding}
-              placeholder="To: @..."
+              placeholder="To: ..."
               placeholderTextColor="#888"
               value={to}
               onChangeText={setTo}
             />
-            <TouchableOpacity style={styles.iconInside}>
-              <Plus2Icon width={24} height={24} />
-            </TouchableOpacity>
           </View>
 
           {/* Message */}
