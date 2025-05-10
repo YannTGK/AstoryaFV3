@@ -10,9 +10,9 @@ import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
 import * as THREE from "three";
 import { Raycaster, Vector2 } from "three";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 
 import JoystickHandler   from "@/components/joystick/JoystickHandler";
 import { setupControls } from "@/components/three/setupControls";
@@ -46,6 +46,28 @@ export default function PublicScreen() {
       }
     })();
   }, []);
+
+/* ─── ✨ spawn direct voor een ster (random) ✨ ─────────── */
+useEffect(() => {
+  if (!cameraRef.current || stars.length === 0) return;
+
+  /* 1️⃣ kies een willekeurige ster */
+  const randIndex    = Math.floor(Math.random() * stars.length);
+  const { x, y, z }  = stars[randIndex];
+
+  /* 2️⃣ camera 20 units vóór de gekozen ster */
+  cameraPosition.current.x = x;
+  cameraPosition.current.y = y;
+  cameraPosition.current.z = z + 20;
+
+  const cam = cameraRef.current;
+  cam.position.set(
+    cameraPosition.current.x,
+    cameraPosition.current.y,
+    cameraPosition.current.z
+  );
+  cam.lookAt(new THREE.Vector3(x, y, z));     // blijf naar de ster kijken
+}, [stars]);
 
   /* ─── input / ray‑casting ────────────────────────────── */
   const raycaster = new Raycaster();
