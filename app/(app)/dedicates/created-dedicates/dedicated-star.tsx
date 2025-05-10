@@ -19,38 +19,44 @@ import AddPeopleIcon  from "@/assets/images/svg-icons/add-people.svg";
 import SeeMembersIcon from "@/assets/images/svg-icons/see-members.svg";
 
 export default function DedicatedStar() {
-  const router = useRouter();
+  const router   = useRouter();
   const { starId } = useLocalSearchParams<{ starId: string }>();
 
-  const [star, setStar]     = useState<any | null>(null);
+  const [star, setStar]       = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
 
-
-  
-  /* ophalen detail */
+  /* detail ophalen */
   useEffect(() => {
-    const fetchStar = async () => {
+    (async () => {
       try {
         const { star: s } = (await api.get(`/stars/${starId}`)).data;
         setStar(s);
       } catch (e) { console.error(e); }
       finally     { setLoading(false); }
-    };
-    fetchStar();
+    })();
   }, [starId]);
 
   /* back naar lijst */
   const goBackToList = () => router.replace("/(app)/dedicates/dedicate");
 
   /* menu actions */
-  const handleAddPeople  = () => router.push("/dedicates/created-dedicates/add-people/add-people-dedicate");
-  const handleSeeMembers = () => router.push("/dedicates/no-members-dedicate");
+  const handleAddPeople = () =>
+    router.push({
+      pathname: "/dedicates/created-dedicates/add-people/add-people-dedicate",
+      params:   { starId },          // ⭐ ID meegeven
+    });
 
-  const handlePhotosPress = () => {
+  const handleSeeMembers = () =>
+    router.push({
+      pathname: "/dedicates/created-dedicates/see-members/see-members-dedicate",
+      params:   { starId },
+    });
+
+  /* voorbeeld: foto's map */
+  const handlePhotosPress = () =>
     router.push("/dedicates/created-dedicates/content-maps/photos/photo-album");
-  }; // ← sluit deze functie netjes af!
-  
+
   if (loading || !star) {
     return (
       <View style={styles.centered}>
@@ -70,17 +76,17 @@ export default function DedicatedStar() {
 
       {/* ⋯ menu knop */}
       <TouchableOpacity style={styles.moreBtn} onPress={() => setMenuOpen(!menuOpen)}>
-        <MoreIcon width={24} height={24} />
+        <MoreIcon width={24} height={24}/>
       </TouchableOpacity>
 
       {menuOpen && (
         <View style={styles.menu}>
           <TouchableOpacity style={styles.menuItem} onPress={handleAddPeople}>
-            <AddPeopleIcon width={16} height={16} />
+            <AddPeopleIcon width={16} height={16}/>
             <Text style={styles.menuText}>Add people</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={handleSeeMembers}>
-            <SeeMembersIcon width={16} height={16} />
+            <SeeMembersIcon width={16} height={16}/>
             <Text style={styles.menuText}>See members</Text>
           </TouchableOpacity>
         </View>
@@ -90,7 +96,7 @@ export default function DedicatedStar() {
 
       {/* ster + naam */}
       <View style={styles.canvasWrapper}>
-        <StarView emissive={parseInt(star.color.replace("#", ""), 16)} rotate={false} />
+        <StarView emissive={parseInt(star.color.replace("#", ""), 16)} rotate={false}/>
         <View style={styles.nameOverlay}>
           <Text style={styles.nameText}>{star.publicName}</Text>
         </View>
@@ -98,37 +104,25 @@ export default function DedicatedStar() {
 
       {/* media iconen */}
       <ScrollView
-  horizontal
-  showsHorizontalScrollIndicator={false}
-  style={styles.scrollRow}
-  contentContainerStyle={{ paddingHorizontal: 20 }}
->
-  {[
-    { label: "Photo's", icon: <PhotosIcon width={60} height={60} />, onPress: handlePhotosPress },
-    { label: "Video’s", icon: <VideosIcon width={60} height={60} /> },
-    { label: "Audio’s", icon: <AudiosIcon width={60} height={60} /> },
-    { label: "Documents", icon: <DocumentsIcon width={60} height={60} /> },
-    { label: "Book of Life", icon: <BookOfLifeIcon width={60} height={60} /> },
-  ].map((item, idx) => {
-    const content = (
-      <View style={styles.iconItem}>
-        {item.icon}
-        <Text style={styles.iconLabel}>{item.label}</Text>
-      </View>
-    );
-
-    return item.onPress ? (
-      <TouchableOpacity key={idx} onPress={item.onPress}>
-        {content}
-      </TouchableOpacity>
-    ) : (
-      <View key={idx}>
-        {content}
-      </View>
-    );
-  })}
-</ScrollView>
-
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.scrollRow}
+        contentContainerStyle={{ paddingHorizontal: 20 }}
+      >
+        {[
+          { label:"Photo's",     icon:<PhotosIcon width={60} height={60}/>, onPress:handlePhotosPress },
+          { label:"Video’s",     icon:<VideosIcon width={60} height={60}/> },
+          { label:"Audio’s",     icon:<AudiosIcon width={60} height={60}/> },
+          { label:"Documents",   icon:<DocumentsIcon width={60} height={60}/> },
+          { label:"Book of Life",icon:<BookOfLifeIcon width={60} height={60}/> },
+        ].map((it, i) => (
+          it.onPress
+            ? <TouchableOpacity key={i} onPress={it.onPress}>
+                <View style={styles.iconItem}>{it.icon}<Text style={styles.iconLabel}>{it.label}</Text></View>
+              </TouchableOpacity>
+            : <View key={i} style={styles.iconItem}>{it.icon}<Text style={styles.iconLabel}>{it.label}</Text></View>
+        ))}
+      </ScrollView>
     </View>
   );
 }
