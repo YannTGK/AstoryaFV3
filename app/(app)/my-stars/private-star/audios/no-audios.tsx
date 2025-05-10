@@ -1,104 +1,24 @@
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Path } from "react-native-svg";
-import PlusIcon from "@/assets/images/svg-icons/plus.svg";
-import NoAudiosIcon from "@/assets/images/svg-icons/no-audios.svg"; 
-import UploadIcon from "@/assets/images/svg-icons/upload-icon.svg";
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
 
 export default function NoAudios() {
-  const router = useRouter();
-
-  
-  const handleUploadPress = () => {
-    //setShowPopup(true);
-  };
-
   return (
-    <View style={{ flex: 1 }}>
-      <LinearGradient
-        colors={["#000000", "#273166", "#000000"]}
-        style={StyleSheet.absoluteFill}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-      />
-
-      {/* Back-button */}
-      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M15 18l-6-6 6-6"
-            stroke="#FEEDB6"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
-      </TouchableOpacity>
-
-      {/* Upload button rechtsboven */}
-      <TouchableOpacity style={styles.uploadBtn} onPress={handleUploadPress}>
-        <UploadIcon width={30} height={30} />
-      </TouchableOpacity>      
-
-      {/* Titel */}
-      <Text style={styles.title}>Audio's</Text>
-
-      {/* Geen audio - GECENTREERD */}
-      <View style={styles.centeredContent}>
-        <NoAudiosIcon width={140} height={140} />
-        <Text style={styles.messageText}>No audio memories here…{"\n"}yet!</Text>
-      </View>
-
-      {/* Plus-knop */}
-      <View style={styles.plusWrapper}>
-        <TouchableOpacity onPress={() => router.push("/(app)/my-stars/private-star/audios/audios")}>
-          <PlusIcon width={50} height={50} />
-        </TouchableOpacity>
-      </View>
+    <View style={styles.container}>
+      <Text style={styles.text}>No audio files found.</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  backBtn: {
-    position: "absolute",
-    top: 50,
-    left: 20,
-    zIndex: 10,
-  },
-  uploadBtn: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    zIndex: 10,
-  },
-  title: {
-    fontFamily: "Alice-Regular",
-    fontSize: 20,
-    color: "#fff",
-    textAlign: "center",
-    marginTop: 50,
-  },
-  centeredContent: {
+  container: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 80,
+    backgroundColor: "#000",
   },
-  messageText: {
+  text: {
     color: "#fff",
     fontFamily: "Alice-Regular",
-    fontSize: 14,
-    textAlign: "center",
-    marginTop: 10,
-    lineHeight: 20,
-  },
-  plusWrapper: {
-    position: "absolute",
-    bottom: 100,
-    width: "100%",
-    alignItems: "center",
-    zIndex: 10,
+    fontSize: 16,
   },
 });
