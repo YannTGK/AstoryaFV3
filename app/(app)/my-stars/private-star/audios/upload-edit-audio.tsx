@@ -118,7 +118,9 @@ export default function EditAudioScreen() {
 </View>
       <ScrollView contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}>
   <View style={styles.playerBox}>
-          <Text style={styles.audioFilename}>{name ?? "audio.mp3"}</Text>
+<Text style={styles.audioFilename}>
+  {title ? `${title}` : name || "audio.mp3"}
+</Text>
 
           <View
             style={styles.progressBar}
@@ -132,13 +134,23 @@ export default function EditAudioScreen() {
           <Text style={styles.timestamp}>{formatTime(position)} / {formatTime(duration)}</Text>
 
           <View style={styles.controlsContainer}>
-            <TouchableOpacity onPress={loadAndPlay}>
-              {isPlaying ? <PauseIcon width={24} height={24} /> : <PlayIcon width={24} height={24} />}
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => { if (sound) { sound.stopAsync(); setIsPlaying(false); } }}>
-              <StopIcon width={24} height={24} />
-            </TouchableOpacity>
-          </View>
+  <TouchableOpacity onPress={loadAndPlay}>
+    {isPlaying ? <PauseIcon width={24} height={24} /> : <PlayIcon width={24} height={24} />}
+  </TouchableOpacity>
+
+  <TouchableOpacity
+    onPress={() => {
+      if (sound) {
+        sound.stopAsync();
+        setIsPlaying(false);
+      }
+    }}
+    style={{ marginLeft: 30 }}  // ← voeg meer ruimte toe
+  >
+    <StopIcon width={24} height={24} />
+  </TouchableOpacity>
+</View>
+
         </View>
       </ScrollView>
 
@@ -177,6 +189,7 @@ menuText: {
   form: {
     marginTop: 80,
     paddingHorizontal: 20,
+    
   },
   input: {
     backgroundColor: "#fff",
@@ -218,7 +231,7 @@ menuText: {
     top: -6,
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: 8,
     backgroundColor: "#FEEDB6",
     transform: [{ translateX: -10 }],
   },
@@ -228,23 +241,23 @@ menuText: {
     alignItems: "center",
     backgroundColor: "#FEEDB6",
     paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     borderRadius: 40,
     marginTop: 16,
   },
   addBtn: {
     position: "absolute",
     bottom: 110,
-    left: 20,
-    right: 20,
+    left: 16,
+    right: 16,
     backgroundColor: "#ccc",
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",
     zIndex: 10,
   },
   addText: {
-    fontSize: 16,
+    fontSize: 18,
     color: "#333",
   },
 });
