@@ -12,8 +12,18 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Audio } from "expo-av";
 import Svg, { Rect } from "react-native-svg";
+import PlayIcon from "@/assets/images/icons/play.svg";
+import PauseIcon from "@/assets/images/icons/pause.svg";
+import StopIcon from "@/assets/images/icons/stop-circle.svg";
 
 const { width: screenWidth } = Dimensions.get("window");
+
+function formatTime(ms: number) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+}
 
 export default function EditAudioScreen() {
   const router = useRouter();
@@ -25,6 +35,9 @@ const uri = typeof rawUri === 'string' ? rawUri : rawUri?.[0] ?? '';
 const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [peaks, setPeaks] = useState<number[]>([]);
+  const [position, setPosition] = useState(0);
+const [duration, setDuration] = useState(1); // voorkomen van deling door nul
+
 
   useEffect(() => {
     // Mock peaks for demonstration; replace with real waveform data
@@ -37,13 +50,21 @@ const [sound, setSound] = useState<Audio.Sound | null>(null);
   }, []);
 
   const loadAndPlay = async () => {
-    if (!sound) {
-      const { sound: newSound } = await Audio.Sound.createAsync({ uri });
-      setSound(newSound);
-      await newSound.playAsync();
-      setIsPlaying(true);
-    } else {
-      if (isPlaying) {
+  if (!sound) {
+    const { sound: newSound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: true });
+    setSound(newSound);
+    setIsPlaying(true);
+
+    newSound.setOnPlaybackStatusUpdate((status) => {
+      if (!status.isLoaded) return; // ✅ check eerst of geladen
+      setPosition(status.positionMillis);
+      setDuration(status.durationMillis || 1);
+      setIsPlaying(status.isPlaying); // ✅ nu veilig
+    });
+  } else {
+    const status = await sound.getStatusAsync();
+    if ('isLoaded' in status && status.isLoaded) {
+      if (status.isPlaying) {
         await sound.pauseAsync();
         setIsPlaying(false);
       } else {
@@ -51,7 +72,9 @@ const [sound, setSound] = useState<Audio.Sound | null>(null);
         setIsPlaying(true);
       }
     }
-  };
+  }
+};
+
 
   return (
     <View style={{ flex: 1 }}>
@@ -95,11 +118,37 @@ const [sound, setSound] = useState<Audio.Sound | null>(null);
       <View style={styles.playerBox}>
   <Text style={styles.audioFilename}>{name ?? "audio.mp3"}</Text>
   <Text style={styles.timestamp}>00:00 / 00:30</Text>
-  <View style={styles.controls}>
-    <TouchableOpacity style={styles.controlBtn} onPress={loadAndPlay}>
-      <Text style={styles.controlText}>{isPlaying ? "⏸" : "▶️"}</Text>
-    </TouchableOpacity>
-  </View>
+  <View style={styles.progressBar}>
+  <View style={[styles.progressFill, { width: `${(position / duration) * 100}%` }]} />
+</View>
+<Text style={styles.timestamp}>
+  {formatTime(position)} / {formatTime(duration)}
+</Text>
+
+ <View style={styles.controlsContainer}>
+ <TouchableOpacity onPress={loadAndPlay}>
+  {isPlaying ? (
+    <PauseIcon width={24} height={24} />
+  ) : (
+    <PlayIcon width={24} height={24} />
+  )}
+</TouchableOpacity>
+
+ <TouchableOpacity
+  onPress={() => {
+    if (sound) {
+      sound.stopAsync();
+      setIsPlaying(false);
+    }
+  }}
+  style={{ marginLeft: 20 }}
+>
+  <StopIcon width={24} height={24} />
+</TouchableOpacity>
+
+</View>
+
+
 </View>
 
 
@@ -167,6 +216,34 @@ playerBox: {
     fontSize: 20,
     color: "#11152A",
   },
+  controlsContainer: {
+  flexDirection: "row",
+  justifyContent: "space-around",
+  alignItems: "center",
+  backgroundColor: "#FEEDB6",
+  paddingVertical: 10,
+  paddingHorizontal: 20,
+  borderRadius: 40,
+  marginTop: 16,
+},
+controlIcon: {
+  fontSize: 24,
+  color: "#11152A",
+  marginHorizontal: 10,
+},
+progressBar: {
+  width: "90%",
+  height: 6,
+  backgroundColor: "#999",
+  borderRadius: 3,
+  overflow: "hidden",
+  marginTop: 8,
+},
+progressFill: {
+  height: 6,
+  backgroundColor: "#FEEDB6",
+},
+
   addBtn: {
     backgroundColor: "#ccc",
     paddingVertical: 16,
