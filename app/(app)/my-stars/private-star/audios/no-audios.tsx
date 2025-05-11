@@ -10,11 +10,31 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import { useRouter } from "expo-router";
 import HeadphoneIcon from "@/assets/images/icons/no-audio.svg"
-import PlusIcon from "@/assets/images/svg-icons/plus3.svg";
+import PlusIcon from "@/assets/images/svg-icons/plus.svg";
 import UploadIcon from "@/assets/images/icons/upload-cloud.svg";
+import * as DocumentPicker from "expo-document-picker";
+import { Alert } from "react-native";
 
 export default function AudioScreen() {
   const router = useRouter();
+
+  const handleUploadAudio = async () => {
+      console.log("Upload knop werd geklikt");
+
+  const result = await DocumentPicker.getDocumentAsync({
+    type: "audio/*",
+    copyToCacheDirectory: true,
+    multiple: false,
+  });
+
+  if (result.canceled) return;
+
+  const file = result.assets[0];
+  console.log("Audio-bestand geselecteerd:", file);
+
+  // eventueel een uploadactie starten hier
+  Alert.alert("Audio geselecteerd", file.name);
+};
 
   return (
     <View style={{ flex: 1 }}>
@@ -39,14 +59,14 @@ export default function AudioScreen() {
       {/* Title */}
       <Text style={styles.title}>Audio</Text>
 
-     <TouchableOpacity style={styles.uploadBtn}>
-  <UploadIcon width={24} height={24} />
+<TouchableOpacity style={styles.uploadBtn} onPress={handleUploadAudio}>
+  <UploadIcon width={34} height={34} />
 </TouchableOpacity>
 
 
       {/* Headphone icon */}
      <View style={styles.centerContent}>
-  <HeadphoneIcon width={120} height={120} />
+  <HeadphoneIcon width={132} height={132} />
   <Text style={styles.text}>No audio memories here…{"\n"}yet!</Text>
 </View>
 
@@ -85,7 +105,7 @@ const styles = StyleSheet.create({
   },
 uploadBtn: {
   position: "absolute",
-  top: 80,
+  top: 110,
   right: 16,
   zIndex: 10,
 },
