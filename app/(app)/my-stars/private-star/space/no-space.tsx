@@ -87,7 +87,7 @@ export default function NoVRSpace() {
             <TextInput
               value={spaceName}
               onChangeText={setSpaceName}
-              placeholder="e.g. To my daughter"
+              placeholder="Enter a name"
               placeholderTextColor="#999"
               style={styles.input}
             />
