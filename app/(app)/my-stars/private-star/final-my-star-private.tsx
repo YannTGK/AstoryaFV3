@@ -123,11 +123,11 @@ export default function FinalMyStarPrivate() {
       router.push("/(app)/my-stars/private-star/documents/no-documents");
     } else if (label === "Audio’s") {
       router.push("/(app)/my-stars/private-star/audios/no-audios");
+    } else if (label === "3D VR Space") {
+      router.push("/(app)/my-stars/private-star/space/no-space");
     }
   };
   
-  
-
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
