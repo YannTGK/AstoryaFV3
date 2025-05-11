@@ -6,8 +6,8 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import CountryPicker, {
   Country,
@@ -16,17 +16,20 @@ import CountryPicker, {
 import Svg, { Path } from "react-native-svg";
 import StarLoader from "../../../../components/loaders/StarLoader";
 
-export default function Filter() {
+export default function Privateilter() {
   const router = useRouter();
   const { from } = useLocalSearchParams<{ from: string }>();
 
   const [dob, setDob] = useState("");
   const [dod, setDod] = useState("");
   const [countryCode, setCountryCode] = useState<CountryCode>("BE");
-  const [countryName, setCountryName] = useState<string>("Belgium");
-  const [coordinate, setCoordinate] = useState("");
+  const [countryName, setCountryName] = useState("Belgium");
 
-  const [loading, setLoading] = useState(false);
+  const [coordX, setCoordX] = useState("");
+  const [coordY, setCoordY] = useState("");
+  const [coordZ, setCoordZ] = useState("");
+
+  const [loading, setLoading]   = useState(false);
   const [progress, setProgress] = useState(0);
 
   const handleApplyFilter = () => {
@@ -59,7 +62,7 @@ export default function Filter() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       {/* Header met back */}
       <View style={styles.titleRow}>
         <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
@@ -104,23 +107,43 @@ export default function Filter() {
           withFlag
           withFilter
           withCountryNameButton
-          onSelect={(country: Country) => {
-            setCountryCode(country.cca2 as CountryCode);
-            setCountryName(country.name);
+          onSelect={(c: Country) => {
+            setCountryCode(c.cca2 as CountryCode);
+            setCountryName(c.name);
           }}
           containerButtonStyle={styles.countryButton}
         />
+        <Text style={styles.countryText}>{countryName}</Text>
       </View>
 
-      {/* Coordinate */}
-      <Text style={styles.label}>Coordinate</Text>
-      <TextInput
-        placeholder="X(),Y(),Z()"
-        placeholderTextColor="#aaa"
-        style={styles.input}
-        value={coordinate}
-        onChangeText={setCoordinate}
-      />
+      {/* Coordinates X / Y / Z */}
+      <Text style={styles.label}>Coordinates</Text>
+      <View style={styles.coordRow}>
+        <TextInput
+          placeholder="X"
+          placeholderTextColor="#aaa"
+          style={[styles.input, styles.coordInput]}
+          value={coordX}
+          onChangeText={setCoordX}
+          keyboardType="numeric"
+        />
+        <TextInput
+          placeholder="Y"
+          placeholderTextColor="#aaa"
+          style={[styles.input, styles.coordInput]}
+          value={coordY}
+          onChangeText={setCoordY}
+          keyboardType="numeric"
+        />
+        <TextInput
+          placeholder="Z"
+          placeholderTextColor="#aaa"
+          style={[styles.input, styles.coordInput]}
+          value={coordZ}
+          onChangeText={setCoordZ}
+          keyboardType="numeric"
+        />
+      </View>
 
       {/* Filter button */}
       <View style={styles.buttonWrapper}>
@@ -135,7 +158,7 @@ export default function Filter() {
           <StarLoader progress={progress} />
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -144,7 +167,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0B1022",
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingBottom: 20,
   },
   titleRow: {
     flexDirection: "row",
@@ -194,6 +217,15 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: "#000",
+    fontFamily: "Alice-Regular",
+  },
+  coordRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  coordInput: {
+    flex: 1,
+    marginRight: 8,
   },
   buttonWrapper: {
     marginTop: 25,

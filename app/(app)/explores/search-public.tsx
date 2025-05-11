@@ -18,6 +18,7 @@ import { useLayoutStore } from "@/lib/store/layoutStore";
 import SearchIcon from "@/assets/images/svg-icons/search.svg";
 import FilterIcon from "@/assets/images/svg-icons/filter.svg";
 import CloseIcon from "@/assets/images/svg-icons/close-icon2.svg";
+import { useFilterStore } from "@/lib/store/filterStore";
 
 export default function SearchPublic() {
   const router = useRouter();
@@ -33,10 +34,12 @@ export default function SearchPublic() {
 
   /* Guard: zet toggle altijd off→on als nodig */
   useEffect(() => {
+    const { resetFilters } = useFilterStore.getState();
+    resetFilters();               // ← filter resetten bij aankomst
     if (!showOnlyMine) {
-      setShowOnlyMine(false);
+      setShowOnlyMine(false);     // ← toggle guard behouden
     }
-  }, [showOnlyMine]);
+  }, []);
 
   return (
     <SafeAreaView style={[st.wrap, { paddingTop: insets.top }]} edges={["top", "left", "right"]}>

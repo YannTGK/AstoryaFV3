@@ -13,61 +13,144 @@ import { setupControls } from "@/components/three/setupControls";
 import StarsManager from "@/components/stars/StarManager";
 import api from "@/services/api";
 import { useLayoutStore } from "@/lib/store/layoutStore";
+import { useFilterStore } from "@/lib/store/filterStore";
 
 const { width, height } = Dimensions.get("window");
-const CLUSTER_FACTOR = 0.15;           // ↙︎ afstandsreductie wanneer toggle aan staat
+const CLUSTER_FACTOR = 0.15;
+
+const isNear = (value: number, target: number, margin = 2) =>
+  Math.abs(value - target) <= margin;
 
 export default function PublicScreen() {
-  /* ─── camera refs ───────────────────────────────────── */
   const camPos = useRef({ x: 0, y: 0, z: 10 });
   const camRot = useRef({ x: 0, y: 0 });
   const camRef = useRef<THREE.PerspectiveCamera | null>(null);
 
-  /* ─── data state ────────────────────────────────────── */
   const [rawStars, setRawStars] = useState<any[]>([]);
-  const [scene, setScene]       = useState<THREE.Scene | null>(null);
-  const [loading, setLoading]   = useState(true);
+  const [scene, setScene] = useState<THREE.Scene | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const showOnlyMine = useLayoutStore((s) => s.showOnlyMine);
+  const { dob, dod, country, coordX, coordY, coordZ } = useFilterStore();
 
-  /* ─── fetch once ────────────────────────────────────── */
-  useEffect(() => { (async () => {
-    try {
-      const { stars } = (await api.get("/stars/public")).data;
-      setRawStars(stars);
-    } catch (e) { console.error(e); }
-    finally     { setLoading(false); }
-  })(); }, []);
+  useEffect(() => {
+    (async () => {
+      try {
+        const { stars } = (await api.get("/stars/public")).data;
+        setRawStars(stars);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
-  /* ─── filter & cluster ──────────────────────────────── */
   const stars = useMemo(() => {
-    if (!showOnlyMine) return rawStars;
+    let filtered = [...rawStars];
 
-    return rawStars
-      .filter((s) => s.related)                    // alleen mijn sterren
-      .map((s) => ({                              // dichter bij elkaar
-        ...s,
-        x: s.x * CLUSTER_FACTOR,
-        y: s.y * CLUSTER_FACTOR,
-        z: s.z * CLUSTER_FACTOR,
-      }));
-  }, [rawStars, showOnlyMine]);
+    if (dob) {
+      const formattedDob = new Date(dob.split("/").reverse().join("-"))
+        .toISOString()
+        .slice(0, 10);
+      filtered = filtered.filter(
+        (s) => s.user?.dob?.slice(0, 10) === formattedDob
+      );
+    }
+
+    if (dod) {
+      const formattedDod = new Date(dod.split("/").reverse().join("-"))
+        .toISOString()
+        .slice(0, 10);
+      filtered = filtered.filter(
+        (s) => s.user?.dod?.slice(0, 10) === formattedDod
+      );
+    }
+
+    if (country) {
+      filtered = filtered.filter((s) => s.user?.country === country);
+    }
+
+    if (coordX) {
+      const xVal = parseFloat(coordX);
+      if (!isNaN(xVal)) {
+        filtered = filtered.filter((s) => isNear(s.x, xVal));
+      }
+    }
+
+    if (coordY) {
+      const yVal = parseFloat(coordY);
+      if (!isNaN(yVal)) {
+        filtered = filtered.filter((s) => isNear(s.y, yVal));
+      }
+    }
+
+    if (coordZ) {
+      const zVal = parseFloat(coordZ);
+      if (!isNaN(zVal)) {
+        filtered = filtered.filter((s) => isNear(s.z, zVal));
+      }
+    }
+
+    if (showOnlyMine) {
+      filtered = filtered
+        .filter((s) => s.related)
+        .map((s) => ({
+          ...s,
+          x: s.x * CLUSTER_FACTOR,
+          y: s.y * CLUSTER_FACTOR,
+          z: s.z * CLUSTER_FACTOR,
+        }));
+    }
+
+    return filtered;
+  }, [rawStars, showOnlyMine, dob, dod, country, coordX, coordY, coordZ]);
 
   const highlightIds = useMemo(
     () => (showOnlyMine ? stars.map((s) => s._id) : []),
     [stars, showOnlyMine]
   );
 
-  /* ─── spawn camera vóór willekeurige ster ───────────── */
   useEffect(() => {
     if (!camRef.current || stars.length === 0) return;
-    const { x, y, z } = stars[Math.floor(Math.random() * stars.length)];
-    camPos.current = { x, y, z: z + 20 };
-    camRef.current.position.set(x, y, z + 20);
-    camRef.current.lookAt(new THREE.Vector3(x, y, z));
+
+    const center = stars.reduce(
+      (acc, s) => {
+        acc.x += s.x;
+        acc.y += s.y;
+        acc.z += s.z;
+        return acc;
+      },
+      { x: 0, y: 0, z: 0 }
+    );
+
+    center.x /= stars.length;
+    center.y /= stars.length;
+    center.z /= stars.length;
+
+    const maxDistance = Math.max(
+      ...stars.map(
+        (s) =>
+          Math.sqrt(
+            Math.pow(s.x - center.x, 2) +
+              Math.pow(s.y - center.y, 2) +
+              Math.pow(s.z - center.z, 2)
+          )
+      )
+    );
+
+    const safeDistance = maxDistance * 1.5 + 50;
+
+    camPos.current = {
+      x: center.x,
+      y: center.y,
+      z: center.z + safeDistance,
+    };
+
+    camRef.current.position.set(center.x, center.y, center.z + safeDistance);
+    camRef.current.lookAt(new THREE.Vector3(center.x, center.y, center.z));
   }, [stars]);
 
-  /* ─── Three setup ───────────────────────────────────── */
   const createScene = async (gl: any) => {
     const renderer = new Renderer({ gl, preserveDrawingBuffer: true });
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
@@ -106,10 +189,9 @@ export default function PublicScreen() {
     loop();
   };
 
-  /* ─── raycast‑click ─────────────────────────────────── */
   const raycaster = new Raycaster();
-  const touch     = new Vector2();
-  const panResp   = useRef(setupControls({ cameraPosition: camPos, cameraRotation: camRot })).current;
+  const touch = new Vector2();
+  const panResp = useRef(setupControls({ cameraPosition: camPos, cameraRotation: camRot })).current;
 
   const handleTouch = (e: any) => {
     if (!scene || !camRef.current) return;
@@ -123,7 +205,6 @@ export default function PublicScreen() {
     o?.userData?.id && console.log("🟢 click star:", o.userData.id);
   };
 
-  /* ─── UI ────────────────────────────────────────────── */
   return (
     <View style={styles.container}>
       <GLView
@@ -155,10 +236,20 @@ export default function PublicScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
-  gl:        { position: "absolute", width, height, top: 0, left: 0 },
-  cross:     { position: "absolute", top: "50%", left: "50%",
-               transform: [{ translateX: -10 }, { translateY: -10 }], zIndex: 10 },
-  plus:      { fontSize: 24, color: "#fff" },
-  spinner:   { position: "absolute", top: "50%", left: "50%",
-               marginLeft: -15, marginTop: -15 },
+  gl: { position: "absolute", width, height, top: 0, left: 0 },
+  cross: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: [{ translateX: -10 }, { translateY: -10 }],
+    zIndex: 10,
+  },
+  plus: { fontSize: 24, color: "#fff" },
+  spinner: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    marginLeft: -15,
+    marginTop: -15,
+  },
 });
