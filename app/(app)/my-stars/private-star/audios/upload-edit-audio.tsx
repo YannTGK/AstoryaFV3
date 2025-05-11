@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Dimensions,
   ScrollView,
   PanResponder,
-  GestureResponderEvent,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -16,10 +14,9 @@ import { Audio } from "expo-av";
 import PlayIcon from "@/assets/images/icons/play.svg";
 import PauseIcon from "@/assets/images/icons/pause.svg";
 import StopIcon from "@/assets/images/icons/stop-circle.svg";
+import Svg, { Path } from "react-native-svg";
 
-const { width: screenWidth } = Dimensions.get("window");
-
-function formatTime(ms: number) {
+function formatTime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
@@ -30,6 +27,7 @@ export default function EditAudioScreen() {
   const router = useRouter();
   const { uri: rawUri, name } = useLocalSearchParams();
   const uri = typeof rawUri === "string" ? rawUri : rawUri?.[0] ?? "";
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [to, setTo] = useState("");
@@ -37,6 +35,7 @@ export default function EditAudioScreen() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(1);
+  const [barWidth, setBarWidth] = useState(0);
 
   useEffect(() => {
     Audio.setAudioModeAsync({
@@ -50,10 +49,7 @@ export default function EditAudioScreen() {
 
   const loadAndPlay = async () => {
     if (!sound) {
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri },
-        { shouldPlay: true }
-      );
+      const { sound: newSound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: true });
       setSound(newSound);
       setIsPlaying(true);
 
@@ -65,7 +61,7 @@ export default function EditAudioScreen() {
       });
     } else {
       const status = await sound.getStatusAsync();
-      if ('isLoaded' in status && status.isLoaded) {
+      if (status.isLoaded) {
         if (status.isPlaying) {
           await sound.pauseAsync();
           setIsPlaying(false);
@@ -77,99 +73,78 @@ export default function EditAudioScreen() {
     }
   };
 
-  const seekAudio = async (event: GestureResponderEvent) => {
-    if (!sound) return;
-    const { locationX } = event.nativeEvent;
-    const percent = locationX / (screenWidth * 0.9);
-    const newPosition = percent * duration;
-    await sound.setPositionAsync(newPosition);
-  };
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt) => {
+        if (!sound || !duration || barWidth === 0) return;
+        const x = evt.nativeEvent.locationX;
+        const ratio = Math.max(0, Math.min(x / barWidth, 1));
+        const newPos = ratio * duration;
+        sound.setPositionAsync(newPos);
+        setPosition(newPos);
+      },
+      onPanResponderMove: (evt) => {
+        if (!sound || !duration || barWidth === 0) return;
+        const x = evt.nativeEvent.locationX;
+        const ratio = Math.max(0, Math.min(x / barWidth, 1));
+        const newPos = ratio * duration;
+        sound.setPositionAsync(newPos);
+        setPosition(newPos);
+      },
+    })
+  ).current;
 
   return (
     <View style={{ flex: 1 }}>
-      <LinearGradient
-        colors={["#000000", "#273166", "#000000"]}
-        style={StyleSheet.absoluteFill}
-      />
+      <LinearGradient colors={["#000000", "#273166", "#000000"]} style={StyleSheet.absoluteFill} />
 
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Text style={{ color: "#FEEDB6", fontSize: 24 }}>{"<"}</Text>
+        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+        </Svg>
       </TouchableOpacity>
+
+<TouchableOpacity style={styles.menuBtn} onPress={() => console.log("Menu opened")}>
+  <Text style={styles.menuText}>⋮</Text>
+</TouchableOpacity>
 
       <Text style={styles.title}>Audio</Text>
 
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 40 }}
-      >
         <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Title: Give the audio a title."
-            placeholderTextColor="#999"
-            value={title}
-            onChangeText={setTitle}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Description: Write a small description."
-            placeholderTextColor="#999"
-            value={description}
-            onChangeText={setDescription}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="To: @username"
-            placeholderTextColor="#999"
-            value={to}
-            onChangeText={setTo}
-          />
-        </View>
-
-        <View style={styles.playerBox}>
+  <TextInput style={styles.input} placeholder="Title" value={title} onChangeText={setTitle} />
+  <TextInput style={styles.input} placeholder="Description" value={description} onChangeText={setDescription} />
+  <TextInput style={styles.input} placeholder="To: @username" value={to} onChangeText={setTo} />
+</View>
+      <ScrollView contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}>
+  <View style={styles.playerBox}>
           <Text style={styles.audioFilename}>{name ?? "audio.mp3"}</Text>
-          <Text style={styles.timestamp}>00:00 / 00:30</Text>
 
-          <TouchableOpacity onPress={seekAudio} style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                { width: `${(position / duration) * 100}%` },
-              ]}
-            />
-          </TouchableOpacity>
+          <View
+            style={styles.progressBar}
+            onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
+            {...panResponder.panHandlers}
+          >
+            <View style={[styles.progressFill, { width: `${(position / duration) * 100}%` }]} />
+            <View style={[styles.progressThumb, { left: `${(position / duration) * 100}%` }]} />
+          </View>
 
-          <Text style={styles.timestamp}>
-            {formatTime(position)} / {formatTime(duration)}
-          </Text>
+          <Text style={styles.timestamp}>{formatTime(position)} / {formatTime(duration)}</Text>
 
           <View style={styles.controlsContainer}>
             <TouchableOpacity onPress={loadAndPlay}>
-              {isPlaying ? (
-                <PauseIcon width={24} height={24} />
-              ) : (
-                <PlayIcon width={24} height={24} />
-              )}
+              {isPlaying ? <PauseIcon width={24} height={24} /> : <PlayIcon width={24} height={24} />}
             </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                if (sound) {
-                  sound.stopAsync();
-                  setIsPlaying(false);
-                }
-              }}
-              style={{ marginLeft: 20 }}
-            >
+            <TouchableOpacity onPress={() => { if (sound) { sound.stopAsync(); setIsPlaying(false); } }}>
               <StopIcon width={24} height={24} />
             </TouchableOpacity>
           </View>
         </View>
-
-        <TouchableOpacity style={styles.addBtn}>
-          <Text style={styles.addText}>Add</Text>
-        </TouchableOpacity>
       </ScrollView>
+
+      <TouchableOpacity style={styles.addBtn}>
+        <Text style={styles.addText}>Add</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -182,14 +157,25 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   title: {
-    fontFamily: "Alice-Regular",
     fontSize: 20,
     color: "#fff",
     textAlign: "center",
     marginTop: 50,
+    fontFamily: "Alice-Regular",
   },
+  menuBtn: {
+  position: "absolute",
+  top: 100,
+  right: 20,
+  zIndex: 10,
+},
+menuText: {
+  color: "#fff",
+  fontSize: 32,
+},
+
   form: {
-    marginTop: 40,
+    marginTop: 80,
     paddingHorizontal: 20,
   },
   input: {
@@ -198,24 +184,43 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 16,
     fontSize: 14,
-    fontFamily: "Alice-Regular",
   },
   audioFilename: {
     color: "#fff",
     fontSize: 16,
-    fontFamily: "Alice-Regular",
     marginBottom: 8,
   },
   timestamp: {
     color: "#fff",
     fontSize: 14,
-    fontFamily: "Alice-Regular",
-    marginBottom: 16,
+    marginVertical: 8,
   },
   playerBox: {
     alignItems: "center",
     marginTop: 20,
     marginBottom: 20,
+  },
+  progressBar: {
+    width: "90%",
+    height: 14,
+    backgroundColor: "#999",
+    borderRadius: 7,
+    overflow: "hidden",
+    marginTop: 8,
+    position: "relative",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#FEEDB6",
+  },
+  progressThumb: {
+    position: "absolute",
+    top: -6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#FEEDB6",
+    transform: [{ translateX: -10 }],
   },
   controlsContainer: {
     flexDirection: "row",
@@ -227,27 +232,18 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     marginTop: 16,
   },
-  progressBar: {
-    width: "90%",
-    height: 6,
-    backgroundColor: "#999",
-    borderRadius: 3,
-    overflow: "hidden",
-    marginTop: 8,
-  },
-  progressFill: {
-    height: 6,
-    backgroundColor: "#FEEDB6",
-  },
   addBtn: {
+    position: "absolute",
+    bottom: 110,
+    left: 20,
+    right: 20,
     backgroundColor: "#ccc",
     paddingVertical: 16,
-    margin: 24,
     borderRadius: 8,
     alignItems: "center",
+    zIndex: 10,
   },
   addText: {
-    fontFamily: "Alice-Regular",
     fontSize: 16,
     color: "#333",
   },
