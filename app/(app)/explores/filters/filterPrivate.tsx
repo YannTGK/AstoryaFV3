@@ -1,26 +1,40 @@
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
+// app/(app)/explores/filter.tsx
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useState, useEffect } from "react";
-import { Picker } from "@react-native-picker/picker";
+import CountryPicker, {
+  Country,
+  CountryCode,
+} from "react-native-country-picker-modal";
 import Svg, { Path } from "react-native-svg";
-import StarLoader from "../../../components/loaders/StarLoader"; 
+import StarLoader from "../../../../components/loaders/StarLoader";
 
-export default function Filter() {
+export default function Privateilter() {
   const router = useRouter();
-  const { from } = useLocalSearchParams();
+  const { from } = useLocalSearchParams<{ from: string }>();
 
   const [dob, setDob] = useState("");
   const [dod, setDod] = useState("");
-  const [country, setCountry] = useState("Belgium");
-  const [coordinate, setCoordinate] = useState("");
+  const [countryCode, setCountryCode] = useState<CountryCode>("BE");
+  const [countryName, setCountryName] = useState("Belgium");
 
-  const [loading, setLoading] = useState(false);
+  const [coordX, setCoordX] = useState("");
+  const [coordY, setCoordY] = useState("");
+  const [coordZ, setCoordZ] = useState("");
+
+  const [loading, setLoading]   = useState(false);
   const [progress, setProgress] = useState(0);
 
   const handleApplyFilter = () => {
     setLoading(true);
     setProgress(0);
-
     let current = 0;
     const interval = setInterval(() => {
       current += 10;
@@ -29,27 +43,27 @@ export default function Filter() {
         clearInterval(interval);
         setTimeout(() => {
           setLoading(false);
-          if (from === "private") {
-            router.replace("/(app)/explores/private");
-          } else {
-            router.replace("/(app)/explores/public");
-          }
+          router.replace(
+            from === "private"
+              ? "/(app)/explores/private"
+              : "/(app)/explores/public"
+          );
         }, 500);
       }
     }, 150);
   };
 
   const handleBack = () => {
-    if (from === "private") {
-      router.replace("/(app)/explores/private");
-    } else {
-      router.replace("/(app)/explores/public");
-    }
+    router.replace(
+      from === "private"
+        ? "/(app)/explores/private"
+        : "/(app)/explores/public"
+    );
   };
 
   return (
-    <View style={styles.container}>
-      {/* Titel met backbutton gecentreerd */}
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      {/* Header met back */}
       <View style={styles.titleRow}>
         <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
           <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
@@ -65,64 +79,86 @@ export default function Filter() {
         <Text style={styles.title}>Filter stars</Text>
       </View>
 
-      {/* Velden */}
+      {/* Date of birth */}
       <Text style={styles.label}>Date of birth</Text>
       <TextInput
-        placeholder="DD/MM/JJJJ"
+        placeholder="DD/MM/YYYY"
         placeholderTextColor="#aaa"
         style={styles.input}
         value={dob}
         onChangeText={setDob}
       />
 
+      {/* Date of death */}
       <Text style={styles.label}>Date of death</Text>
       <TextInput
-        placeholder="DD/MM/JJJJ"
+        placeholder="DD/MM/YYYY"
         placeholderTextColor="#aaa"
         style={styles.input}
         value={dod}
         onChangeText={setDod}
       />
 
+      {/* Country picker */}
       <Text style={styles.label}>Country</Text>
       <View style={styles.pickerWrapper}>
-        <Picker
-          selectedValue={country}
-          onValueChange={(itemValue) => setCountry(itemValue)}
-          style={styles.picker}
-          dropdownIconColor="#000"
-          mode="dropdown"
-        >
-          <Picker.Item label="Belgium" value="Belgium" />
-          <Picker.Item label="Netherlands" value="Netherlands" />
-          <Picker.Item label="France" value="France" />
-          <Picker.Item label="Germany" value="Germany" />
-        </Picker>
+        <CountryPicker
+          countryCode={countryCode}
+          withFlag
+          withFilter
+          withCountryNameButton
+          onSelect={(c: Country) => {
+            setCountryCode(c.cca2 as CountryCode);
+            setCountryName(c.name);
+          }}
+          containerButtonStyle={styles.countryButton}
+        />
+        <Text style={styles.countryText}>{countryName}</Text>
       </View>
 
-      <Text style={styles.label}>Coördinate</Text>
-      <TextInput
-        placeholder="X(),Y(),Z()"
-        placeholderTextColor="#aaa"
-        style={styles.input}
-        value={coordinate}
-        onChangeText={setCoordinate}
-      />
+      {/* Coordinates X / Y / Z */}
+      <Text style={styles.label}>Coordinates</Text>
+      <View style={styles.coordRow}>
+        <TextInput
+          placeholder="X"
+          placeholderTextColor="#aaa"
+          style={[styles.input, styles.coordInput]}
+          value={coordX}
+          onChangeText={setCoordX}
+          keyboardType="numeric"
+        />
+        <TextInput
+          placeholder="Y"
+          placeholderTextColor="#aaa"
+          style={[styles.input, styles.coordInput]}
+          value={coordY}
+          onChangeText={setCoordY}
+          keyboardType="numeric"
+        />
+        <TextInput
+          placeholder="Z"
+          placeholderTextColor="#aaa"
+          style={[styles.input, styles.coordInput]}
+          value={coordZ}
+          onChangeText={setCoordZ}
+          keyboardType="numeric"
+        />
+      </View>
 
-      {/* Gele knop */}
+      {/* Filter button */}
       <View style={styles.buttonWrapper}>
         <TouchableOpacity style={styles.button} onPress={handleApplyFilter}>
-          <Text style={styles.buttonText}>Filter</Text>
+          <Text style={styles.buttonText}>Apply filter</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Loader overlay met percentage */}
+      {/* Loader overlay */}
       {loading && (
         <View style={styles.loaderOverlay}>
           <StarLoader progress={progress} />
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -131,7 +167,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0B1022",
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingBottom: 20,
   },
   titleRow: {
     flexDirection: "row",
@@ -166,18 +202,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   pickerWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#fff",
     borderRadius: 8,
     height: 44,
-    justifyContent: "center",
-    paddingHorizontal: 0,
+    paddingHorizontal: 10,
   },
-  picker: {
-    flex: 1,
-    color: "#000",
+  countryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  countryText: {
+    marginLeft: 8,
     fontSize: 14,
-    textAlignVertical: "center",
-    marginTop: -6,
+    color: "#000",
+    fontFamily: "Alice-Regular",
+  },
+  coordRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  coordInput: {
+    flex: 1,
+    marginRight: 8,
   },
   buttonWrapper: {
     marginTop: 25,
