@@ -33,7 +33,13 @@ export default function AudioScreen() {
   console.log("Audio-bestand geselecteerd:", file);
 
   // eventueel een uploadactie starten hier
-  Alert.alert("Audio geselecteerd", file.name);
+router.push({
+  pathname: "/(app)/my-stars/private-star/audios/upload-edit-audio",
+  params: {
+    uri: file.uri,
+    name: file.name,
+  },
+});
 };
 
   return (
