@@ -1,179 +1,189 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context"; 
+import {
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+
+import CountryPicker, {
+  Country,
+  CountryCode,
+} from "react-native-country-picker-modal";
+
+import InputField   from "@/components/ui/Inputs/Input";
 import CustomButton from "@/components/ui/Buttons/CustomButton";
-import Span from "@/components/ui/Text/Span";
-import InputField from "@/components/ui/Inputs/Input";
+import Span         from "@/components/ui/Text/Span";
 import useRegisterStore from "@/lib/store/UseRegisterStore";
 
 export default function RegisterScreen(): JSX.Element {
   const router = useRouter();
 
-  const [firstName, setFirstName] = useState<string>("");
-  const [lastName, setLastName] = useState<string>("");
-  const [username, setUsername] = useState<string>("");
-  const [email, setEmail] = useState<string>("");
-  const [phoneNumber, setPhoneNumber] = useState<string>("");
-  const [dob, setDob] = useState<string>("");
+  /* -------- veldwaarden -------- */
+  const [firstName, setFirstName] = useState("");
+  const [lastName,  setLastName]  = useState("");
+  const [username,  setUsername]  = useState("");
+  const [email,     setEmail]     = useState("");
+  const [phone,     setPhone]     = useState("");
+  const [dob,       setDob]       = useState("");
+  const [cca2,      setCca2]      = useState<CountryCode>("BE");
+  const [country,   setCountry]   = useState("Belgium");
 
   const [errors, setErrors] = useState({
     firstName: "",
-    lastName: "",
-    username: "", 
-    email: "",
-    phoneNumber: "",
-    dob: "",
+    lastName:  "",
+    username:  "",
+    email:     "",
+    phone:     "",
+    dob:       "",
   });
 
   const { setUserInfo } = useRegisterStore();
 
-  const validateFields = () => {
-    const newErrors = {
-      firstName: firstName.trim() ? "" : "Please enter a valid first name",
-      lastName: lastName.trim() ? "" : "Please enter a valid last name",
-      username: username.trim() ? "" : "Please enter a valid username", // <-- Valideer
-      email: /^\S+@\S+\.\S+$/.test(email) ? "" : "Enter a valid email",
-      phoneNumber: /^\+?[0-9\s]{8,15}$/.test(phoneNumber) ? "" : "Enter a valid phone number",
-      dob: /^\d{2}\/\d{2}\/\d{4}$/.test(dob) ? "" : "Enter date as DD/MM/YYYY"
+  /* -------- validatie -------- */
+  const validate = () => {
+    const e = {
+      firstName: firstName.trim() ? "" : "Please enter a first name",
+      lastName : lastName.trim()  ? "" : "Please enter a last name",
+      username : username.trim()  ? "" : "Please enter a username",
+      email    : /^\S+@\S+\.\S+$/.test(email) ? "" : "Enter a valid email",
+      phone    : /^\+?[0-9\s]{8,15}$/.test(phone) ? "" : "Enter a valid phone",
+      dob      : /^\d{2}\/\d{2}\/\d{4}$/.test(dob) ? "" : "Use DD/MM/YYYY",
     };
-    setErrors(newErrors);
-    return Object.values(newErrors).every(error => error === "");
+    setErrors(e);
+    return Object.values(e).every((v) => v === "");
   };
 
-  const nextRegister = (): void => {
-    if (!validateFields()) return;
-  
-    // Zet email naar lowercase vóórdat je het in de store zet
+  /* -------- land selecteren -------- */
+  const onSelect = (c: Country) => {
+    setCca2(c.cca2 as CountryCode);
+    setCountry(c.name);
+  };
+
+  /* -------- verder -------- */
+  const next = () => {
+    if (!validate()) return;
+
     setUserInfo({
       firstName,
       lastName,
       username: username.trim().toLowerCase(),
-      email: email.toLowerCase(),
-      phoneNumber,
-      dob
+      email:    email.toLowerCase(),
+      phoneNumber: phone,
+      dob,
+      country,
     });
-  
+
     router.push("/(auth)/(register)/setPassword");
   };
 
+  /* -------- UI -------- */
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <Text style={styles.headersLogin}>Welcome{"\n"}Create an account.</Text>
-        </View>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.h1}>Welcome{"\n"}Create an account.</Text>
 
-        <View style={styles.inputSection}>
-          <View>
-            <InputField
-              label="First Name"
-              placeholder="Enter your first name"
-              value={firstName}
-              onChangeText={(text) => {
-                setFirstName(text);
-                setErrors(prev => ({ ...prev, firstName: "" }));
-              }}
-            />
-            {errors.firstName ? <Span color="#FF7466">{errors.firstName}</Span> : null}
-          </View>
+        <View style={styles.section}>
+          {/* ── tekstvelden ─────────────────────────── */}
+          <InputField
+            label="First Name"
+            value={firstName}
+            placeholder="Enter first name"
+            onChangeText={(t) => {
+              setFirstName(t);
+              setErrors((p) => ({ ...p, firstName: "" }));
+            }}
+          />
+          {errors.firstName ? <Span color="#FF7466">{errors.firstName}</Span> : null}
 
-          <View>
-            <InputField
-              label="Last Name"
-              placeholder="Enter your last name"
-              value={lastName}
-              onChangeText={(text) => {
-                setLastName(text);
-                setErrors(prev => ({ ...prev, lastName: "" }));
-              }}
-            />
-            {errors.lastName ? <Span color="#FF7466">{errors.lastName}</Span> : null}
-          </View>
-          <View>
-            <InputField
-              label="Username"
-              placeholder="Enter your username"
-              value={username}
-              onChangeText={(text) => {
-                setUsername(text);
-                setErrors(prev => ({ ...prev, username: "" }));
-              }}
-            />
-            {errors.username ? <Span color="#FF7466">{errors.username}</Span> : null}
-          </View>
-          <View>
-            <InputField
-              label="Email"
-              placeholder="example@gmail.com"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                setErrors(prev => ({ ...prev, email: "" }));
-              }}
-            />
-            {errors.email ? <Span color="#FF7466">{errors.email}</Span> : null}
-          </View>
+          <InputField
+            label="Last Name"
+            value={lastName}
+            placeholder="Enter last name"
+            onChangeText={(t) => {
+              setLastName(t);
+              setErrors((p) => ({ ...p, lastName: "" }));
+            }}
+          />
+          {errors.lastName ? <Span color="#FF7466">{errors.lastName}</Span> : null}
 
-          <View>
-            <InputField
-              label="Phone Number"
-              placeholder="+32 403 739 134"
-              keyboardType="phone-pad"
-              value={phoneNumber}
-              onChangeText={(text) => {
-                setPhoneNumber(text);
-                setErrors(prev => ({ ...prev, phoneNumber: "" }));
-              }}
-            />
-            {errors.phoneNumber ? <Span color="#FF7466">{errors.phoneNumber}</Span> : null}
-          </View>
+          <InputField
+            label="Username"
+            value={username}
+            placeholder="Enter username"
+            onChangeText={(t) => {
+              setUsername(t);
+              setErrors((p) => ({ ...p, username: "" }));
+            }}
+          />
+          {errors.username ? <Span color="#FF7466">{errors.username}</Span> : null}
 
-          <View>
-            <InputField
-              label="Date of Birth"
-              placeholder="DD/MM/YYYY"
-              keyboardType="numeric"
-              value={dob}
-              onChangeText={(text) => {
-                setDob(text);
-                setErrors(prev => ({ ...prev, dob: "" }));
-              }}
+          {/* ── land picker ───────────────────────────── */}
+          <Text style={styles.label}>Country</Text>
+          <TouchableOpacity
+            style={styles.countryBox}
+            activeOpacity={0.9}
+            onPress={() => {}}
+          >
+            <CountryPicker
+              countryCode={cca2}
+              withFilter
+              withFlag
+              withCountryNameButton
+              withCallingCodeButton={false}
+              onSelect={onSelect}
             />
-            {errors.dob ? <Span color="#FF7466">{errors.dob}</Span> : null}
-          </View>
-
-          <View style={styles.buttonContainer}>
-            <CustomButton
-              title="Continue"
-              onPress={nextRegister}
-              backgroundColor="#FEEDB6"
-              textColor="#11152A"
-            />
-          </View>
-        </View>
-
-        <View style={styles.bottomSection}>
-          <View style={styles.orContainer}>
-            <View style={styles.line} />
-            <Text style={styles.orText}>OR</Text>
-            <View style={styles.line} />
-          </View>
-          <View style={styles.iconHolder}>
-            <TouchableOpacity style={styles.iconButton}>
-              <Image source={require("@/assets/images/logo/itsme.png")} style={styles.icon} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton}>
-              <Image source={require("@/assets/images/logo/Google.png")} style={styles.icon} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton}>
-              <Image source={require("@/assets/images/logo/Facebook.png")} style={styles.icon} />
-            </TouchableOpacity>
-          </View>
-          <TouchableOpacity onPress={() => router.replace("/(auth)/(login)/login")}>
-            <Span color="#fff">Do you already have an account? Log in</Span>
           </TouchableOpacity>
+
+          <InputField
+            label="Email"
+            value={email}
+            placeholder="example@gmail.com"
+            keyboardType="email-address"
+            onChangeText={(t) => {
+              setEmail(t);
+              setErrors((p) => ({ ...p, email: "" }));
+            }}
+          />
+          {errors.email ? <Span color="#FF7466">{errors.email}</Span> : null}
+
+          <InputField
+            label="Phone Number"
+            value={phone}
+            placeholder="+32 123 456 789"
+            keyboardType="phone-pad"
+            onChangeText={(t) => {
+              setPhone(t);
+              setErrors((p) => ({ ...p, phone: "" }));
+            }}
+          />
+          {errors.phone ? <Span color="#FF7466">{errors.phone}</Span> : null}
+
+          <InputField
+            label="Date of Birth"
+            value={dob}
+            placeholder="DD/MM/YYYY"
+            keyboardType="numeric"
+            onChangeText={(t) => {
+              setDob(t);
+              setErrors((p) => ({ ...p, dob: "" }));
+            }}
+          />
+          {errors.dob ? <Span color="#FF7466">{errors.dob}</Span> : null}
+
+          <CustomButton
+            title="Continue"
+            onPress={next}
+            backgroundColor="#FEEDB6"
+            textColor="#11152A"
+            style={{ marginTop: 16 }}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -181,65 +191,27 @@ export default function RegisterScreen(): JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#273166",
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingHorizontal: 16,
-    gap: 32,
-  },
-  header: {
-    marginTop: 20,
-  },
-  headersLogin: {
+  container: { flex: 1, backgroundColor: "#273166" },
+  content: { paddingHorizontal: 16, paddingBottom: 24 },
+  h1: {
     fontSize: 32,
-    color: "white",
+    color: "#fff",
     fontFamily: "Alice-Regular",
+    marginTop: 20,
+    marginBottom: 24,
   },
-  inputSection: {
-    width: "100%",
-    gap: 16,
+  section: { gap: 16 },
+  label: {
+    color: "#fff",
+    fontSize: 18,
+    fontFamily: "Alice-Regular",
+    marginBottom: -10,
   },
-  buttonContainer: {
-    marginTop: 8,
-  },
-  bottomSection: {
-    width: "100%",
-    alignItems: "center",
-    gap: 24,
-    marginBottom: 8,
-  },
-  orContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+  countryBox: {
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: "#fff",
     justifyContent: "center",
-    width: "100%",
-  },
-  line: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#A0A0A0",
-  },
-  orText: {
-    marginHorizontal: 16,
-    fontSize: 16,
-    fontFamily: "Alice-Regular",
-    color: "#ffffff",
-  },
-  iconHolder: {
-    flexDirection: "row",
-    gap: 40,
-  },
-  iconButton: {
-    borderRadius: 16,
-    borderColor: "#fff", 
-    borderWidth: 1,
-    padding: 16,
-  },
-  icon: {
-    width: 32,
-    height: 32,
+    paddingHorizontal: 10,
   },
 });
