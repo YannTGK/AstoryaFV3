@@ -63,7 +63,7 @@ export default function SearchPublic() {
       <TouchableOpacity
         style={st.filterBtn}
         onPress={() =>
-          router.push({ pathname: "explores/filter", params: { from: "public" } })
+          router.push({ pathname: "/explores/filters/filterPublic", params: { from: "public" } })
         }
       >
         <Text style={st.filterTxt}>Filter</Text>
