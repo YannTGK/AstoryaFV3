@@ -9,14 +9,18 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "This app needs access to your microphone for recording and playback."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.AstoryaFV3"
+      "package": "com.anonymous.AstoryaFV3",
+            "permissions": ["RECORD_AUDIO", "READ_EXTERNAL_STORAGE"]
     },
     "web": {
       "bundler": "metro",
