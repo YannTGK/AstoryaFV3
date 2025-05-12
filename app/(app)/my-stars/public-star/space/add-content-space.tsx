@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Image } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
@@ -15,6 +16,8 @@ export default function AddContentSpace() {
   const router = useRouter();
   const [photos, setPhotos] = useState<string[]>([]);
   const [videos, setVideos] = useState<string[]>([]);
+  const [audios, setAudios] = useState<string[]>([]);
+  const [documents, setDocuments] = useState<string[]>([]);
 
   const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -22,7 +25,6 @@ export default function AddContentSpace() {
       allowsMultipleSelection: true,
       quality: 1,
     });
-
     if (!result.canceled) {
       const newPhotos = result.assets.map((asset) => asset.uri);
       setPhotos((prev) => [...prev, ...newPhotos].slice(0, 10));
@@ -35,10 +37,31 @@ export default function AddContentSpace() {
       allowsMultipleSelection: true,
       quality: 1,
     });
-
     if (!result.canceled) {
       const newVideos = result.assets.map((asset) => asset.uri);
       setVideos((prev) => [...prev, ...newVideos].slice(0, 3));
+    }
+  };
+
+  const pickAudio = async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: "audio/*",
+      multiple: true,
+    });
+    if (!result.canceled && result.assets) {
+      const newAudios = result.assets.map((file) => file.uri);
+      setAudios((prev) => [...prev, ...newAudios].slice(0, 3));
+    }
+  };
+
+  const pickDocument = async () => {
+    const result = await DocumentPicker.getDocumentAsync({
+      type: "*/*",
+      multiple: true,
+    });
+    if (!result.canceled && result.assets) {
+      const newDocs = result.assets.map((file) => file.uri);
+      setDocuments((prev) => [...prev, ...newDocs].slice(0, 3));
     }
   };
 
@@ -72,11 +95,7 @@ export default function AddContentSpace() {
           <Text style={styles.label}>Photo’s {photos.length}/10</Text>
           <View style={styles.row}>
             {photos.map((uri, index) => (
-              <Image
-                key={index}
-                source={{ uri }}
-                style={styles.mediaThumbnail}
-              />
+              <Image key={index} source={{ uri }} style={styles.mediaThumbnail} />
             ))}
             {photos.length < 10 && (
               <TouchableOpacity onPress={pickPhoto}>
@@ -101,22 +120,43 @@ export default function AddContentSpace() {
           </View>
         </View>
 
-        {/* Rest: dummy icons */}
+        {/* Audios */}
         <View style={styles.item}>
-          <Text style={styles.label}>Audio’s 0/3</Text>
-          <PlusCircle width={60} height={60} />
+          <Text style={styles.label}>Audio’s {audios.length}/3</Text>
+          <View style={styles.row}>
+            {audios.map((uri, index) => (
+              <View key={index} style={styles.audioIcon} />
+            ))}
+            {audios.length < 3 && (
+              <TouchableOpacity onPress={pickAudio}>
+                <PlusCircle width={60} height={60} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
+        {/* Messages */}
         <View style={styles.item}>
           <Text style={styles.label}>Messages 0/3</Text>
           <PlusLetter width={80} height={80} />
         </View>
 
+        {/* Documents */}
         <View style={styles.item}>
-          <Text style={styles.label}>Documents 0/3</Text>
-          <PlusSquare width={60} height={60} />
+          <Text style={styles.label}>Documents {documents.length}/3</Text>
+          <View style={styles.row}>
+            {documents.map((uri, index) => (
+              <View key={index} style={styles.docIcon} />
+            ))}
+            {documents.length < 3 && (
+              <TouchableOpacity onPress={pickDocument}>
+                <PlusSquare width={60} height={60} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
+        {/* Songs */}
         <View style={styles.item}>
           <Text style={styles.label}>Songs 0/3</Text>
           <PlusCircle width={60} height={60} />
@@ -134,12 +174,7 @@ export default function AddContentSpace() {
 }
 
 const styles = StyleSheet.create({
-  backBtn: {
-    position: "absolute",
-    top: 50,
-    left: 20,
-    zIndex: 10,
-  },
+  backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
   title: {
     fontFamily: "Alice-Regular",
     fontSize: 20,
@@ -177,6 +212,20 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     backgroundColor: "#444",
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  audioIcon: {
+    width: 60,
+    height: 60,
+    backgroundColor: "#7733aa",
+    borderRadius: 30,
+    marginRight: 8,
+  },
+  docIcon: {
+    width: 60,
+    height: 60,
+    backgroundColor: "#1166ff",
     borderRadius: 8,
     marginRight: 8,
   },

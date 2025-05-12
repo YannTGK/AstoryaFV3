@@ -60,7 +60,8 @@
     "react-native-webview": "13.13.5",
     "three": "^0.166.0",
     "three-stdlib": "^2.35.14",
-    "zustand": "^5.0.3"
+    "zustand": "^5.0.3",
+    "expo-document-picker": "~13.1.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
