@@ -81,7 +81,7 @@ export default function MyStarPublic2() {
                 router.push("/(app)/my-stars/public-star/space/no-space")
               }
             >
-              <Text style={styles.buttonTxt}>Add 3D/VR - space</Text>
+              <Text style={styles.buttonTxt}>Add 3D/VR - space</Text>  Note:  See 3D/VR - space" (na flow space gdn is)
             </TouchableOpacity>
           </View>
         </>
