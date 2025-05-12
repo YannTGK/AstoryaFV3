@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -25,8 +25,9 @@ interface AudioItem {
 export default function AudioListScreen() {
   const { audios = [] } = useAudio();
   const router = useRouter();
+  const [menuOpenIndex, setMenuOpenIndex] = useState<number | null>(null); // ✅ toegevoegd
 
-  const renderItem = ({ item }: { item: AudioItem }) => (
+  const renderItem = ({ item, index }: { item: AudioItem; index: number }) => (
     <View style={styles.audioCard}>
       <View style={styles.cardHeader}>
         <View>
@@ -39,12 +40,26 @@ export default function AudioListScreen() {
             })}
           </Text>
         </View>
-        <TouchableOpacity onPress={() => console.log("Menu opened")}>
+        <TouchableOpacity onPress={() => setMenuOpenIndex(menuOpenIndex === index ? null : index)}>
           <Entypo name="dots-three-vertical" size={18} color="#fff" />
         </TouchableOpacity>
       </View>
 
       <AudioPlayer uri={item.uri} />
+
+      {menuOpenIndex === index && (
+        <View style={styles.menu}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => console.log("Uploaden")}>
+            <Text style={styles.menuText}>Uploaden</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => console.log("Delete")}>
+            <Text style={styles.menuText}>Delete</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => console.log("Download")}>
+            <Text style={styles.menuText}>Download</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 
@@ -77,8 +92,6 @@ export default function AudioListScreen() {
         contentContainerStyle={styles.listContent}
       />
 
-      {/* Start-knop */}
-
       {/* Plus-knop */}
       <View style={styles.plusWrapper}>
         <TouchableOpacity
@@ -110,7 +123,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingTop: 32,
     paddingHorizontal: 16,
-    paddingBottom: 240, // genoeg ruimte voor buttons onderaan
+    paddingBottom: 240,
   },
   audioCard: {
     backgroundColor: "#1A1F3D",
@@ -141,5 +154,26 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     zIndex: 10,
+  },
+  menu: {
+    backgroundColor: "#fff",
+    position: "absolute",
+    top: 40,
+    right: 16,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    zIndex: 20,
+  },
+  menuItem: {
+    paddingVertical: 8,
+  },
+  menuText: {
+    fontSize: 14,
+    color: "#11152A",
   },
 });

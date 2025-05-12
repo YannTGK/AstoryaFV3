@@ -150,17 +150,18 @@ const styles = StyleSheet.create({
     top: "50%",
     left: 0,
   },
-  movingDot: {
+    movingDot: {
     position: "absolute",
     top: "50%",
     left: 0,
-    
     width: 10,
     height: 10,
     borderRadius: 5,
     backgroundColor: "#FEEDB6",
     marginTop: -5,
+    zIndex: 2, // ⬅️ Zorg dat de dot bovenop komt
   },
+
   playIcon: {
     position: "absolute",
     top: "150%",
