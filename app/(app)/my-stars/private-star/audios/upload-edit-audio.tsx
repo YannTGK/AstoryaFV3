@@ -112,6 +112,8 @@ const handleAddAudio = () => {
     })
   ).current;
 
+ 
+
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient colors={["#000000", "#273166", "#000000"]} style={StyleSheet.absoluteFill} />

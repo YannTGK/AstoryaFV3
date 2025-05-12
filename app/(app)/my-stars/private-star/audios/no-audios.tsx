@@ -79,7 +79,7 @@ router.push({
 
 {/* Plus-knop */}
       <View style={styles.plusWrapper}>
-        <TouchableOpacity onPress={() => router.push("/(app)/my-stars/private-star/messages/write-message")}>
+        <TouchableOpacity onPress={() => router.push("/(app)/my-stars/private-star/audios/record-audio")}>
           <PlusIcon width={50} height={50} />
         </TouchableOpacity>
       </View>
