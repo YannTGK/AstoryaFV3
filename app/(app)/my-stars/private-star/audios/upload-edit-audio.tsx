@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
   },
   progressThumb: {
     position: "absolute",
-    top: -6,
+    top: -52,
     width: 20,
     height: 20,
     borderRadius: 8,

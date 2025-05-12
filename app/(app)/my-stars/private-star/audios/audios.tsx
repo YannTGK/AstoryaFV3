@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   Modal,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
@@ -16,6 +17,7 @@ import { Entypo } from "@expo/vector-icons";
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
 import DeleteIcon from "@/assets/images/svg-icons/delete.svg";
 import DownloadIcon from "@/assets/images/svg-icons/download.svg";
+import * as FileSystem from "expo-file-system";
 
 interface AudioItem {
   uri: string;
@@ -33,12 +35,32 @@ export default function AudioListScreen() {
   const [audioToDeleteIndex, setAudioToDeleteIndex] = useState<number | null>(null);
 
   const handleDelete = () => {
-    if (audioToDeleteIndex !== null && typeof removeAudio === 'function') {
+    if (audioToDeleteIndex !== null && typeof removeAudio === "function") {
       removeAudio(audioToDeleteIndex);
       setAudioToDeleteIndex(null);
       setMenuOpenIndex(null);
     }
     setShowModal(false);
+  };
+
+  const handleDownload = async (uri: string, title: string) => {
+    if (!uri) {
+      Alert.alert("Download failed", "Audio URI is missing.");
+      return;
+    }
+
+    try {
+      const filename = `${title || "audio"}.m4a`;
+      const downloadPath = FileSystem.documentDirectory + filename;
+
+      const downloadRes = await FileSystem.downloadAsync(uri, downloadPath);
+      console.log("Downloaded to:", downloadRes.uri);
+
+      Alert.alert("Success", "Audio downloaded locally.");
+    } catch (error) {
+      console.error("Download failed:", error);
+      Alert.alert("Download failed", "Something went wrong while downloading.");
+    }
   };
 
   const renderItem = ({ item, index }: { item: AudioItem; index: number }) => (
@@ -76,7 +98,10 @@ export default function AudioListScreen() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem} onPress={() => console.log("Download")}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => handleDownload(item.uri, item.title)}
+          >
             <View style={styles.menuItemRow}>
               <DownloadIcon width={16} height={16} />
               <Text style={styles.menuText}>Download</Text>
@@ -113,7 +138,7 @@ export default function AudioListScreen() {
       />
 
       <View style={styles.plusWrapper}>
-        <TouchableOpacity onPress={() => router.push("/(app)/my-stars/private-star/audios/upload-edit-audio")}>
+        <TouchableOpacity onPress={() => router.push("/(app)/my-stars/private-star/audios/components/AudioPlayer")}>
           <PlusIcon width={50} height={50} />
         </TouchableOpacity>
       </View>
