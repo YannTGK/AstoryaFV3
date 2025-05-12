@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
+  Modal,
 } from "react-native";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
@@ -13,7 +14,6 @@ import { useAudio } from "./audioProvider";
 import AudioPlayer from "@/app/(app)/my-stars/private-star/audios/components/AudioPlayer";
 import { Entypo } from "@expo/vector-icons";
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
-import UploadIcon from "@/assets/images/svg-icons/upload-cloud-b.svg";
 import DeleteIcon from "@/assets/images/svg-icons/delete.svg";
 import DownloadIcon from "@/assets/images/svg-icons/download.svg";
 
@@ -26,9 +26,20 @@ interface AudioItem {
 }
 
 export default function AudioListScreen() {
-  const { audios = [] } = useAudio();
+  const { audios = [], removeAudio } = useAudio();
   const router = useRouter();
   const [menuOpenIndex, setMenuOpenIndex] = useState<number | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [audioToDeleteIndex, setAudioToDeleteIndex] = useState<number | null>(null);
+
+  const handleDelete = () => {
+    if (audioToDeleteIndex !== null && typeof removeAudio === 'function') {
+      removeAudio(audioToDeleteIndex);
+      setAudioToDeleteIndex(null);
+      setMenuOpenIndex(null);
+    }
+    setShowModal(false);
+  };
 
   const renderItem = ({ item, index }: { item: AudioItem; index: number }) => (
     <View style={styles.audioCard}>
@@ -52,20 +63,21 @@ export default function AudioListScreen() {
 
       {menuOpenIndex === index && (
         <View style={styles.menu}>
-          <TouchableOpacity style={styles.menuItem} onPress={() => console.log("Uploaden")}>
-            <View style={styles.menuItemContent}>
-              <UploadIcon width={16} height={16} />
-              <Text style={styles.menuText}>Uploaden</Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={() => console.log("Delete")}>
-            <View style={styles.menuItemContent}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setAudioToDeleteIndex(index);
+              setShowModal(true);
+            }}
+          >
+            <View style={styles.menuItemRow}>
               <DeleteIcon width={16} height={16} />
               <Text style={styles.menuText}>Delete</Text>
             </View>
           </TouchableOpacity>
+
           <TouchableOpacity style={styles.menuItem} onPress={() => console.log("Download")}>
-            <View style={styles.menuItemContent}>
+            <View style={styles.menuItemRow}>
               <DownloadIcon width={16} height={16} />
               <Text style={styles.menuText}>Download</Text>
             </View>
@@ -77,12 +89,8 @@ export default function AudioListScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <LinearGradient
-        colors={["#000", "#273166", "#000"]}
-        style={StyleSheet.absoluteFill}
-      />
+      <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
 
-      {/* Back Button */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
           <Path
@@ -104,16 +112,27 @@ export default function AudioListScreen() {
         contentContainerStyle={styles.listContent}
       />
 
-      {/* Plus-knop */}
       <View style={styles.plusWrapper}>
-        <TouchableOpacity
-          onPress={() =>
-            router.push("/(app)/my-stars/private-star/audios/upload-edit-audio")
-          }
-        >
+        <TouchableOpacity onPress={() => router.push("/(app)/my-stars/private-star/audios/upload-edit-audio")}>
           <PlusIcon width={50} height={50} />
         </TouchableOpacity>
       </View>
+
+      <Modal visible={showModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalText}>Are you sure you want to remove the audio?</Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity onPress={() => setShowModal(false)} style={styles.modalButton}>
+                <Text style={[styles.modalButtonText, { color: "#3F64FF" }]}>No</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleDelete} style={styles.modalButton}>
+                <Text style={[styles.modalButtonText, { color: "#3F64FF" }]}>Yes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -184,7 +203,7 @@ const styles = StyleSheet.create({
   menuItem: {
     paddingVertical: 8,
   },
-  menuItemContent: {
+  menuItemRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
@@ -193,5 +212,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Alice-Regular",
     color: "#11152A",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContainer: {
+    backgroundColor: "#fff",
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    width: 280,
+    alignItems: "center",
+  },
+  modalText: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    borderTopWidth: 1,
+    borderColor: "#E6E6E6",
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  modalButtonText: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
   },
 });

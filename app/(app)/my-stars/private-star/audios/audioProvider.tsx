@@ -11,6 +11,7 @@ interface AudioItem {
 const AudioContext = createContext<{
   audios: AudioItem[];
   addAudio: (audio: AudioItem) => void;
+  removeAudio: (index: number) => void; // ✅ toegevoegd
 } | null>(null);
 
 export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
@@ -20,8 +21,12 @@ export const AudioProvider = ({ children }: { children: React.ReactNode }) => {
     setAudios(prev => [...prev, audio]);
   };
 
+  const removeAudio = (index: number) => {
+    setAudios(prev => prev.filter((_, i) => i !== index)); // ✅ verwijdert audio op basis van index
+  };
+
   return (
-    <AudioContext.Provider value={{ audios, addAudio }}>
+    <AudioContext.Provider value={{ audios, addAudio, removeAudio }}>
       {children}
     </AudioContext.Provider>
   );
