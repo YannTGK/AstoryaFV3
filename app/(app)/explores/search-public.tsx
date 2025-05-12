@@ -26,14 +26,15 @@ export default function SearchPublic() {
   const showOnlyMine = useLayoutStore((s) => s.showOnlyMine);
   const setShowOnlyMine = useLayoutStore((s) => s.setShowOnlyMine);
 
+  // store hooks
   const { searchQuery } = useFilterStore();
   const setFilters = useFilterStore((s) => s.setFilters);
   const resetFilters = useFilterStore((s) => s.resetFilters);
 
   const [rawStars, setRawStars] = useState<any[]>([]);
-  const [searchText, setSearchText] = useState(searchQuery);
+  const [searchText, setSearchText] = useState<string>("");
 
-  // Fetch stars
+  // 1️⃣ Fetch public stars
   useEffect(() => {
     (async () => {
       try {
@@ -45,9 +46,10 @@ export default function SearchPublic() {
     })();
   }, []);
 
-  // reset filters + toggle
+  // 2️⃣ Reset filters + lokale zoektekst + toggle guard bij mount
   useEffect(() => {
     resetFilters();
+    setSearchText("");
     if (!showOnlyMine) setShowOnlyMine(false);
   }, []);
 
@@ -56,6 +58,7 @@ export default function SearchPublic() {
     router.replace("/explores/public");
   };
 
+  // 3️⃣ Update zoekterm lokaal & in store
   const onChangeSearch = useCallback(
     (text: string) => {
       setSearchText(text);
@@ -64,6 +67,7 @@ export default function SearchPublic() {
     [setFilters]
   );
 
+  // 4️⃣ Suggesties filteren
   const suggestions = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     if (!q) return [];
@@ -72,13 +76,14 @@ export default function SearchPublic() {
     );
   }, [searchText, rawStars]);
 
+  // 5️⃣ Format createdAt
   const formatCreatedAt = (iso?: string) => {
     if (!iso) return "";
     const [Y, M, D] = iso.slice(0, 10).split("-");
     return `${D}/${M}/${Y}`;
   };
 
-  // ← Hier zetten we de gekozen ster in de store!
+  // 6️⃣ Klik op suggestie → sla op in store en sluit
   const goToStar = useCallback(
     (id: string) => {
       setFilters({ selectedStarId: id });
@@ -103,13 +108,14 @@ export default function SearchPublic() {
   return (
     <SafeAreaView style={[st.wrap, { paddingTop: insets.top }]} edges={["top","left","right"]}>
       <TouchableOpacity
-        style={[st.close,{ top: insets.top + 10 }]}
+        style={[st.close, { top: insets.top + 10 }]}
         onPress={close}
         hitSlop={{ top:10,bottom:10,left:10,right:10 }}
       >
         <CloseIcon width={18} height={18}/>
       </TouchableOpacity>
 
+      {/* Zoekbalk */}
       <View style={st.row}>
         <SearchIcon width={20} height={20} style={{ marginRight:10 }}/>
         <TextInput
@@ -121,6 +127,7 @@ export default function SearchPublic() {
         />
       </View>
 
+      {/* Suggestie-kaart */}
       {searchText.length > 0 && (
         <View style={st.suggestionsCard}>
           {suggestions.length > 0 ? (
@@ -137,6 +144,7 @@ export default function SearchPublic() {
         </View>
       )}
 
+      {/* Filter-knop */}
       <TouchableOpacity
         style={st.filterBtn}
         onPress={() =>
@@ -150,6 +158,7 @@ export default function SearchPublic() {
         <FilterIcon width={18} height={18}/>
       </TouchableOpacity>
 
+      {/* Toggle */}
       <View style={st.block}>
         <View style={st.head}>
           <Text style={st.title}>Show only my stars</Text>

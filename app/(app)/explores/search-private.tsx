@@ -23,15 +23,15 @@ export default function SearchPrivate() {
   const insets = useSafeAreaInsets();
   const setIsSearching = useLayoutStore((s) => s.setIsSearching);
 
-  // gebruik dezelfde filterStore als voor public
+  // pak de store hooks
   const { searchQuery } = useFilterStore();
   const setFilters = useFilterStore((s) => s.setFilters);
   const resetFilters = useFilterStore((s) => s.resetFilters);
 
   const [rawStars, setRawStars] = useState<any[]>([]);
-  const [searchText, setSearchText] = useState(searchQuery);
+  const [searchText, setSearchText] = useState<string>(""); // start altijd met lege tekst
 
-  // 1️⃣ Haal private stars op
+  // ★ 1️⃣ Fetch private stars
   useEffect(() => {
     (async () => {
       try {
@@ -43,9 +43,10 @@ export default function SearchPrivate() {
     })();
   }, []);
 
-  // 2️⃣ Reset searchQuery bij mount
+  // ★ 2️⃣ Reset filters & lokale zoektekst bij mount
   useEffect(() => {
-    resetFilters();
+    resetFilters();      // clear store (incl. searchQuery)
+    setSearchText("");   // clear lokale state
   }, []);
 
   const close = () => {
@@ -53,7 +54,7 @@ export default function SearchPrivate() {
     router.replace("/explores/private");
   };
 
-  // 3️⃣ Store updaten bij typen
+  // ★ 3️⃣ Schrijf nieuwe zoekterm both lokaal en in store
   const onChangeSearch = useCallback(
     (text: string) => {
       setSearchText(text);
@@ -62,7 +63,7 @@ export default function SearchPrivate() {
     [setFilters]
   );
 
-  // 4️⃣ Suggesties filteren
+  // ★ 4️⃣ Suggesties filteren
   const suggestions = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     if (!q) return [];
@@ -71,19 +72,20 @@ export default function SearchPrivate() {
     );
   }, [searchText, rawStars]);
 
-  // 5️⃣ createdAt in DD/MM/YYYY
+  // ★ 5️⃣ Format createdAt
   const formatCreatedAt = (iso?: string) => {
     if (!iso) return "";
     const [Y, M, D] = iso.slice(0, 10).split("-");
     return `${D}/${M}/${Y}`;
   };
 
-  // 6️⃣ Klik op suggestie → spring naar star in PrivateScreen
+  // ★ 6️⃣ Klik op suggestie → bewaar in store en navigeer terug
   const goToStar = useCallback(
     (starId: string) => {
+      console.log("🔍 SearchPrivate selected starId =", starId);
+      setFilters({ selectedStarId: starId });
       setIsSearching(false);
-      setFilters({ selectedStarId: starId });       // bewaar de gekozen ster
-      router.replace({ pathname: "/explores/private" });
+      router.replace("/explores/private");
     },
     [router, setFilters, setIsSearching]
   );
@@ -94,24 +96,25 @@ export default function SearchPrivate() {
       onPress={() => goToStar(item._id)}
     >
       <Text style={st.suggestionText}>
-        {item.publicName}, {item.user?.country} – created {formatCreatedAt(item.createdAt)}
+        {item.publicName}, {item.user?.country} – created{" "}
+        {formatCreatedAt(item.createdAt)}
       </Text>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={[st.wrap, { paddingTop: insets.top }]} edges={["top", "left", "right"]}>
+    <SafeAreaView style={[st.wrap, { paddingTop: insets.top }]} edges={["top","left","right"]}>
       <TouchableOpacity
         style={[st.close, { top: insets.top + 10 }]}
         onPress={close}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        hitSlop={{ top:10,bottom:10,left:10,right:10 }}
       >
         <CloseIcon width={18} height={18} />
       </TouchableOpacity>
 
       {/* Zoekbalk */}
       <View style={st.row}>
-        <SearchIcon width={20} height={20} style={{ marginRight: 10 }} />
+        <SearchIcon width={20} height={20} style={{ marginRight:10 }} />
         <TextInput
           style={st.input}
           placeholder="Search by name…"
@@ -156,50 +159,15 @@ export default function SearchPrivate() {
 }
 
 const st = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: "#0B1022", paddingHorizontal: 20 },
-  close: { position: "absolute", right: 20, zIndex: 10 },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 22,
-    paddingHorizontal: 14,
-    height: 44,
-    marginTop: 20,
-  },
-  input: { flex: 1, fontSize: 16, color: "#000" },
-  suggestionsCard: {
-    marginTop: 8,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    maxHeight: 300,
-  },
-  suggestionsList: { flexGrow: 0 },
-  suggestionItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  suggestionText: { fontSize: 16, color: "#000" },
-  noResults: {
-    paddingVertical: 12,
-    fontSize: 14,
-    color: "#888",
-    textAlign: "center",
-  },
-  filterBtn: {
-    flexDirection: "row",
-    alignSelf: "flex-end",
-    marginTop: 20,
-    marginBottom: 10,
-    backgroundColor: "#FEEDB6",
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 8,
-    alignItems: "center",
-    gap: 6,
-  },
-  filterTxt: { fontFamily: "Alice-Regular", fontSize: 14, color: "#000" },
+  wrap:            { flex:1, backgroundColor:"#0B1022", paddingHorizontal:20 },
+  close:           { position:"absolute", right:20, zIndex:10 },
+  row:             { flexDirection:"row", alignItems:"center", backgroundColor:"#fff", borderRadius:22, paddingHorizontal:14, height:44, marginTop:20 },
+  input:           { flex:1, fontSize:16, color:"#000" },
+  suggestionsCard: { marginTop:8, backgroundColor:"#fff", borderRadius:12, paddingVertical:8, paddingHorizontal:12, maxHeight:300 },
+  suggestionsList: { flexGrow:0 },
+  suggestionItem:  { paddingVertical:10, borderBottomWidth:1, borderBottomColor:"#eee" },
+  suggestionText:  { fontSize:16, color:"#000" },
+  noResults:       { paddingVertical:12, fontSize:14, color:"#888", textAlign:"center" },
+  filterBtn:       { flexDirection:"row", alignSelf:"flex-end", marginTop:20, marginBottom:10, backgroundColor:"#FEEDB6", paddingVertical:10, paddingHorizontal:18, borderRadius:8, alignItems:"center", gap:6 },
+  filterTxt:       { fontFamily:"Alice-Regular", fontSize:14, color:"#000" },
 });
