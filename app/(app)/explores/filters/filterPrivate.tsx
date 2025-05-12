@@ -11,7 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import CountryPicker, { Country, CountryCode } from "react-native-country-picker-modal";
 import Svg, { Path } from "react-native-svg";
-import StarLoader from "../../../../components/loaders/StarLoader";
+import StarLoader from "@/components/loaders/StarLoader";
 import { useFilterStore } from "@/lib/store/filterStore";
 
 export default function PrivateFilter() {
