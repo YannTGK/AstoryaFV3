@@ -80,7 +80,7 @@ export default function SaveSpace() {
 
         <TouchableOpacity
           style={styles.lightButton}
-          onPress={() => router.push("/(app)/my-stars/public-star/space/chose-vr-space")}
+          onPress={() => {}}
         >
           <Text style={styles.lightButtonText}>Change VR - space</Text>
         </TouchableOpacity>
