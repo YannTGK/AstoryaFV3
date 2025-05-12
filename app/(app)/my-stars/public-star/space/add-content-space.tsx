@@ -21,6 +21,7 @@ import PlusLetter from "@/assets/images/svg-icons/plus-letter.svg";
 import AudioIcon from "@/assets/images/svg-icons/audio-line.svg";
 import PdfIcon from "@/assets/images/svg-icons/pdf-image.svg";
 import WordIcon from "@/assets/images/svg-icons/word-image.svg";
+import EditIcon from "@/assets/images/svg-icons/edit2.svg";
 
 const { width } = Dimensions.get("window");
 
@@ -71,7 +72,11 @@ export default function AddContentSpace() {
 
   const openDocumentPicker = async () => {
     const result = await DocumentPicker.getDocumentAsync({
-      type: "*/*",
+      type: [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ],
       multiple: true,
     });
     if (!result.canceled && result.assets) {
@@ -100,6 +105,10 @@ export default function AddContentSpace() {
             strokeLinejoin="round"
           />
         </Svg>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.editIcon} onPress={() => {}}>
+        <EditIcon width={28} height={28} />
       </TouchableOpacity>
 
       <Text style={styles.title}>3D/VR - space</Text>
@@ -153,7 +162,9 @@ export default function AddContentSpace() {
         {/* Messages */}
         <View style={styles.item}>
           <Text style={styles.label}>Messages 0/3</Text>
-          <PlusLetter width={80} height={80} />
+          <TouchableOpacity onPress={() => router.push("/(app)/my-stars/public-star/space/add-message/write-message-space")}>
+            <PlusLetter width={80} height={80} />
+          </TouchableOpacity>
         </View>
 
         {/* Documents */}
@@ -183,7 +194,7 @@ export default function AddContentSpace() {
 
       {/* Next button */}
       <View style={styles.buttonWrapper}>
-        <TouchableOpacity style={styles.button} onPress={() => {}}>
+        <TouchableOpacity style={styles.button} onPress={() => router.push("/(app)/my-stars/public-star/space/save-space")}>
           <Text style={styles.buttonText}>Next</Text>
         </TouchableOpacity>
       </View>
@@ -207,7 +218,7 @@ export default function AddContentSpace() {
                 style={styles.popupButton}
                 onPress={() => {
                   setShowAudioPopup(false);
-                  router.push("/(app)/my-stars/private-star/audios/record-audio");
+                  router.push("/(app)/my-stars/public-star/space/add-audio/record-audio");
                 }}
               >
                 <Text style={styles.popupButtonTextYes}>Create</Text>
@@ -323,8 +334,15 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: "#fff",
     textAlign: "center",
-    marginTop: 40,
+    marginTop: 50,
   },
+  editIcon: {
+  position: "absolute",
+  top: 52,
+  right: 20,
+  zIndex: 10,
+},
+
   scrollContent: {
     paddingTop: 25,
     paddingBottom: 160,
