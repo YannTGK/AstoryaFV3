@@ -67,7 +67,7 @@ export default function NoVRSpace() {
       {/* Lege toestand */}
       <View style={styles.centeredContent}>
         <Text style={styles.messageText}>
-          No 3D/VR-spaces created yet.{"\n"}Create your first VR-space!
+          No 3D/VR-space created yet.{"\n"}Create your public VR-space!
         </Text>
       </View>
 
