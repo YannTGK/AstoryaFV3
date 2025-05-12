@@ -29,7 +29,7 @@ export default function NoVRSpace() {
     const encoded = encodeURIComponent(spaceName.trim());
 
     router.push({
-      pathname: "/(app)/my-stars/private-star/space/chose-vr-space",
+      pathname: "/(app)/my-stars/public-star/space/chose-vr-space",
       params: { name: encoded },
     });
   };

@@ -49,7 +49,7 @@ export default function ChoseVRSpace() {
         <TouchableOpacity
           style={styles.button}
           onPress={() => {
-            router.push("/(app)/my-stars/private-star/space/chosen-vr-space");
+            router.push("/(app)/my-stars/public-star/space/chosen-vr-space");
           }}
         >
           <Text style={styles.buttonText}>Select</Text>
