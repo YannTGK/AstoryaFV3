@@ -1,4 +1,3 @@
-// app/(app)/explores/filters/PrivateFilter.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -17,38 +16,31 @@ import { useFilterStore } from "@/lib/store/filterStore";
 export default function PrivateFilter() {
   const router = useRouter();
   const { from } = useLocalSearchParams<{ from: string }>();
+  const { setFilters, resetFilters } = useFilterStore();
 
-  // lokale state
   const [dob, setDob] = useState("");
   const [dod, setDod] = useState("");
   const [countryCode, setCountryCode] = useState<CountryCode>("BE");
   const [countryName, setCountryName] = useState("Belgium");
-
   const [coordX, setCoordX] = useState("");
   const [coordY, setCoordY] = useState("");
   const [coordZ, setCoordZ] = useState("");
 
-  // laad-/progress-state
-  const [loading, setLoading]   = useState(false);
+  const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  // **hier** halen we de setFilters uit de store
-  const { setFilters, resetFilters } = useFilterStore();
-
-  // reset filters als je dit scherm opent
+  // reset all previous filters on mount
   useEffect(() => {
     resetFilters();
   }, []);
 
-  // alleen cijfers, min-teken en komma of punt toestaan
+  // allow only -, digits, one comma or dot
   const handleCoordInput = (text: string, setter: (v: string) => void) => {
-    if (/^-?\d*(?:[.,]\d*)?$/.test(text)) {
-      setter(text);
-    }
+    if (/^-?\d*(?:[.,]\d*)?$/.test(text)) setter(text);
   };
 
   const handleApplyFilter = () => {
-    // 1️⃣ schrijf de filters in de store
+    // write to store
     setFilters({
       dob,
       dod,
@@ -58,7 +50,7 @@ export default function PrivateFilter() {
       coordZ,
     });
 
-    // 2️⃣ animatie + redirect terug
+    // simple progress animation then go back
     setLoading(true);
     setProgress(0);
     let current = 0;
@@ -93,7 +85,9 @@ export default function PrivateFilter() {
       <View style={styles.titleRow}>
         <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
           <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-            <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
+            <Path d="M15 18l-6-6 6-6"
+              stroke="#FEEDB6" strokeWidth={2}
+              strokeLinecap="round" strokeLinejoin="round"/>
           </Svg>
         </TouchableOpacity>
         <Text style={styles.title}>Filter sterren</Text>

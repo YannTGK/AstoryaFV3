@@ -1,4 +1,3 @@
-// app/(app)/explores/private/SearchPrivate.tsx
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   View,
@@ -23,15 +22,20 @@ export default function SearchPrivate() {
   const insets = useSafeAreaInsets();
   const setIsSearching = useLayoutStore((s) => s.setIsSearching);
 
-  // pak de store hooks
   const { searchQuery } = useFilterStore();
-  const setFilters = useFilterStore((s) => s.setFilters);
-  const resetFilters = useFilterStore((s) => s.resetFilters);
+  const { setFilters, resetFilters } = useFilterStore();
 
   const [rawStars, setRawStars] = useState<any[]>([]);
-  const [searchText, setSearchText] = useState<string>(""); // start altijd met lege tekst
+  const [searchText, setSearchText] = useState(searchQuery);
 
-  // ★ 1️⃣ Fetch private stars
+  // reset on mount
+  useEffect(() => {
+    resetFilters();
+    setSearchText("");
+    setFilters({ searchQuery: "" });
+  }, []);
+
+  // load private stars
   useEffect(() => {
     (async () => {
       try {
@@ -43,18 +47,12 @@ export default function SearchPrivate() {
     })();
   }, []);
 
-  // ★ 2️⃣ Reset filters & lokale zoektekst bij mount
-  useEffect(() => {
-    resetFilters();      // clear store (incl. searchQuery)
-    setSearchText("");   // clear lokale state
-  }, []);
-
   const close = () => {
     setIsSearching(false);
     router.replace("/explores/private");
   };
 
-  // ★ 3️⃣ Schrijf nieuwe zoekterm both lokaal en in store
+  // when typing, update store
   const onChangeSearch = useCallback(
     (text: string) => {
       setSearchText(text);
@@ -63,7 +61,7 @@ export default function SearchPrivate() {
     [setFilters]
   );
 
-  // ★ 4️⃣ Suggesties filteren
+  // filtered suggestions
   const suggestions = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     if (!q) return [];
@@ -72,22 +70,21 @@ export default function SearchPrivate() {
     );
   }, [searchText, rawStars]);
 
-  // ★ 5️⃣ Format createdAt
+  // format date
   const formatCreatedAt = (iso?: string) => {
     if (!iso) return "";
     const [Y, M, D] = iso.slice(0, 10).split("-");
     return `${D}/${M}/${Y}`;
   };
 
-  // ★ 6️⃣ Klik op suggestie → bewaar in store en navigeer terug
+  // pick a star → store ID & go back
   const goToStar = useCallback(
     (starId: string) => {
-      console.log("🔍 SearchPrivate selected starId =", starId);
       setFilters({ selectedStarId: starId });
       setIsSearching(false);
       router.replace("/explores/private");
     },
-    [router, setFilters, setIsSearching]
+    [setFilters, setIsSearching]
   );
 
   const renderSuggestion = ({ item }: { item: any }) => (
@@ -105,16 +102,15 @@ export default function SearchPrivate() {
   return (
     <SafeAreaView style={[st.wrap, { paddingTop: insets.top }]} edges={["top","left","right"]}>
       <TouchableOpacity
-        style={[st.close, { top: insets.top + 10 }]}
+        style={[st.close,{ top: insets.top + 10 }]}
         onPress={close}
         hitSlop={{ top:10,bottom:10,left:10,right:10 }}
       >
-        <CloseIcon width={18} height={18} />
+        <CloseIcon width={18} height={18}/>
       </TouchableOpacity>
 
-      {/* Zoekbalk */}
       <View style={st.row}>
-        <SearchIcon width={20} height={20} style={{ marginRight:10 }} />
+        <SearchIcon width={20} height={20} style={{ marginRight:10 }}/>
         <TextInput
           style={st.input}
           placeholder="Search by name…"
@@ -124,13 +120,12 @@ export default function SearchPrivate() {
         />
       </View>
 
-      {/* Suggestie-kaart */}
       {searchText.length > 0 && (
         <View style={st.suggestionsCard}>
           {suggestions.length > 0 ? (
             <FlatList
               data={suggestions}
-              keyExtractor={(s) => s._id}
+              keyExtractor={(star) => star._id}
               renderItem={renderSuggestion}
               nestedScrollEnabled
               style={st.suggestionsList}
@@ -141,7 +136,6 @@ export default function SearchPrivate() {
         </View>
       )}
 
-      {/* Filter-knop */}
       <TouchableOpacity
         style={st.filterBtn}
         onPress={() =>
@@ -152,7 +146,7 @@ export default function SearchPrivate() {
         }
       >
         <Text style={st.filterTxt}>Filter</Text>
-        <FilterIcon width={18} height={18} />
+        <FilterIcon width={18} height={18}/>
       </TouchableOpacity>
     </SafeAreaView>
   );
