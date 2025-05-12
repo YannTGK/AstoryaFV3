@@ -15,6 +15,7 @@ import PlayIcon from "@/assets/images/icons/play.svg";
 import PauseIcon from "@/assets/images/icons/pause.svg";
 import StopIcon from "@/assets/images/icons/stop-circle.svg";
 import Svg, { Path } from "react-native-svg";
+import { useAudio } from "@/app/(app)/my-stars/private-star/audios/audioProvider";
 
 function formatTime(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -36,6 +37,22 @@ export default function EditAudioScreen() {
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(1);
   const [barWidth, setBarWidth] = useState(0);
+
+const { addAudio } = useAudio();
+
+const handleAddAudio = () => {
+  addAudio({
+    uri,
+    title,
+    description,
+    to,
+    date: new Date().toISOString(),
+  });
+
+  router.replace("/(app)/my-stars/private-star/audios/audios");
+};
+
+  const isFormComplete = title.trim() !== "" && description.trim() !== "" && to.trim() !== "";
 
   useEffect(() => {
     Audio.setAudioModeAsync({
@@ -105,22 +122,21 @@ export default function EditAudioScreen() {
         </Svg>
       </TouchableOpacity>
 
-<TouchableOpacity style={styles.menuBtn} onPress={() => console.log("Menu opened")}>
-  <Text style={styles.menuText}>⋮</Text>
-</TouchableOpacity>
+      <TouchableOpacity style={styles.menuBtn} onPress={() => console.log("Menu opened")}>
+        <Text style={styles.menuText}>⋮</Text>
+      </TouchableOpacity>
 
       <Text style={styles.title}>Audio</Text>
 
-        <View style={styles.form}>
-  <TextInput style={styles.input} placeholder="Title" value={title} onChangeText={setTitle} />
-  <TextInput style={styles.input} placeholder="Description" value={description} onChangeText={setDescription} />
-  <TextInput style={styles.input} placeholder="To: @username" value={to} onChangeText={setTo} />
-</View>
-      <ScrollView contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}>
-  <View style={styles.playerBox}>
-<Text style={styles.audioFilename}>
-  {title ? `${title}` : name || "audio.mp3"}
-</Text>
+      <View style={styles.form}>
+        <TextInput style={styles.input} placeholder="Title" value={title} onChangeText={setTitle} placeholderTextColor="#999" />
+        <TextInput style={styles.input} placeholder="Description" value={description} onChangeText={setDescription} placeholderTextColor="#999" />
+        <TextInput style={styles.input} placeholder="To: @username" value={to} onChangeText={setTo} placeholderTextColor="#999" />
+      </View>
+
+      <ScrollView contentContainerStyle={{ paddingBottom: 150, flexGrow: 1 }}>
+        <View style={styles.playerBox}>
+          <Text style={styles.audioFilename}>{title ? title : name || "audio.mp3"}</Text>
 
           <View
             style={styles.progressBar}
@@ -134,28 +150,31 @@ export default function EditAudioScreen() {
           <Text style={styles.timestamp}>{formatTime(position)} / {formatTime(duration)}</Text>
 
           <View style={styles.controlsContainer}>
-  <TouchableOpacity onPress={loadAndPlay}>
-    {isPlaying ? <PauseIcon width={24} height={24} /> : <PlayIcon width={24} height={24} />}
-  </TouchableOpacity>
+            <TouchableOpacity onPress={loadAndPlay}>
+              {isPlaying ? <PauseIcon width={24} height={24} /> : <PlayIcon width={24} height={24} />}
+            </TouchableOpacity>
 
-  <TouchableOpacity
-    onPress={() => {
-      if (sound) {
-        sound.stopAsync();
-        setIsPlaying(false);
-      }
-    }}
-    style={{ marginLeft: 30 }}  // ← voeg meer ruimte toe
-  >
-    <StopIcon width={24} height={24} />
-  </TouchableOpacity>
-</View>
-
+            <TouchableOpacity
+              onPress={() => {
+                if (sound) {
+                  sound.stopAsync();
+                  setIsPlaying(false);
+                }
+              }}
+              style={{ marginLeft: 30 }}
+            >
+              <StopIcon width={24} height={24} />
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
 
-      <TouchableOpacity style={styles.addBtn}>
-        <Text style={styles.addText}>Add</Text>
+      <TouchableOpacity
+        style={[styles.addBtn, isFormComplete && styles.addBtnActive]}
+        disabled={!isFormComplete}
+        onPress={handleAddAudio}
+      >
+        <Text style={[styles.addText, isFormComplete && styles.addTextActive]}>Add</Text>
       </TouchableOpacity>
     </View>
   );
@@ -176,20 +195,19 @@ const styles = StyleSheet.create({
     fontFamily: "Alice-Regular",
   },
   menuBtn: {
-  position: "absolute",
-  top: 100,
-  right: 20,
-  zIndex: 10,
-},
-menuText: {
-  color: "#fff",
-  fontSize: 32,
-},
-
+    position: "absolute",
+    top: 100,
+    right: 20,
+    zIndex: 10,
+  },
+  menuText: {
+    color: "#fff",
+    fontSize: 32,
+    fontFamily: "Alice-Regular",
+  },
   form: {
     marginTop: 80,
     paddingHorizontal: 20,
-    
   },
   input: {
     backgroundColor: "#fff",
@@ -197,16 +215,19 @@ menuText: {
     padding: 12,
     marginBottom: 16,
     fontSize: 14,
+    fontFamily: "Alice-Regular",
   },
   audioFilename: {
     color: "#fff",
     fontSize: 16,
     marginBottom: 8,
+    fontFamily: "Alice-Regular",
   },
   timestamp: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 16,
     marginVertical: 8,
+    fontFamily: "Alice-Regular",
   },
   playerBox: {
     alignItems: "center",
@@ -215,7 +236,7 @@ menuText: {
   },
   progressBar: {
     width: "90%",
-    height: 14,
+    height: 16,
     backgroundColor: "#999",
     borderRadius: 7,
     overflow: "hidden",
@@ -237,7 +258,8 @@ menuText: {
   },
   controlsContainer: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "center",
+    gap: 30,
     alignItems: "center",
     backgroundColor: "#FEEDB6",
     paddingVertical: 10,
@@ -251,13 +273,21 @@ menuText: {
     left: 16,
     right: 16,
     backgroundColor: "#ccc",
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderRadius: 8,
     alignItems: "center",
     zIndex: 10,
   },
+  addBtnActive: {
+    backgroundColor: "#FEEDB6",
+  },
   addText: {
     fontSize: 18,
     color: "#333",
+    fontFamily: "Alice-Regular",
+  },
+  addTextActive: {
+    color: "#11152A",
+    fontWeight: "600",
   },
 });
