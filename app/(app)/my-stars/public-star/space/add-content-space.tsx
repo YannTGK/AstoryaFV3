@@ -1,4 +1,6 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from "react-native";
+import { useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Image } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
@@ -11,6 +13,34 @@ const { width } = Dimensions.get("window");
 
 export default function AddContentSpace() {
   const router = useRouter();
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [videos, setVideos] = useState<string[]>([]);
+
+  const pickPhoto = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const newPhotos = result.assets.map((asset) => asset.uri);
+      setPhotos((prev) => [...prev, ...newPhotos].slice(0, 10));
+    }
+  };
+
+  const pickVideo = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsMultipleSelection: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const newVideos = result.assets.map((asset) => asset.uri);
+      setVideos((prev) => [...prev, ...newVideos].slice(0, 3));
+    }
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -34,21 +64,44 @@ export default function AddContentSpace() {
         </Svg>
       </TouchableOpacity>
 
-      {/* Title */}
       <Text style={styles.title}>3D/VR - space</Text>
 
-      {/* Content list */}
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Photos */}
         <View style={styles.item}>
-          <Text style={styles.label}>Photo’s 0/10</Text>
-          <PlusSquare width={60} height={60} />
+          <Text style={styles.label}>Photo’s {photos.length}/10</Text>
+          <View style={styles.row}>
+            {photos.map((uri, index) => (
+              <Image
+                key={index}
+                source={{ uri }}
+                style={styles.mediaThumbnail}
+              />
+            ))}
+            {photos.length < 10 && (
+              <TouchableOpacity onPress={pickPhoto}>
+                <PlusSquare width={60} height={60} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
+        {/* Videos */}
         <View style={styles.item}>
-          <Text style={styles.label}>Video’s 0/3</Text>
-          <PlusSquare width={60} height={60} />
+          <Text style={styles.label}>Video’s {videos.length}/3</Text>
+          <View style={styles.row}>
+            {videos.map((uri, index) => (
+              <View key={index} style={styles.videoPlaceholder} />
+            ))}
+            {videos.length < 3 && (
+              <TouchableOpacity onPress={pickVideo}>
+                <PlusSquare width={60} height={60} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
+        {/* Rest: dummy icons */}
         <View style={styles.item}>
           <Text style={styles.label}>Audio’s 0/3</Text>
           <PlusCircle width={60} height={60} />
@@ -56,7 +109,7 @@ export default function AddContentSpace() {
 
         <View style={styles.item}>
           <Text style={styles.label}>Messages 0/3</Text>
-          <PlusLetter width={80} height={80} /> {/* groter */}
+          <PlusLetter width={80} height={80} />
         </View>
 
         <View style={styles.item}>
@@ -70,7 +123,7 @@ export default function AddContentSpace() {
         </View>
       </ScrollView>
 
-      {/* Next button, zelfde positie als Add content */}
+      {/* Next button */}
       <View style={styles.buttonWrapper}>
         <TouchableOpacity style={styles.button} onPress={() => {}}>
           <Text style={styles.buttonText}>Next</Text>
@@ -92,7 +145,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: "#fff",
     textAlign: "center",
-    marginTop: 50, 
+    marginTop: 40,
   },
   scrollContent: {
     paddingTop: 25,
@@ -108,9 +161,28 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginBottom: 6,
   },
+  row: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    alignItems: "center",
+  },
+  mediaThumbnail: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  videoPlaceholder: {
+    width: 60,
+    height: 60,
+    backgroundColor: "#444",
+    borderRadius: 8,
+    marginRight: 8,
+  },
   buttonWrapper: {
     position: "absolute",
-    bottom: 100, 
+    bottom: 100,
     left: 20,
     right: 20,
   },
