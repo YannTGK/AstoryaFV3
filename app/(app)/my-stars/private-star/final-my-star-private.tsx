@@ -20,7 +20,7 @@ import AudiosIcon from "@/assets/images/svg-icons/audios.svg";
 import MessagesIcon from "@/assets/images/svg-icons/messages.svg";
 import DocumentsIcon from "@/assets/images/svg-icons/documents.svg";
 import BookOfLifeIcon from "@/assets/images/svg-icons/book-of-life.svg";
-import VRSpaceIcon from "@/assets/images/svg-icons/3D-VR-space.svg";
+/*import VRSpaceIcon from "@/assets/images/svg-icons/3D-VR-space.svg";*/
 
 const { width } = Dimensions.get("window");
 
@@ -111,7 +111,7 @@ export default function FinalMyStarPrivate() {
     { label: "Messages", icon: <MessagesIcon width={60} height={60} /> },
     { label: "Documents", icon: <DocumentsIcon width={60} height={60} /> },
     { label: "Book of Life", icon: <BookOfLifeIcon width={60} height={60} /> },
-    { label: "3D VR Space", icon: <VRSpaceIcon width={60} height={60} /> },
+    /*{ label: "3D VR Space", icon: <VRSpaceIcon width={60} height={60} /> },*/
   ];
 
   const handlePress = (label: string) => {
@@ -123,9 +123,9 @@ export default function FinalMyStarPrivate() {
       router.push("/(app)/my-stars/private-star/documents/no-documents");
     } else if (label === "Audio’s") {
       router.push("/(app)/my-stars/private-star/audios/no-audios");
-    } else if (label === "3D VR Space") {
+    } /*else if (label === "3D VR Space") {
       router.push("/(app)/my-stars/private-star/space/no-space");
-    }
+    } */
   };
   
   return (
