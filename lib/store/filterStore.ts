@@ -9,7 +9,7 @@ type FilterState = {
   coordY: string;
   coordZ: string;
   searchQuery: string;
-  selectedStarId: string | null;         // ← nieuw
+  selectedStarId: string | null;
   setFilters: (filters: Partial<FilterState>) => void;
   resetFilters: () => void;
 };
@@ -22,9 +22,10 @@ export const useFilterStore = create<FilterState>((set) => ({
   coordY: "",
   coordZ: "",
   searchQuery: "",
-  selectedStarId: null,                  // ← initieel null
+  selectedStarId: null,
 
-  setFilters: (filters) => set((state) => ({ ...state, ...filters })),
+  setFilters: (filters) =>
+    set((state) => ({ ...state, ...filters })),
 
   resetFilters: () =>
     set({
@@ -35,6 +36,6 @@ export const useFilterStore = create<FilterState>((set) => ({
       coordY: "",
       coordZ: "",
       searchQuery: "",
-      selectedStarId: null,               // ← reset hier ook
+      selectedStarId: null,
     }),
 }));

@@ -88,7 +88,7 @@ export default function SearchPublic() {
     [router, setIsSearching, setFilters]
   );
 
-  const renderSuggestion = ({ item }) => (
+  const renderSuggestion = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={st.suggestionItem}
       onPress={() => goToStar(item._id)}
