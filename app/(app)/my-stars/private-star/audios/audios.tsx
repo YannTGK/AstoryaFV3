@@ -13,6 +13,9 @@ import { useAudio } from "./audioProvider";
 import AudioPlayer from "@/app/(app)/my-stars/private-star/audios/components/AudioPlayer";
 import { Entypo } from "@expo/vector-icons";
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
+import UploadIcon from "@/assets/images/svg-icons/upload-cloud-b.svg";
+import DeleteIcon from "@/assets/images/svg-icons/delete.svg";
+import DownloadIcon from "@/assets/images/svg-icons/download.svg";
 
 interface AudioItem {
   uri: string;
@@ -25,7 +28,7 @@ interface AudioItem {
 export default function AudioListScreen() {
   const { audios = [] } = useAudio();
   const router = useRouter();
-  const [menuOpenIndex, setMenuOpenIndex] = useState<number | null>(null); // ✅ toegevoegd
+  const [menuOpenIndex, setMenuOpenIndex] = useState<number | null>(null);
 
   const renderItem = ({ item, index }: { item: AudioItem; index: number }) => (
     <View style={styles.audioCard}>
@@ -50,13 +53,22 @@ export default function AudioListScreen() {
       {menuOpenIndex === index && (
         <View style={styles.menu}>
           <TouchableOpacity style={styles.menuItem} onPress={() => console.log("Uploaden")}>
-            <Text style={styles.menuText}>Uploaden</Text>
+            <View style={styles.menuItemContent}>
+              <UploadIcon width={16} height={16} />
+              <Text style={styles.menuText}>Uploaden</Text>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={() => console.log("Delete")}>
-            <Text style={styles.menuText}>Delete</Text>
+            <View style={styles.menuItemContent}>
+              <DeleteIcon width={16} height={16} />
+              <Text style={styles.menuText}>Delete</Text>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={() => console.log("Download")}>
-            <Text style={styles.menuText}>Download</Text>
+            <View style={styles.menuItemContent}>
+              <DownloadIcon width={16} height={16} />
+              <Text style={styles.menuText}>Download</Text>
+            </View>
           </TouchableOpacity>
         </View>
       )}
@@ -172,8 +184,14 @@ const styles = StyleSheet.create({
   menuItem: {
     paddingVertical: 8,
   },
+  menuItemContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   menuText: {
     fontSize: 14,
+    fontFamily: "Alice-Regular",
     color: "#11152A",
   },
 });
