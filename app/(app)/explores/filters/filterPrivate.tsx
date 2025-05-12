@@ -1,4 +1,3 @@
-// app/(app)/explores/filter.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -9,14 +8,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import CountryPicker, {
-  Country,
-  CountryCode,
-} from "react-native-country-picker-modal";
+import CountryPicker, { Country, CountryCode } from "react-native-country-picker-modal";
 import Svg, { Path } from "react-native-svg";
 import StarLoader from "../../../../components/loaders/StarLoader";
+import { useFilterStore } from "@/lib/store/filterStore";
 
-export default function Privateilter() {
+export default function PrivateFilter() {
   const router = useRouter();
   const { from } = useLocalSearchParams<{ from: string }>();
 
@@ -29,10 +26,30 @@ export default function Privateilter() {
   const [coordY, setCoordY] = useState("");
   const [coordZ, setCoordZ] = useState("");
 
-  const [loading, setLoading]   = useState(false);
+  const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  const { setFilters } = useFilterStore();
+
+  // Alleen -, cijfers en één komma of punt toestaan
+  const handleCoordInput = (text: string, setter: (v: string) => void) => {
+    if (/^-?\d*(?:[.,]\d*)?$/.test(text)) {
+      setter(text);
+    }
+  };
+
   const handleApplyFilter = () => {
+    // Zet de filters in de store
+    setFilters({
+      dob,
+      dod,
+      country: countryName,
+      coordX,
+      coordY,
+      coordZ,
+    });
+
+    // animatie + redirect
     setLoading(true);
     setProgress(0);
     let current = 0;
@@ -43,22 +60,14 @@ export default function Privateilter() {
         clearInterval(interval);
         setTimeout(() => {
           setLoading(false);
-          router.replace(
-            from === "private"
-              ? "/(app)/explores/private"
-              : "/(app)/explores/public"
-          );
+          router.replace("/explores/private");
         }, 500);
       }
     }, 150);
   };
 
   const handleBack = () => {
-    router.replace(
-      from === "private"
-        ? "/(app)/explores/private"
-        : "/(app)/explores/public"
-    );
+    router.replace("/explores/search-private");
   };
 
   return (
@@ -76,7 +85,7 @@ export default function Privateilter() {
             />
           </Svg>
         </TouchableOpacity>
-        <Text style={styles.title}>Filter stars</Text>
+        <Text style={styles.title}>Filter sterren</Text>
       </View>
 
       {/* Date of birth */}
@@ -109,7 +118,7 @@ export default function Privateilter() {
           withCountryNameButton
           onSelect={(c: Country) => {
             setCountryCode(c.cca2 as CountryCode);
-            setCountryName(c.name);
+            setCountryName(c.name as string);
           }}
           containerButtonStyle={styles.countryButton}
         />
@@ -120,28 +129,28 @@ export default function Privateilter() {
       <Text style={styles.label}>Coordinates</Text>
       <View style={styles.coordRow}>
         <TextInput
-          placeholder="X"
+          placeholder="X (bv. -25,3)"
           placeholderTextColor="#aaa"
           style={[styles.input, styles.coordInput]}
           value={coordX}
-          onChangeText={setCoordX}
-          keyboardType="numeric"
+          onChangeText={(t) => handleCoordInput(t, setCoordX)}
+          keyboardType="default"
         />
         <TextInput
-          placeholder="Y"
+          placeholder="Y (bv. 0)"
           placeholderTextColor="#aaa"
           style={[styles.input, styles.coordInput]}
           value={coordY}
-          onChangeText={setCoordY}
-          keyboardType="numeric"
+          onChangeText={(t) => handleCoordInput(t, setCoordY)}
+          keyboardType="default"
         />
         <TextInput
-          placeholder="Z"
+          placeholder="Z (bv. 480,2)"
           placeholderTextColor="#aaa"
           style={[styles.input, styles.coordInput]}
           value={coordZ}
-          onChangeText={setCoordZ}
-          keyboardType="numeric"
+          onChangeText={(t) => handleCoordInput(t, setCoordZ)}
+          keyboardType="default"
         />
       </View>
 
