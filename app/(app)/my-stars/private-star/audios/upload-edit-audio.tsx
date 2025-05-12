@@ -11,10 +11,12 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Audio } from "expo-av";
+import Svg, { Path } from "react-native-svg";
 import PlayIcon from "@/assets/images/icons/play.svg";
 import PauseIcon from "@/assets/images/icons/pause.svg";
 import StopIcon from "@/assets/images/icons/stop-circle.svg";
-import Svg, { Path } from "react-native-svg";
+import UserPlusIcon from "@/assets/images/svg-icons/add-people.svg";
+import UserIcon from "@/assets/images/svg-icons/see-members.svg";
 import { useAudio } from "@/app/(app)/my-stars/private-star/audios/audioProvider";
 
 function formatTime(ms: number): string {
@@ -37,22 +39,24 @@ export default function EditAudioScreen() {
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(1);
   const [barWidth, setBarWidth] = useState(0);
+  const [showMenu, setShowMenu] = useState(false); // menu toggle
 
-const { addAudio } = useAudio();
+  const { addAudio } = useAudio();
 
-const handleAddAudio = () => {
-  addAudio({
-    uri,
-    title,
-    description,
-    to,
-    date: new Date().toISOString(),
-  });
+  const isFormComplete =
+    title.trim() !== "" && description.trim() !== "" && to.trim() !== "";
 
-  router.replace("/(app)/my-stars/private-star/audios/audios");
-};
+  const handleAddAudio = () => {
+    addAudio({
+      uri,
+      title,
+      description,
+      to,
+      date: new Date().toISOString(),
+    });
 
-  const isFormComplete = title.trim() !== "" && description.trim() !== "" && to.trim() !== "";
+    router.replace("/(app)/my-stars/private-star/audios/audios");
+  };
 
   useEffect(() => {
     Audio.setAudioModeAsync({
@@ -66,7 +70,10 @@ const handleAddAudio = () => {
 
   const loadAndPlay = async () => {
     if (!sound) {
-      const { sound: newSound } = await Audio.Sound.createAsync({ uri }, { shouldPlay: true });
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri },
+        { shouldPlay: true }
+      );
       setSound(newSound);
       setIsPlaying(true);
 
@@ -112,48 +119,113 @@ const handleAddAudio = () => {
     })
   ).current;
 
- 
-
   return (
     <View style={{ flex: 1 }}>
-      <LinearGradient colors={["#000000", "#273166", "#000000"]} style={StyleSheet.absoluteFill} />
+      <LinearGradient
+        colors={["#000000", "#273166", "#000000"]}
+        style={StyleSheet.absoluteFill}
+      />
 
+      {/* Back Button */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          <Path
+            d="M15 18l-6-6 6-6"
+            stroke="#FEEDB6"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </Svg>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.menuBtn} onPress={() => console.log("Menu opened")}>
+      {/* Menu Toggle Button */}
+      <TouchableOpacity
+        style={styles.menuBtn}
+        onPress={() => setShowMenu(!showMenu)}
+      >
         <Text style={styles.menuText}>⋮</Text>
       </TouchableOpacity>
+
+      {/* Dropdown Menu */}
+      {showMenu && (
+        <View style={styles.menuDropdown}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => console.log("Add people")}>
+            <UserPlusIcon width={16} height={16} style={{ marginRight: 8 }} />
+            <Text style={styles.menuTextItem}>Add people</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => console.log("See members")}>
+            <UserIcon width={16} height={16} style={{ marginRight: 8 }} />
+            <Text style={styles.menuTextItem}>See members</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <Text style={styles.title}>Audio</Text>
 
       <View style={styles.form}>
-        <TextInput style={styles.input} placeholder="Title" value={title} onChangeText={setTitle} placeholderTextColor="#999" />
-        <TextInput style={styles.input} placeholder="Description" value={description} onChangeText={setDescription} placeholderTextColor="#999" />
-        <TextInput style={styles.input} placeholder="To: @username" value={to} onChangeText={setTo} placeholderTextColor="#999" />
+        <TextInput
+          style={styles.input}
+          placeholder="Title"
+          value={title}
+          onChangeText={setTitle}
+          placeholderTextColor="#999"
+        />
+        <TextInput
+  style={[styles.input, styles.descriptionInput]}
+  placeholder="Description"
+  value={description}
+  onChangeText={setDescription}
+  placeholderTextColor="#999"
+  multiline
+  numberOfLines={3}
+/>
+
+        <TextInput
+          style={styles.input}
+          placeholder="To: @username"
+          value={to}
+          onChangeText={setTo}
+          placeholderTextColor="#999"
+        />
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 150, flexGrow: 1 }}>
         <View style={styles.playerBox}>
-          <Text style={styles.audioFilename}>{title ? title : name || "audio.mp3"}</Text>
+          <Text style={styles.audioFilename}>
+            {title ? title : name || "audio.mp3"}
+          </Text>
 
           <View
             style={styles.progressBar}
             onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
             {...panResponder.panHandlers}
           >
-            <View style={[styles.progressFill, { width: `${(position / duration) * 100}%` }]} />
-            <View style={[styles.progressThumb, { left: `${(position / duration) * 100}%` }]} />
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${(position / duration) * 100}%` },
+              ]}
+            />
+            <View
+              style={[
+                styles.progressThumb,
+                { left: `${(position / duration) * 100}%` },
+              ]}
+            />
           </View>
 
-          <Text style={styles.timestamp}>{formatTime(position)} / {formatTime(duration)}</Text>
+          <Text style={styles.timestamp}>
+            {formatTime(position)} / {formatTime(duration)}
+          </Text>
 
           <View style={styles.controlsContainer}>
             <TouchableOpacity onPress={loadAndPlay}>
-              {isPlaying ? <PauseIcon width={24} height={24} /> : <PlayIcon width={24} height={24} />}
+              {isPlaying ? (
+                <PauseIcon width={24} height={24} />
+              ) : (
+                <PlayIcon width={24} height={24} />
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -176,7 +248,9 @@ const handleAddAudio = () => {
         disabled={!isFormComplete}
         onPress={handleAddAudio}
       >
-        <Text style={[styles.addText, isFormComplete && styles.addTextActive]}>Add</Text>
+        <Text style={[styles.addText, isFormComplete && styles.addTextActive]}>
+          Add
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -189,26 +263,51 @@ const styles = StyleSheet.create({
     left: 20,
     zIndex: 10,
   },
-  title: {
-    fontSize: 20,
-    color: "#fff",
-    textAlign: "center",
-    marginTop: 50,
-    fontFamily: "Alice-Regular",
-  },
   menuBtn: {
     position: "absolute",
-    top: 100,
+    top: 80,
     right: 20,
-    zIndex: 10,
+    zIndex: 20,
   },
   menuText: {
     color: "#fff",
-    fontSize: 32,
+    fontSize: 28,
+    fontFamily: "Alice-Regular",
+  },
+  menuDropdown: {
+    position: "absolute",
+    top: 110,
+    right: 20,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 25,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  menuTextItem: {
+    color: "#11152A",
+    fontFamily: "Alice-Regular",
+    fontSize: 14,
+  },
+  title: {
+    textAlign: "center",
+    marginTop: 50,
+    fontSize: 20,
+    color: "#fff",
     fontFamily: "Alice-Regular",
   },
   form: {
-    marginTop: 80,
+    marginTop: 50,
     paddingHorizontal: 20,
   },
   input: {
@@ -292,4 +391,9 @@ const styles = StyleSheet.create({
     color: "#11152A",
     fontWeight: "600",
   },
+  descriptionInput: {
+  height: 100, // of bijv. 80 als je het compacter wil
+  textAlignVertical: "top", // zorgt dat de tekst bovenaan begint
+},
+
 });

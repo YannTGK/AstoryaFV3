@@ -13,27 +13,52 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import RecordIcon from "@/assets/images/svg-icons/microphone.svg";
 import PauseIcon from "@/assets/images/icons/pause.svg";
+import PlayIcon from "@/assets/images/icons/play.svg";
 import StopIcon from "@/assets/images/icons/stop-circle.svg";
 
 export default function RecordAudioScreen() {
   const router = useRouter();
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const startRecording = async () => {
     try {
+      if (recording && isPaused) {
+        await recording.startAsync();
+        setIsRecording(true);
+        setIsPaused(false);
+        timerRef.current = setInterval(() => {
+          setRecordingDuration((prev) => prev + 1);
+        }, 1000);
+        return;
+      }
+
+      if (recording) {
+        await recording.stopAndUnloadAsync();
+        setRecording(null);
+      }
+
       await Audio.requestPermissionsAsync();
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
       });
 
-      const { recording } = await Audio.Recording.createAsync(
+      const { recording: newRecording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY
       );
-      setRecording(recording);
+      setRecording(newRecording);
       setIsRecording(true);
+      setIsPaused(false);
+      setRecordingDuration(0);
+
+      timerRef.current = setInterval(() => {
+        setRecordingDuration((prev) => prev + 1);
+      }, 1000);
     } catch (err) {
       console.error("Failed to start recording", err);
     }
@@ -43,6 +68,8 @@ export default function RecordAudioScreen() {
     if (recording) {
       await recording.pauseAsync();
       setIsRecording(false);
+      setIsPaused(true);
+      if (timerRef.current) clearInterval(timerRef.current);
     }
   };
 
@@ -52,6 +79,8 @@ export default function RecordAudioScreen() {
       const uri = recording.getURI();
       setRecording(null);
       setIsRecording(false);
+      setIsPaused(false);
+      if (timerRef.current) clearInterval(timerRef.current);
 
       if (uri) {
         router.push({
@@ -86,6 +115,12 @@ export default function RecordAudioScreen() {
     }
   }, [isRecording]);
 
+  const formatDuration = (seconds: number) => {
+    const min = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    return `${min}:${sec < 10 ? "0" : ""}${sec}`;
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
@@ -107,16 +142,27 @@ export default function RecordAudioScreen() {
 
       <Text style={styles.title}>Audio</Text>
 
+      {isRecording && (
+        <View style={styles.listeningRow}>
+          <Text style={styles.listeningText}>Listening...</Text>
+          <Text style={styles.timerText}>{formatDuration(recordingDuration)}</Text>
+        </View>
+      )}
+
       <View style={styles.recorderContainer}>
-        <Animated.View style={[styles.recordCircle, { transform: [{ scale: pulseAnim }] }]}>
+        <Animated.View
+          style={[styles.recordCircle, { transform: [{ scale: pulseAnim }] }]}
+        >
           <RecordIcon width={278} height={278} />
         </Animated.View>
 
         <View style={styles.controlsContainer}>
-          <TouchableOpacity
-            onPress={isRecording ? pauseRecording : startRecording}
-          >
-            <PauseIcon width={24} height={24} />
+          <TouchableOpacity onPress={isRecording ? pauseRecording : startRecording}>
+            {isRecording ? (
+              <PauseIcon width={24} height={24} />
+            ) : (
+              <PlayIcon width={24} height={24} />
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity onPress={stopRecording} style={{ marginLeft: 30 }}>
@@ -140,6 +186,23 @@ const styles = StyleSheet.create({
     color: "#fff",
     textAlign: "center",
     marginTop: 50,
+    fontFamily: "Alice-Regular",
+  },
+  listeningRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 32,
+    marginTop: 32,
+  },
+  listeningText: {
+    color: "#fff",
+    fontSize: 16,
+    fontFamily: "Alice-Regular",
+  },
+  timerText: {
+    color: "#fff",
+    fontSize: 16,
     fontFamily: "Alice-Regular",
   },
   recorderContainer: {
