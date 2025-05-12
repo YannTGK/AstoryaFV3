@@ -1,5 +1,7 @@
+// app/(app)/explores/public/index.tsx
 import React, { useEffect, useRef, useState, useMemo } from "react";
-import { View, StyleSheet, Dimensions, Text, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Dimensions, ActivityIndicator, Text } from "react-native";
+import { useRouter } from "expo-router";
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
 import * as THREE from "three";
@@ -17,83 +19,70 @@ import { useFilterStore } from "@/lib/store/filterStore";
 
 const { width, height } = Dimensions.get("window");
 const CLUSTER_FACTOR = 0.15;
-
-const isNear = (value: number, target: number, margin = 2) =>
-  Math.abs(value - target) <= margin;
+const isNear = (v: number, t: number, m = 2) => Math.abs(v - t) <= m;
 
 export default function PublicScreen() {
+  const router = useRouter();
   const camPos = useRef({ x: 0, y: 0, z: 10 });
   const camRot = useRef({ x: 0, y: 0 });
   const camRef = useRef<THREE.PerspectiveCamera | null>(null);
 
   const [rawStars, setRawStars] = useState<any[]>([]);
-  const [scene, setScene] = useState<THREE.Scene | null>(null);
   const [loading, setLoading] = useState(true);
+  const [scene, setScene] = useState<THREE.Scene | null>(null);
 
   const showOnlyMine = useLayoutStore((s) => s.showOnlyMine);
-  const { dob, dod, country, coordX, coordY, coordZ } = useFilterStore();
+  const { dob, dod, country, coordX, coordY, coordZ, searchQuery, selectedStarId } =
+    useFilterStore();
 
+  // ─── 1. Fetch public stars ─────────────────
   useEffect(() => {
     (async () => {
       try {
         const { stars } = (await api.get("/stars/public")).data;
         setRawStars(stars);
-      } catch (e) {
-        console.error(e);
+      } catch (err) {
+        console.error("★ public fetch error:", err);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
+  // ─── 2. Apply filters & search ─────────────
   const stars = useMemo(() => {
-    let filtered = [...rawStars];
-
+    let f = [...rawStars];
     if (dob) {
-      const formattedDob = new Date(dob.split("/").reverse().join("-"))
+      const d = new Date(dob.split("/").reverse().join("-"))
         .toISOString()
         .slice(0, 10);
-      filtered = filtered.filter(
-        (s) => s.user?.dob?.slice(0, 10) === formattedDob
-      );
+      f = f.filter((s) => s.user?.dob?.slice(0, 10) === d);
     }
-
     if (dod) {
-      const formattedDod = new Date(dod.split("/").reverse().join("-"))
+      const D = new Date(dod.split("/").reverse().join("-"))
         .toISOString()
         .slice(0, 10);
-      filtered = filtered.filter(
-        (s) => s.user?.dod?.slice(0, 10) === formattedDod
-      );
+      f = f.filter((s) => s.user?.dod?.slice(0, 10) === D);
     }
-
-    if (country) {
-      filtered = filtered.filter((s) => s.user?.country === country);
-    }
-
+    if (country) f = f.filter((s) => s.user?.country === country);
     if (coordX) {
-      const xVal = parseFloat(coordX);
-      if (!isNaN(xVal)) {
-        filtered = filtered.filter((s) => isNear(s.x, xVal));
-      }
+      const x = parseFloat(coordX);
+      if (!isNaN(x)) f = f.filter((s) => isNear(s.x, x));
     }
-
     if (coordY) {
-      const yVal = parseFloat(coordY);
-      if (!isNaN(yVal)) {
-        filtered = filtered.filter((s) => isNear(s.y, yVal));
-      }
+      const y = parseFloat(coordY);
+      if (!isNaN(y)) f = f.filter((s) => isNear(s.y, y));
     }
-
     if (coordZ) {
-      const zVal = parseFloat(coordZ);
-      if (!isNaN(zVal)) {
-        filtered = filtered.filter((s) => isNear(s.z, zVal));
-      }
+      const z = parseFloat(coordZ);
+      if (!isNaN(z)) f = f.filter((s) => isNear(s.z, z));
     }
-
+    if (searchQuery) {
+      const q = searchQuery.trim().toLowerCase();
+      f = f.filter((s) => s.publicName.toLowerCase().includes(q));
+    }
     if (showOnlyMine) {
-      filtered = filtered
+      f = f
         .filter((s) => s.related)
         .map((s) => ({
           ...s,
@@ -102,55 +91,58 @@ export default function PublicScreen() {
           z: s.z * CLUSTER_FACTOR,
         }));
     }
-
-    return filtered;
-  }, [rawStars, showOnlyMine, dob, dod, country, coordX, coordY, coordZ]);
+    return f;
+  }, [rawStars, dob, dod, country, coordX, coordY, coordZ, searchQuery, showOnlyMine]);
 
   const highlightIds = useMemo(
     () => (showOnlyMine ? stars.map((s) => s._id) : []),
     [stars, showOnlyMine]
   );
 
+  // ─── 3. Center on whole cluster ────────────
   useEffect(() => {
     if (!camRef.current || stars.length === 0) return;
-
     const center = stars.reduce(
-      (acc, s) => {
-        acc.x += s.x;
-        acc.y += s.y;
-        acc.z += s.z;
-        return acc;
-      },
+      (a, s) => ({ x: a.x + s.x, y: a.y + s.y, z: a.z + s.z }),
       { x: 0, y: 0, z: 0 }
     );
-
     center.x /= stars.length;
     center.y /= stars.length;
     center.z /= stars.length;
 
-    const maxDistance = Math.max(
-      ...stars.map(
-        (s) =>
-          Math.sqrt(
-            Math.pow(s.x - center.x, 2) +
-              Math.pow(s.y - center.y, 2) +
-              Math.pow(s.z - center.z, 2)
-          )
+    const maxD = Math.max(
+      ...stars.map((s) =>
+        Math.hypot(s.x - center.x, s.y - center.y, s.z - center.z)
       )
     );
-
-    const safeDistance = maxDistance * 1.5 + 50;
-
-    camPos.current = {
-      x: center.x,
-      y: center.y,
-      z: center.z + safeDistance,
-    };
-
-    camRef.current.position.set(center.x, center.y, center.z + safeDistance);
-    camRef.current.lookAt(new THREE.Vector3(center.x, center.y, center.z));
+    const dist = maxD * 1.5 + 50;
+    camPos.current = { x: center.x, y: center.y, z: center.z + dist };
+    camRef.current!.position.set(center.x, center.y, center.z + dist);
+    camRef.current!.lookAt(new THREE.Vector3(center.x, center.y, center.z));
   }, [stars]);
 
+  // ─── 4. Jump to selectedStarId ────────────
+  useEffect(() => {
+    if (!camRef.current || !scene || stars.length === 0 || !selectedStarId)
+      return;
+    const target = stars.find((s) => s._id === selectedStarId);
+    if (target) {
+      const offset = 20;
+      camPos.current = { x: target.x, y: target.y, z: target.z + offset };
+      camRef.current!.position.set(
+        target.x,
+        target.y,
+        target.z + offset
+      );
+      camRef.current!.lookAt(
+        new THREE.Vector3(target.x, target.y, target.z)
+      );
+      // clear it so it doesn’t loop
+      useFilterStore.getState().setFilters({ selectedStarId: null });
+    }
+  }, [selectedStarId, stars, scene]);
+
+  // ─── 5. Three.js scene setup ──────────────
   const createScene = async (gl: any) => {
     const renderer = new Renderer({ gl, preserveDrawingBuffer: true });
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
@@ -158,20 +150,23 @@ export default function PublicScreen() {
     const sc = new THREE.Scene();
     setScene(sc);
 
-    const camera = new THREE.PerspectiveCamera(
+    const cam = new THREE.PerspectiveCamera(
       75,
       gl.drawingBufferWidth / gl.drawingBufferHeight,
       0.1,
       10000
     );
-    camera.position.z = camPos.current.z;
-    camRef.current = camera;
+    cam.position.z = camPos.current.z;
+    camRef.current = cam;
 
     const composer = new EffectComposer(renderer);
-    composer.addPass(new RenderPass(sc, camera));
+    composer.addPass(new RenderPass(sc, cam));
     composer.addPass(
       new UnrealBloomPass(
-        new THREE.Vector2(gl.drawingBufferWidth, gl.drawingBufferHeight),
+        new THREE.Vector2(
+          gl.drawingBufferWidth,
+          gl.drawingBufferHeight
+        ),
         3,
         1,
         0
@@ -180,29 +175,38 @@ export default function PublicScreen() {
 
     const loop = () => {
       requestAnimationFrame(loop);
-      camera.position.set(camPos.current.x, camPos.current.y, camPos.current.z);
-      camera.rotation.x = camRot.current.x;
-      camera.rotation.y = camRot.current.y;
+      cam.position.set(
+        camPos.current.x,
+        camPos.current.y,
+        camPos.current.z
+      );
+      cam.rotation.x = camRot.current.x;
+      cam.rotation.y = camRot.current.y;
       composer.render();
       gl.endFrameEXP();
     };
     loop();
   };
 
-  const raycaster = new Raycaster();
+  const ray = new Raycaster();
   const touch = new Vector2();
-  const panResp = useRef(setupControls({ cameraPosition: camPos, cameraRotation: camRot })).current;
+  const pan = useRef(
+    setupControls({
+      cameraPosition: camPos,
+      cameraRotation: camRot,
+    })
+  ).current;
 
   const handleTouch = (e: any) => {
     if (!scene || !camRef.current) return;
     touch.x = (e.locationX / width) * 2 - 1;
     touch.y = -(e.locationY / height) * 2 + 1;
-    raycaster.setFromCamera(touch, camRef.current);
-    const hit = raycaster.intersectObjects(scene.children, true)[0];
+    ray.setFromCamera(touch, camRef.current!);
+    const hit = ray.intersectObjects(scene.children, true)[0];
     if (!hit) return;
-    let o = hit.object;
+    let o: any = hit.object;
     while (o && !o.userData?.id && o.parent) o = o.parent;
-    o?.userData?.id && console.log("🟢 click star:", o.userData.id);
+    if (o.userData?.id) console.log("🟢 click star:", o.userData.id);
   };
 
   return (
@@ -211,18 +215,28 @@ export default function PublicScreen() {
         style={styles.gl}
         onContextCreate={createScene}
         onTouchEnd={(e) => handleTouch(e.nativeEvent)}
-        {...panResp.panHandlers}
+        {...pan.panHandlers}
       />
+
       <View style={styles.cross}>
         <Text style={styles.plus}>+</Text>
       </View>
 
-      <JoystickHandler cameraPosition={camPos} cameraRotation={camRot} />
+      <JoystickHandler
+        cameraPosition={camPos}
+        cameraRotation={camRot}
+      />
 
-      {(loading || !scene) && (
-        <ActivityIndicator style={styles.spinner} size="large" color="#fff" />
+      {/* only loading the API call now */}
+      {loading && (
+        <ActivityIndicator
+          style={styles.spinner}
+          size="large"
+          color="#fff"
+        />
       )}
 
+      {/* once scene exists we render your stars */}
       {scene && (
         <StarsManager
           scene={scene}
@@ -241,7 +255,10 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: "50%",
     left: "50%",
-    transform: [{ translateX: -10 }, { translateY: -10 }],
+    transform: [
+      { translateX: -10 },
+      { translateY: -10 },
+    ],
     zIndex: 10,
   },
   plus: { fontSize: 24, color: "#fff" },

@@ -1,3 +1,4 @@
+// lib/store/filterStore.ts
 import { create } from "zustand";
 
 type FilterState = {
@@ -7,6 +8,8 @@ type FilterState = {
   coordX: string;
   coordY: string;
   coordZ: string;
+  searchQuery: string;
+  selectedStarId: string | null;
   setFilters: (filters: Partial<FilterState>) => void;
   resetFilters: () => void;
 };
@@ -18,7 +21,12 @@ export const useFilterStore = create<FilterState>((set) => ({
   coordX: "",
   coordY: "",
   coordZ: "",
-  setFilters: (filters) => set((state) => ({ ...state, ...filters })),
+  searchQuery: "",
+  selectedStarId: null,
+
+  setFilters: (filters) =>
+    set((state) => ({ ...state, ...filters })),
+
   resetFilters: () =>
     set({
       dob: "",
@@ -27,5 +35,7 @@ export const useFilterStore = create<FilterState>((set) => ({
       coordX: "",
       coordY: "",
       coordZ: "",
+      searchQuery: "",
+      selectedStarId: null,
     }),
 }));
