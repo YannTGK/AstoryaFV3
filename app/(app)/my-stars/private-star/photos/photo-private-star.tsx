@@ -13,16 +13,16 @@ export default function PhotosPage() {
   const [albumName, setAlbumName] = useState("");
 
   return (
-<View style={{ flex: 1, position: "relative" }}>
-<LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
+      <View style={{ flex: 1, position: "relative" }}>
+      <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
 
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-  <Svg width={24} height={24}>
-    <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
-  </Svg>
-</TouchableOpacity>
+        <Svg width={24} height={24}>
+          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
+        </Svg>
+      </TouchableOpacity>
 
-      <Text style={styles.title}>Photo albums</Text>
+      <Text style={styles.title}>Photo album</Text>
 
       <View style={styles.centered}>
         {/* Vervang dit met je eigen icoon later */}
