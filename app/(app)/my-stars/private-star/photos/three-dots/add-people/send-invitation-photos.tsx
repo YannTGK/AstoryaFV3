@@ -108,6 +108,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   title: {
+        position: "absolute",
     fontFamily: "Alice-Regular",
     fontSize: 20,
     color: "#fff",
@@ -115,6 +116,7 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
   subtitle: {
+        position: "absolute",
     marginTop: 32,
     marginHorizontal: 16,
     fontFamily: "Alice-Regular",
@@ -143,6 +145,7 @@ const styles = StyleSheet.create({
     color: "#11152A",
   },
   button: {
+        position: "absolute",
     backgroundColor: "#FEEDB6",
     paddingVertical: 16,
     borderRadius: 8,

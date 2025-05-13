@@ -1,3 +1,4 @@
+// foto album (empty state)
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { useRouter } from "expo-router";
@@ -107,85 +108,83 @@ const styles = StyleSheet.create({
         alignItems: "center",
         zIndex: 10,
       },
-  modalOverlay: {
-    position: "absolute",
-    top: 0, left: 0, right: 0, bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    zIndex: 100, // blijft zo
-  },
-  
-  modalBox: {
-    width: 280,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    alignItems: "center",
-    shadowColor: "#000",
-shadowOpacity: 0.1,
-shadowRadius: 10,
-elevation: 10,
+modalOverlay: {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: "rgba(0, 0, 0, 0.5)",
+  zIndex: 100,
+},
+modalBox: {
+  width: 300,
+  backgroundColor: "#fff",
+  borderRadius: 20,
+  paddingTop: 24,
+  paddingBottom: 16,
+  paddingHorizontal: 24,
+  borderWidth: 1,
+  borderColor: "#007AFF",
+  alignItems: "center",
+  overflow: "hidden",
+  shadowColor: "#000",
+  shadowOpacity: 0.05,
+  shadowRadius: 10,
+  elevation: 5,
+},
 
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontFamily: "Alice-Regular",
-    marginBottom: 16,
-    color: "#11152A",
-  },
-  modalLabel: {
-    fontFamily: "Alice-Regular",
-    fontSize: 14,
-    color: "#11152A",
-  },
-  input: {
-    width: "100%",
-    fontSize: 16,
-    fontFamily: "Alice-Regular",
-    color: "#11152A",
-    borderBottomWidth: 1,
-    borderBottomColor: "#aaa",
-    paddingBottom: 4,
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  
-  inputUnderline: {
-    width: "100%",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-    marginTop: 4,
-    marginBottom: 20,
-  },
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    marginTop: 10,
-  },
-  modalCancel: {
-    color: "#007AFF",
-    fontSize: 16,
-    fontFamily: "Alice-Regular",
-    padding: 16,
-    flex: 1,
-    textAlign: "center",
-  },
-  
-  modalCreate: {
-    color: "#007AFF",
-    fontSize: 16,
-    fontFamily: "Alice-Regular",
-    padding: 16,
-    flex: 1,
-    textAlign: "center",
-  },
-  buttonDivider: {
-    width: 1,
-    height: "100%",
-    backgroundColor: "#eee",
-  },  
+modalTitle: {
+  fontSize: 20,
+  fontFamily: "Alice-Regular",
+  color: "#11152A",
+  marginBottom: 20,
+},
+
+input: {
+  width: "100%",
+  fontSize: 16,
+  fontFamily: "Alice-Regular",
+  color: "#11152A",
+  borderBottomWidth: 1,
+  borderStyle: "dashed",
+  borderBottomColor: "#11152A",
+  paddingBottom: 8,
+  marginBottom: 24,
+  textAlign: "center",
+},
+modalButtons: {
+  borderTopWidth: 1,
+  flexDirection: "row",
+  justifyContent: "space-evenly",
+  alignItems: "center",
+  width: "100%",
+  paddingTop: 10,
+  paddingBottom: 10,
+    borderTopColor: "#ccc", // lijn boven cancel/create
+
+},
+modalCancel: {
+  fontSize: 18,
+  fontFamily: "Alice-Regular",
+  color: "#007AFF",
+  textAlign: "center",
+  paddingHorizontal: 20,
+},
+
+modalCreate: {
+  fontSize: 18,
+  fontFamily: "Alice-Regular",
+  color: "#007AFF",
+  textAlign: "center",
+  paddingHorizontal: 20,
+},
+buttonDivider: {
+  width: 1,
+  backgroundColor: "#ccc",
+  height: "100%",
+},
+
 });

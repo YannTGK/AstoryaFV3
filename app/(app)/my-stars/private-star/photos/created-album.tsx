@@ -14,6 +14,7 @@ import Svg, { Path } from "react-native-svg";
 import * as ImagePicker from "expo-image-picker";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { Feather } from "@expo/vector-icons";
+import PlusIcon from "@/assets/images/svg-icons/plus.svg";
 
 export default function AlbumPage() {
   const router = useRouter();
@@ -268,11 +269,11 @@ export default function AlbumPage() {
       </Modal>
 
       {/* ADD BUTTON */}
-      {!isDeleteMode && (
-        <TouchableOpacity style={styles.addButton} onPress={pickImage}>
-          <Text style={styles.plus}>＋</Text>
+       <View style={styles.plusWrapper}>
+<TouchableOpacity onPress={pickImage}>
+          <PlusIcon width={50} height={50} />
         </TouchableOpacity>
-      )}
+      </View>
 
       {/* CONFIRM DELETE MODAL */}
       <Modal visible={confirmDeleteVisible} transparent animationType="fade">
@@ -425,9 +426,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     zIndex: 20,
   },
-  plus: {
-    fontSize: 48,
-    color: "#11152A",
+  plusWrapper: {
+    position: "absolute",
+    bottom: 100,
+    width: "100%",
+    alignItems: "center",
+    zIndex: 10,
   },
   closeBtn: {
     position: "absolute",
