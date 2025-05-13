@@ -30,8 +30,6 @@ export default function StarView({
 
   const onContextCreate = useCallback(
     async (gl: ExpoWebGLRenderingContext) => {
-      console.log("🌐 GL context:", gl);
-  
       // 1. Renderer
       const renderer = new Renderer({ gl });
       renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
@@ -47,14 +45,11 @@ export default function StarView({
       );
       camera.position.set(0, 0, 10);
       scene.add(camera);
-      console.log("Camera at", camera.position);
   
-      // 3. Load GLTF (cached) — **do not pass `gl`** into the wrapper
+      // 3. Load GLTF (cached)
       if (!cachedGLTF) {
-        console.log("→ Loading GLTF…");
         try {
-          const loader = new ThreeGLTFLoader();           // ← no args here
-          // wrap callback API into a Promise
+          const loader = new ThreeGLTFLoader(); // no args
           const gltf: any = await new Promise((resolve, reject) => {
             loader.load(
               "https://cdn.jsdelivr.net/gh/YannTGK/GlbFIle@main/star.glb",
@@ -64,13 +59,9 @@ export default function StarView({
             );
           });
           cachedGLTF = gltf.scene;
-          console.log("← GLTF loaded, children:", cachedGLTF.children.map(c => c.type));
-        } catch (err) {
-          console.error("❌ GLTF load failed:", err);
-          return;
+        } catch {
+          return; // abort if load fails
         }
-      } else {
-        console.log("→ Reusing cached GLTF");
       }
   
       // 4. Clone, position & scale
@@ -80,24 +71,11 @@ export default function StarView({
       star.rotation.x = -Math.PI / 2;
       star.scale.set(3.2, 3.2, 3.2);
       scene.add(star);
-      console.log("Star:", {
-        position: star.position,
-        rotation: star.rotation,
-        scale: star.scale,
-      });
   
-      // 5. Log bounding box
-      const bbox = new THREE.Box3().setFromObject(star);
-      console.log("Bounding box:", {
-        min: bbox.min,
-        max: bbox.max,
-        center: bbox.getCenter(new THREE.Vector3()),
-      });
-  
-      // 6. Camera lookAt origin
+      // 5. Camera lookAt origin
       camera.lookAt(0, 0, 0);
   
-      // 7. Emissive material (no extra lights needed)
+      // 6. Emissive material
       star.traverse((o) => {
         if (o instanceof THREE.Mesh) {
           const m = o.material as THREE.MeshStandardMaterial;
@@ -108,7 +86,7 @@ export default function StarView({
         }
       });
   
-      // 8. Bloom composer
+      // 7. Bloom composer
       const composer = new EffectComposer(renderer);
       composer.addPass(new RenderPass(scene, camera));
       composer.addPass(
@@ -120,7 +98,7 @@ export default function StarView({
         )
       );
   
-      // 9. Render loop
+      // 8. Render loop
       const animate = () => {
         frameRef.current = requestAnimationFrame(animate);
         if (rotate && star) star.rotation.z += 0.005;
@@ -128,7 +106,6 @@ export default function StarView({
         gl.endFrameEXP();
       };
       animate();
-      console.log("▶ Render loop started");
     },
     [rotate, emissive]
   );
@@ -156,7 +133,7 @@ export default function StarView({
 
   return (
     <GLView
-      style={[{ width: size, height: size, backgroundColor: "black" }, style]}
+      style={[{ width: size, height: size, backgroundColor: "transparent" }, style]}
       onContextCreate={onContextCreate}
     />
   );
