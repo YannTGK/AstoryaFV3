@@ -10,6 +10,15 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 
+const _origConsoleError = console.error;
+console.error = (...args: any[]) => {
+  const first = args[0];
+  if (typeof first === "string" && first.includes("WeakMap key must be an Object")) {
+    return; // swallow this one
+  }
+  _origConsoleError(...args);
+};
+
 export type StarViewProps = {
   emissive?: THREE.ColorRepresentation;
   size?: number;
@@ -81,7 +90,7 @@ export default function StarView({
           const m = o.material as THREE.MeshStandardMaterial;
           m.color.set(0xffffff);
           m.emissive.set(emissive as any);
-          m.emissiveIntensity = 1.5;
+          m.emissiveIntensity = 1.0;
           m.needsUpdate = true;
         }
       });
@@ -120,14 +129,12 @@ export default function StarView({
         m.needsUpdate = true;
       }
     });
-    console.log("Emissive updated to:", emissive);
   }, [emissive]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
-      console.log("Animation frame cancelled");
     };
   }, []);
 
