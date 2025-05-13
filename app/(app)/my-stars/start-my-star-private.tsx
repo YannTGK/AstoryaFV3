@@ -20,7 +20,7 @@ export default function StartMyStarPrivate() {
   const { user } = useAuthStore();
 
   const [showPopup, setShowPopup] = useState(false);
-  const [isReady, setIsReady]     = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -29,29 +29,35 @@ export default function StartMyStarPrivate() {
       try {
         // 1) haal alle sterren op
         const { data: stars } = await api.get("/stars");
-        // 2) zoek private ster
-        const privateStar = stars.find((s: any) => s.isPrivate);
-        if (privateStar) {
+
+        // 2) zoek *alleen* je eigen private ster (starFor="myself")
+        const myPrivateStar = stars.find(
+          (s: any) => s.isPrivate === true && s.starFor === "myself"
+        );
+
+        if (myPrivateStar) {
           // kleur als decimaal emissive
-          const hex = privateStar.color?.startsWith("#")
-            ? privateStar.color
+          const hex = myPrivateStar.color?.startsWith("#")
+            ? myPrivateStar.color
             : "#ffffff";
           const emissive = parseInt(hex.slice(1), 16).toString();
 
           // direct naar chosen-private-star
           router.replace({
-            pathname: "/(app)/my-stars/private-star/final-my-star-private",
+            pathname:
+              "/(app)/my-stars/private-star/final-my-star-private",
             params: {
               // id kun je optioneel meegeven als je later wilt updaten
-              id:        privateStar._id,
-              name:      privateStar.publicName || privateStar.word,
+              id: myPrivateStar._id,
+              name:
+                myPrivateStar.publicName || myPrivateStar.word,
               emissive,
             },
           });
           return;
         }
 
-        // 3) geen bestaande private star: toon eventueel popup
+        // 3) geen bestaande *eigen* private star: toon eventueel popup
         if (user.plan === "EXPLORER") {
           setShowPopup(true);
         }
@@ -70,7 +76,9 @@ export default function StartMyStarPrivate() {
   }, [user, router]);
 
   const goCustomize = () =>
-    router.push("/(app)/my-stars/private-star/color-my-star-private");
+    router.push(
+      "/(app)/my-stars/private-star/color-my-star-private"
+    );
   const goPublic = () =>
     router.replace("/(app)/my-stars/start-my-star-public");
 
@@ -84,7 +92,9 @@ export default function StartMyStarPrivate() {
       />
 
       {/* Upgrade-popup voor EXPLORER */}
-      {showPopup && <UpgradePopup onClose={() => setShowPopup(false)} />}
+      {showPopup && (
+        <UpgradePopup onClose={() => setShowPopup(false)} />
+      )}
 
       {!showPopup && (
         <>
@@ -93,7 +103,12 @@ export default function StartMyStarPrivate() {
             style={styles.backBtn}
             onPress={() => router.back()}
           >
-            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+            <Svg
+              width={24}
+              height={24}
+              viewBox="0 0 24 24"
+              fill="none"
+            >
               <Path
                 d="M15 18l-6-6 6-6"
                 stroke="#FEEDB6"
@@ -108,8 +123,15 @@ export default function StartMyStarPrivate() {
 
           {/* Private / Public toggle */}
           <View style={styles.toggleContainer}>
-            <Pressable style={[styles.toggleBtn, styles.privateOn]}>
-              <Text style={[styles.toggleTxt, { color: "#11152A" }]}>
+            <Pressable
+              style={[styles.toggleBtn, styles.privateOn]}
+            >
+              <Text
+                style={[
+                  styles.toggleTxt,
+                  { color: "#11152A" },
+                ]}
+              >
                 Private
               </Text>
             </Pressable>
@@ -117,7 +139,12 @@ export default function StartMyStarPrivate() {
               style={[styles.toggleBtn, styles.publicOff]}
               onPress={goPublic}
             >
-              <Text style={[styles.toggleTxt, { color: "#fff" }]}>
+              <Text
+                style={[
+                  styles.toggleTxt,
+                  { color: "#fff" },
+                ]}
+              >
                 Public
               </Text>
             </Pressable>
@@ -134,7 +161,9 @@ export default function StartMyStarPrivate() {
               style={styles.button}
               onPress={goCustomize}
             >
-              <Text style={styles.buttonText}>Customize star</Text>
+              <Text style={styles.buttonText}>
+                Customize star
+              </Text>
             </TouchableOpacity>
           </View>
         </>
@@ -145,7 +174,12 @@ export default function StartMyStarPrivate() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
+  backBtn: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    zIndex: 10,
+  },
 
   title: {
     fontFamily: "Alice-Regular",
@@ -172,7 +206,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 12,
     borderBottomRightRadius: 12,
   },
-  toggleTxt: { fontFamily: "Alice-Regular", fontSize: 16 },
+  toggleTxt: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+  },
 
   canvasWrapper: {
     position: "absolute",

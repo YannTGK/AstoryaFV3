@@ -57,51 +57,6 @@ export default function FinalMyStarPrivate() {
     scene.add(light);
 
     const loader = new GLTFLoader();
-    loader.load(
-      "https://cdn.jsdelivr.net/gh/YannTGK/GlbFIle@main/star.glb",
-      (gltf) => {
-        const star = gltf.scene;
-        star.scale.set(3.2, 3.2, 3.2);
-        star.position.set(0, 0, 0);
-        star.rotation.x = -Math.PI / 2;
-
-        const glowColor = new THREE.Color(parseInt(emissive as string));
-        star.traverse((child) => {
-          if (child instanceof THREE.Mesh && child.material) {
-            const material = child.material as THREE.MeshStandardMaterial;
-            material.color.set(0xffffff);
-            material.emissive.set(glowColor);
-            material.emissiveIntensity = 1.5;
-          }
-        });
-
-        scene.add(star);
-
-        const composer = new EffectComposer(renderer);
-        composer.addPass(new RenderPass(scene, camera));
-        composer.addPass(
-          new UnrealBloomPass(
-            new THREE.Vector2(gl.drawingBufferWidth, gl.drawingBufferHeight),
-            0.9,
-            0.3,
-            0
-          )
-        );
-
-        const animate = () => {
-          requestAnimationFrame(animate);
-          star.rotation.z += 0.005;
-          composer.render();
-          gl.endFrameEXP();
-        };
-
-        animate();
-      },
-      undefined,
-      (error) => {
-        console.error("Error loading star.glb", error);
-      }
-    );
   };
 
   const icons = [
@@ -110,13 +65,14 @@ export default function FinalMyStarPrivate() {
     { label: "Audio’s", icon: <AudiosIcon width={60} height={60} /> },
     { label: "Messages", icon: <MessagesIcon width={60} height={60} /> },
     { label: "Documents", icon: <DocumentsIcon width={60} height={60} /> },
-    { label: "Book of Life", icon: <BookOfLifeIcon width={60} height={60} /> },
     { label: "3D VR Space", icon: <VRSpaceIcon width={60} height={60} /> },
   ];
 
   const handlePress = (label: string) => {
     if (label === "Photo's") {
       router.push("/(app)/my-stars/private-star/photos/photo-private-star");
+    } else if (label === "Video’s") {
+      router.push("/(app)/my-stars/private-star/videos/photo-album");
     } else if (label === "Messages") {
       router.push("/(app)/my-stars/private-star/messages/no-messages");
     } else if (label === "Documents") {

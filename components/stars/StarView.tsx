@@ -27,50 +27,57 @@ let cachedGLTF: THREE.Object3D | null = null;
  *─────────────────────────────*/
 function patchNumericHandles(gl: ExpoWebGLRenderingContext) {
   type HandleMap = Map<number, any>;
-  const wrappers: Record<string, HandleMap> = {
-    framebuffer: new Map(),
-    renderbuffer: new Map(),
-    texture: new Map(),
-    program: new Map(),
-    shader: new Map(),
-  };
+  // Eén cache per type, we maken die dynamisch aan
+  const wrappers: Record<string, HandleMap> = {};
 
+  // Helper om een type (bv. "buffer") te wrappen
   const makePatch = (
-    type: keyof typeof wrappers,
-    createFn: keyof typeof gl,
-    deleteFn: keyof typeof gl
+    type: string,
+    createFn: string,
+    deleteFn: string
   ) => {
-    const cache = wrappers[type];
-    const origCreate = (gl as any)[createFn] as (...a: any[]) => any;
-    const origDelete = (gl as any)[deleteFn] as (...a: any[]) => any;
+    // maak bij de eerste keer een cache aan
+    if (!wrappers[type]) {
+      wrappers[type] = new Map<number, any>();
+    }
+    const cache = wrappers[type]!;
+    const origCreate = (gl as any)[createFn].bind(gl);
+    const origDelete = (gl as any)[deleteFn].bind(gl);
 
-    (gl as any)[createFn] = function (...args: any[]) {
-      const handle = origCreate.apply(this, args);
+    // override createFn
+    (gl as any)[createFn] = (...args: any[]) => {
+      const handle = origCreate(...args);
       if (typeof handle === "number") {
         let obj = cache.get(handle);
         if (!obj) {
-          obj = Object.create(null); // ultra‑light wrapper
+          obj = Object.create(null);
           Object.defineProperty(obj, "__expoHandle", { value: handle });
           cache.set(handle, obj);
         }
         return obj;
       }
-      return handle; // native JSI already returns objects
+      return handle;
     };
 
-    (gl as any)[deleteFn] = function (obj: any, ...dArgs: any[]) {
+    // override deleteFn
+    (gl as any)[deleteFn] = (obj: any, ...args: any[]) => {
+      // sleutel is ofwel een nummer, of ons wrapper‐object
       const handle =
         typeof obj === "number" ? obj : obj?.__expoHandle ?? obj;
       cache.delete(handle);
-      return origDelete.apply(this, [handle, ...dArgs]);
+      return origDelete(handle, ...args);
     };
   };
 
-  makePatch("framebuffer", "createFramebuffer", "deleteFramebuffer");
-  makePatch("renderbuffer", "createRenderbuffer", "deleteRenderbuffer");
-  makePatch("texture", "createTexture", "deleteTexture");
-  makePatch("program", "createProgram", "deleteProgram");
-  makePatch("shader", "createShader", "deleteShader");
+  // Doorzoek gl op alle create/delete-paren
+  Object.keys(gl).forEach((key) => {
+    if (!key.startsWith("create")) return;
+    const type = key.slice("create".length);                // bv. "Buffer"
+    const deleteFn = "delete" + type;                       // bv. "deleteBuffer"
+    if (typeof (gl as any)[deleteFn] !== "function") return; 
+    const lowerType = type.charAt(0).toLowerCase() + type.slice(1);
+    makePatch(lowerType, key, deleteFn);
+  });
 }
 
 /*──────────────────────────────
