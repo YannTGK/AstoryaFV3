@@ -1,15 +1,8 @@
+import React, { useState } from "react";
 import { View, Text, TouchableOpacity, Pressable, StyleSheet, Dimensions, ScrollView } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
-import { GLView } from "expo-gl";
-import { Renderer } from "expo-three";
-import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
-import { useState } from "react";
 import useAuthStore from "@/lib/store/useAuthStore";
 import StarView from "@/components/stars/StarView";
 
@@ -19,14 +12,17 @@ import VideosIcon from "@/assets/images/svg-icons/videos.svg";
 import AudiosIcon from "@/assets/images/svg-icons/audios.svg";
 import MessagesIcon from "@/assets/images/svg-icons/messages.svg";
 import DocumentsIcon from "@/assets/images/svg-icons/documents.svg";
-import BookOfLifeIcon from "@/assets/images/svg-icons/book-of-life.svg";
-/*import VRSpaceIcon from "@/assets/images/svg-icons/3D-VR-space.svg";*/
+import VRSpaceIcon from "@/assets/images/svg-icons/3D-VR-space.svg";
 
 const { width } = Dimensions.get("window");
 
 export default function FinalMyStarPrivate() {
   const router = useRouter();
-  const { name, emissive } = useLocalSearchParams();
+  const { name, emissive, starId } = useLocalSearchParams<{
+    name?: string;
+    emissive?: string;
+    starId?: string;
+  }>();
   const { user } = useAuthStore();
   const [isPrivate, setIsPrivate] = useState(true);
 
@@ -36,98 +32,28 @@ export default function FinalMyStarPrivate() {
       pathname: "/(app)/my-stars/start-my-star-public",
       params: {
         name: user?.firstName + " " + user?.lastName,
-        emissive: emissive as string,
+        emissive,
+        starId,
       },
     });
   };
 
-  const createScene = async (gl: any) => {
-    const renderer = new Renderer({ gl });
-    renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
-    renderer.setClearColor(0x000000, 0);
-    renderer.autoClear = true;
-
-    const scene = new THREE.Scene();
-    scene.background = null;
-
-    const camera = new THREE.PerspectiveCamera(75, gl.drawingBufferWidth / gl.drawingBufferHeight, 0.1, 1000);
-    camera.position.z = 7;
-
-    const light = new THREE.AmbientLight(0xffffff, 1.5);
-    scene.add(light);
-
-    const loader = new GLTFLoader();
-    loader.load(
-      "https://cdn.jsdelivr.net/gh/YannTGK/GlbFIle@main/star.glb",
-      (gltf) => {
-        const star = gltf.scene;
-        star.scale.set(3.2, 3.2, 3.2);
-        star.position.set(0, 0, 0);
-        star.rotation.x = -Math.PI / 2;
-
-        const glowColor = new THREE.Color(parseInt(emissive as string));
-        star.traverse((child) => {
-          if (child instanceof THREE.Mesh && child.material) {
-            const material = child.material as THREE.MeshStandardMaterial;
-            material.color.set(0xffffff);
-            material.emissive.set(glowColor);
-            material.emissiveIntensity = 1.5;
-          }
-        });
-
-        scene.add(star);
-
-        const composer = new EffectComposer(renderer);
-        composer.addPass(new RenderPass(scene, camera));
-        composer.addPass(
-          new UnrealBloomPass(
-            new THREE.Vector2(gl.drawingBufferWidth, gl.drawingBufferHeight),
-            0.9,
-            0.3,
-            0
-          )
-        );
-
-        const animate = () => {
-          requestAnimationFrame(animate);
-          star.rotation.z += 0.005;
-          composer.render();
-          gl.endFrameEXP();
-        };
-
-        animate();
-      },
-      undefined,
-      (error) => {
-        console.error("Error loading star.glb", error);
-      }
-    );
-  };
-
   const icons = [
-    { label: "Photo's", icon: <PhotosIcon width={60} height={60} /> },
-    { label: "Video’s", icon: <VideosIcon width={60} height={60} /> },
-    { label: "Audio’s", icon: <AudiosIcon width={60} height={60} /> },
-    { label: "Messages", icon: <MessagesIcon width={60} height={60} /> },
-    { label: "Documents", icon: <DocumentsIcon width={60} height={60} /> },
-    { label: "Book of Life", icon: <BookOfLifeIcon width={60} height={60} /> },
-    /*{ label: "3D VR Space", icon: <VRSpaceIcon width={60} height={60} /> },*/
+    { label: "Photo's", route: "/(app)/my-stars/private-star/photos/created-album", icon: <PhotosIcon width={60} height={60} /> },
+    { label: "Video’s", route: "/(app)/my-stars/private-star/videos/photo-album",           icon: <VideosIcon width={60} height={60} /> },
+    { label: "Audio’s", route: "/(app)/my-stars/private-star/audios/no-audios",           icon: <AudiosIcon width={60} height={60} /> },
+    { label: "Messages", route: "/(app)/my-stars/private-star/messages/no-messages",      icon: <MessagesIcon width={60} height={60} /> },
+    { label: "Documents",route: "/(app)/my-stars/private-star/documents/no-documents",    icon: <DocumentsIcon width={60} height={60} /> },
+    { label: "3D VR Space", route: "/(app)/my-stars/private-star/vr-space",               icon: <VRSpaceIcon width={60} height={60} /> },
   ];
 
-  const handlePress = (label: string) => {
-    if (label === "Photo's") {
-      router.push("/(app)/my-stars/private-star/photos/photo-private-star");
-    } else if (label === "Messages") {
-      router.push("/(app)/my-stars/private-star/messages/no-messages");
-    } else if (label === "Documents") {
-      router.push("/(app)/my-stars/private-star/documents/no-documents");
-    } else if (label === "Audio’s") {
-      router.push("/(app)/my-stars/private-star/audios/no-audios");
-    } /*else if (label === "3D VR Space") {
-      router.push("/(app)/my-stars/private-star/space/no-space");
-    } */
+  const handlePress = (route: string) => {
+    router.push({
+      pathname: route,
+      params: { starId },
+    });
   };
-  
+
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
@@ -173,9 +99,9 @@ export default function FinalMyStarPrivate() {
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollRow} contentContainerStyle={{ paddingHorizontal: 20 }}>
-        {icons.map((item, index) => (
-          <View key={index} style={styles.iconItem}>
-            <TouchableOpacity onPress={() => handlePress(item.label)}>
+        {icons.map((item) => (
+          <View key={item.label} style={styles.iconItem}>
+            <TouchableOpacity onPress={() => handlePress(item.route)}>
               {item.icon}
               <Text style={styles.iconLabel}>{item.label}</Text>
             </TouchableOpacity>
@@ -220,11 +146,6 @@ const styles = StyleSheet.create({
     width: 300,
     borderRadius: 20,
     overflow: "hidden",
-  },
-  glView: {
-    height: 300,
-    width: 300,
-    backgroundColor: "transparent",
   },
   nameOverlay: {
     position: "absolute",
