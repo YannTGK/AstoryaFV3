@@ -1,4 +1,4 @@
-// als je op de "edit" icon klikt, kan je albums selecteren om te verwijderen
+// als je op de "edit" icon klikt, kan je albums selecteren om te verwijderen (deze pagina is ook gelinkt aan "move page")
 import React, { useState } from "react";
 import {
   View,

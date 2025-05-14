@@ -1,20 +1,30 @@
-// Move photos to an other album page
+// kopiëren van de foto's naar een album
 import React, { useState } from "react";
 import {
-  View, Text, StyleSheet, FlatList, Image, TouchableOpacity, Dimensions
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  Image,
+  Dimensions,
+  Alert,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
-import Svg, { Path } from "react-native-svg";
 
 const { width } = Dimensions.get("window");
-const IMAGE_SIZE = (width - 48) / 3;
+const CARD_SIZE = (width - 64) / 3;
 
-export default function PhotoSelectScreen() {
+export default function SelectAlbumScreen() {
   const router = useRouter();
-  const [selected, setSelected] = useState<number[]>([]);
+  const { selected } = useLocalSearchParams();
+  const [selectedAlbums, setSelectedAlbums] = useState<string[]>([]);
+  const [confirmVisible, setConfirmVisible] = useState(false);
   const [albums, setAlbums] = useState([
+    // dit is een voorbeeld, moet aangepast worden naar de echte albums via de backend
     { name: "Our memories", count: 7, image: require("@/assets/images/private-star-images/img-1.png") },
     { name: "Summer ‘24", count: 24, image: require("@/assets/images/private-star-images/img-2.png") },
     { name: "Thailand 2016", count: 36, image: require("@/assets/images/private-star-images/img-3.png") },
@@ -22,85 +32,134 @@ export default function PhotoSelectScreen() {
     { name: "Empty", count: 0, image: null },
   ]);
 
-  const toggleSelect = (index: number) => {
-    setSelected(prev =>
-      prev.includes(index)
-        ? prev.filter(i => i !== index)
-        : [...prev, index]
-    );
-  };
-
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
 
+      {/* Terugknop */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24}>
           <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
         </Svg>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Select Album(s)</Text>
+      <Text style={styles.title}>Photo albums</Text>
 
-      <TouchableOpacity onPress={() => router.back()}>
-        <Text style={styles.cancelText}>Cancel</Text>
-      </TouchableOpacity>
+      <View style={styles.allSelectWrapper}>
+        <TouchableOpacity
+          style={styles.selectAllBtn}
+          onPress={() => {
+            const allAlbumNames = albums.map((a) => a.name);
+            const allSelected = allAlbumNames.every((name) => selectedAlbums.includes(name));
+            setSelectedAlbums(allSelected ? [] : allAlbumNames);
+          }}
+        >
+          <View
+            style={[
+              styles.selectAllCircle,
+              albums.every((a) => selectedAlbums.includes(a.name)) && styles.selectAllCircleActive,
+            ]}
+          />
+          <Text style={styles.selectAllText}>All</Text>
+        </TouchableOpacity>
+      </View>
 
       <FlatList
         data={albums}
         keyExtractor={(item) => item.name}
         numColumns={3}
         contentContainerStyle={styles.grid}
-        renderItem={({ item, index }) => {
-          const isSelected = selected.includes(index);
+        renderItem={({ item }) => {
+          const isSelected = selectedAlbums.includes(item.name);
           return (
-            <TouchableOpacity style={styles.albumCard} onPress={() => toggleSelect(index)}>
+            <TouchableOpacity
+              style={styles.albumCard}
+              onPress={() => {
+                setSelectedAlbums((prev) =>
+                  prev.includes(item.name)
+                    ? prev.filter((name) => name !== item.name)
+                    : [...prev, item.name]
+                );
+              }}
+            >
               {item.image ? (
-                <Image
-                  source={item.image}
-                  style={[
-                    styles.albumImage,
-                    isSelected && { opacity: 0.4 },
-                  ]}
-                />
+                <Image source={item.image} style={styles.albumImage} />
               ) : (
-                <View
-                  style={[
-                    styles.albumImage,
-                    { backgroundColor: "#999", opacity: 0.2 },
-                    isSelected && { opacity: 0.4 },
-                  ]}
-                />
+                <View style={[styles.albumImage, { backgroundColor: "#999", opacity: 0.2 }]} />
               )}
               <View
                 style={[
-                  styles.selectCircle,
-                  isSelected && styles.selectCircleActive
+                  styles.radioCircle,
+                  isSelected && styles.radioCircleActive,
                 ]}
               />
               <Text style={styles.albumTitle}>{item.name}</Text>
-              <Text style={styles.albumCount}>
-                {item.count} photo{item.count !== 1 ? "s" : ""}
-              </Text>
+              <Text style={styles.albumCount}>{item.count}</Text>
             </TouchableOpacity>
           );
         }}
-        
       />
 
-      {selected.length > 0 && (
+      {/* Footerbalk alleen als er selectie is */}
+      {selectedAlbums.length > 0 && (
         <TouchableOpacity
           style={styles.footerBar}
-          onPress={() => router.push({
-            pathname: "/my-stars/private-star/photos/created-album",
-            params: { selected: JSON.stringify(selected) }
-          })}
+          onPress={() => setConfirmVisible(true)}
         >
           <Feather name="folder-minus" size={20} color="#fff" style={{ marginRight: 10 }} />
           <Text style={styles.footerText}>
-            Move to {selected.length} album{selected.length !== 1 ? "s" : ""}
+            Move to {selectedAlbums.length} album{selectedAlbums.length !== 1 ? "s" : ""}
           </Text>
         </TouchableOpacity>
+      )}
+
+      {/* Bevestigingspopup */}
+      {confirmVisible && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalText}>
+              Move to {selectedAlbums.length} album{selectedAlbums.length !== 1 ? "s" : ""}?
+            </Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity onPress={() => setConfirmVisible(false)} style={styles.modalBtn}>
+                <Text style={[styles.modalBtnText, { color: "#007AFF" }]}>No</Text>
+              </TouchableOpacity>
+              <View style={styles.modalDivider} />
+              <TouchableOpacity
+                onPress={() => {
+                  if (selectedAlbums.length === 0) {
+                    Alert.alert("No albums selected", "Please select at least one album to continue.");
+                    setConfirmVisible(false);
+                    return;
+                  }
+
+                  const photosToFolder = JSON.parse(selected as string);
+
+                  const updatedAlbums = albums.map((album) =>
+                    selectedAlbums.includes(album.name)
+                      ? { ...album, count: album.count + photosToFolder.length }
+                      : album
+                  );
+
+                  setAlbums(updatedAlbums);
+                  setSelectedAlbums([]);
+                  setConfirmVisible(false);
+
+                  router.push({
+                    pathname: "/my-stars/private-star/photos/three-dots/copy-album/edit-albums",
+                    params: {
+                      selected: selected,
+                      targetAlbums: JSON.stringify(selectedAlbums),
+                    },
+                  });
+                }}
+                style={styles.modalBtn}
+              >
+                <Text style={[styles.modalBtnText, { color: "#007AFF" }]}>Yes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       )}
     </View>
   );
@@ -108,14 +167,6 @@ export default function PhotoSelectScreen() {
 
 const styles = StyleSheet.create({
   backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
-  cancelText: {
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-    fontSize: 18,
-    textAlign: "right",
-    marginRight: 16,
-    marginTop: 32,
-  },
   title: {
     textAlign: "center",
     marginTop: 50,
@@ -124,36 +175,23 @@ const styles = StyleSheet.create({
     fontFamily: "Alice-Regular",
   },
   grid: {
-    padding: 16,
+    paddingTop: 32,
+    paddingHorizontal: 16,
     paddingBottom: 120,
   },
   albumCard: {
-    width: IMAGE_SIZE,
-    margin: 4,
+    width: CARD_SIZE,
+    marginBottom: 20,
+    marginHorizontal: 6,
     alignItems: "center",
     position: "relative",
   },
   albumImage: {
-    width: IMAGE_SIZE,
-    height: IMAGE_SIZE,
+    width: CARD_SIZE,
+    height: CARD_SIZE,
     borderRadius: 8,
     marginBottom: 6,
   },
-  selectCircle: {
-    position: "absolute",
-    top: 8,
-    left: 8,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: "#fff",
-    backgroundColor: "transparent",
-  },
-  selectCircleActive: {
-    backgroundColor: "#FEEDB6",
-  },
-  
   albumTitle: {
     fontSize: 14,
     color: "#fff",
@@ -165,6 +203,20 @@ const styles = StyleSheet.create({
     fontFamily: "Alice-Regular",
     opacity: 0.7,
   },
+  radioCircle: {
+    position: "absolute",
+    top: 6,
+    left: 6,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: "#fff",
+    backgroundColor: "transparent",
+  },
+  radioCircleActive: {
+    backgroundColor: "#FEEDB6",
+  },
   footerBar: {
     position: "absolute",
     bottom: 80,
@@ -174,10 +226,83 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 20,
+    backgroundColor: "transparent",
   },
   footerText: {
     color: "#fff",
     fontFamily: "Alice-Regular",
     fontSize: 16,
+  },
+  modalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    zIndex: 100,
+  },
+  modalBox: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 20,
+    width: 280,
+    alignItems: "center",
+  },
+  modalText: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+    color: "#11152A",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  modalActions: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderColor: "#ccc",
+    width: "100%",
+  },
+  modalBtn: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  modalBtnText: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+  },
+  modalDivider: {
+    width: 1,
+    backgroundColor: "#ccc",
+  },
+  allSelectWrapper: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    marginTop: 16,
+    marginHorizontal: 20,
+  },
+  selectAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  selectAllCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: "#fff",
+    backgroundColor: "transparent",
+  },
+  selectAllCircleActive: {
+    backgroundColor: "#FEEDB6",
+  },
+  selectAllText: {
+    fontFamily: "Alice-Regular",
+    color: "#fff",
+    fontSize: 14,
+    marginLeft: 10,
   },
 });

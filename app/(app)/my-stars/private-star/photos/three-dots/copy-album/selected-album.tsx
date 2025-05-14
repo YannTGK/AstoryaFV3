@@ -1,3 +1,4 @@
+// kopiëren van de foto's naar een album
 import React, { useState } from "react";
 import {
   View,
@@ -23,6 +24,7 @@ export default function SelectAlbumScreen() {
   const [selectedAlbums, setSelectedAlbums] = useState<string[]>([]);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [albums, setAlbums] = useState([
+    // dit is een voorbeeld, moet aangepast worden naar de echte albums via de backend
     { name: "Our memories", count: 7, image: require("@/assets/images/private-star-images/img-1.png") },
     { name: "Summer ‘24", count: 24, image: require("@/assets/images/private-star-images/img-2.png") },
     { name: "Thailand 2016", count: 36, image: require("@/assets/images/private-star-images/img-3.png") },
