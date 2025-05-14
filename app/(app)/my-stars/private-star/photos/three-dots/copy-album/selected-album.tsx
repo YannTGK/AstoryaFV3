@@ -1,4 +1,3 @@
-// als je op "copy x photo to album" klikt kom je op deze pagina
 import React, { useState } from "react";
 import {
   View,
@@ -8,6 +7,7 @@ import {
   FlatList,
   Image,
   Dimensions,
+  Alert,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Svg, { Path } from "react-native-svg";
@@ -23,7 +23,6 @@ export default function SelectAlbumScreen() {
   const [selectedAlbums, setSelectedAlbums] = useState<string[]>([]);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [albums, setAlbums] = useState([
-    // dit is een voorbeeld van hoe de albums eruit zien, moet in de backend veranderd worden
     { name: "Our memories", count: 7, image: require("@/assets/images/private-star-images/img-1.png") },
     { name: "Summer ‘24", count: 24, image: require("@/assets/images/private-star-images/img-2.png") },
     { name: "Thailand 2016", count: 36, image: require("@/assets/images/private-star-images/img-3.png") },
@@ -43,25 +42,25 @@ export default function SelectAlbumScreen() {
       </TouchableOpacity>
 
       <Text style={styles.title}>Photo albums</Text>
-<View style={styles.allSelectWrapper}>
-  <TouchableOpacity
-    style={styles.selectAllBtn}
-    onPress={() => {
-      const allAlbumNames = albums.map((a) => a.name);
-      const allSelected = allAlbumNames.every((name) => selectedAlbums.includes(name));
-      setSelectedAlbums(allSelected ? [] : allAlbumNames);
-    }}
-  >
-    <View
-      style={[
-        styles.selectAllCircle,
-        albums.every((a) => selectedAlbums.includes(a.name)) && styles.selectAllCircleActive,
-      ]}
-    />
-    <Text style={styles.selectAllText}>All</Text>
-  </TouchableOpacity>
-</View>
 
+      <View style={styles.allSelectWrapper}>
+        <TouchableOpacity
+          style={styles.selectAllBtn}
+          onPress={() => {
+            const allAlbumNames = albums.map((a) => a.name);
+            const allSelected = allAlbumNames.every((name) => selectedAlbums.includes(name));
+            setSelectedAlbums(allSelected ? [] : allAlbumNames);
+          }}
+        >
+          <View
+            style={[
+              styles.selectAllCircle,
+              albums.every((a) => selectedAlbums.includes(a.name)) && styles.selectAllCircleActive,
+            ]}
+          />
+          <Text style={styles.selectAllText}>All</Text>
+        </TouchableOpacity>
+      </View>
 
       <FlatList
         data={albums}
@@ -99,7 +98,7 @@ export default function SelectAlbumScreen() {
         }}
       />
 
-      {/* Footerbalk */}
+      {/* Footerbalk alleen als er selectie is */}
       {selectedAlbums.length > 0 && (
         <TouchableOpacity
           style={styles.footerBar}
@@ -117,7 +116,7 @@ export default function SelectAlbumScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
             <Text style={styles.modalText}>
-              Copy to {selectedAlbums.length} album{selectedAlbums.length !== 1 ? "s" : ""}?
+              Copy to {selectedAlbums.length} album{selectedAlbums.length !== 1 ? "s" : "}"}?
             </Text>
             <View style={styles.modalActions}>
               <TouchableOpacity onPress={() => setConfirmVisible(false)} style={styles.modalBtn}>
@@ -126,6 +125,12 @@ export default function SelectAlbumScreen() {
               <View style={styles.modalDivider} />
               <TouchableOpacity
                 onPress={() => {
+                  if (selectedAlbums.length === 0) {
+                    Alert.alert("No albums selected", "Please select at least one album to continue.");
+                    setConfirmVisible(false);
+                    return;
+                  }
+
                   const photosToCopy = JSON.parse(selected as string);
 
                   const updatedAlbums = albums.map((album) =>
@@ -139,7 +144,6 @@ export default function SelectAlbumScreen() {
                   setConfirmVisible(false);
 
                   router.push({
-                    // dit is hoe een foto album eruit ziet
                     pathname: "/my-stars/private-star/photos/three-dots/copy-album/edit-albums",
                     params: {
                       selected: selected,
@@ -271,34 +275,32 @@ const styles = StyleSheet.create({
     width: 1,
     backgroundColor: "#ccc",
   },
-allSelectWrapper: {
-  flexDirection: "row",
-  justifyContent: "flex-end",
-  alignItems: "center",
-  marginTop: 16,
-  marginHorizontal: 20,
-},
-selectAllBtn: {
-  flexDirection: "row",
-  alignItems: "center",
-},
-selectAllCircle: {
-  width: 16,
-  height: 16,
-  borderRadius: 8,
-  borderWidth: 1.5,
-  borderColor: "#fff",
-  backgroundColor: "transparent",
-},
-selectAllCircleActive: {
-  backgroundColor: "#FEEDB6",
-},
-selectAllText: {
-  fontFamily: "Alice-Regular",
-  color: "#fff",
-  fontSize: 14,
-  marginLeft: 10,
-},
-
-
+  allSelectWrapper: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    marginTop: 16,
+    marginHorizontal: 20,
+  },
+  selectAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  selectAllCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: "#fff",
+    backgroundColor: "transparent",
+  },
+  selectAllCircleActive: {
+    backgroundColor: "#FEEDB6",
+  },
+  selectAllText: {
+    fontFamily: "Alice-Regular",
+    color: "#fff",
+    fontSize: 14,
+    marginLeft: 10,
+  },
 });

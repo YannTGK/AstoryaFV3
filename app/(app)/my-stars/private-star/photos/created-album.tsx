@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 16,
+    marginTop: 28,
     marginHorizontal: 20,
     position: "relative",
   },
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
   },
   gridContainer: {
     paddingBottom: 180,
-    paddingTop: 32,
+    paddingTop: 68,
   },
   gridImage: {
     width: 109,
