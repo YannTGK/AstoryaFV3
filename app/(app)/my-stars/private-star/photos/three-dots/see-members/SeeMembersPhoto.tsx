@@ -1,9 +1,11 @@
+// eerste pagina als je op "see members" klikt
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import PlusIcon from "@/assets/images/svg-icons/plus3.svg";
 
+// dit is een voorbeeld van mensen, moet veranderd worden adhv de backend
 const members = [
   { name: "You" },
   { name: "@Elisabeth_251" },

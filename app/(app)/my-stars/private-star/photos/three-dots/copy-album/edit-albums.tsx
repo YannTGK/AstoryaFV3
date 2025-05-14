@@ -1,3 +1,4 @@
+// als je op de "edit" icon klikt, kan je albums selecteren om te verwijderen
 import React, { useState } from "react";
 import {
   View,
@@ -13,12 +14,14 @@ import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
+import PlusIcon from "@/assets/images/svg-icons/plus.svg";
 
 const { width } = Dimensions.get("window");
 const CARD_SIZE = (width - 64) / 3;
 
 export default function EditAlbumScreen() {
   const router = useRouter();
+  const [editMode, setEditMode] = useState(false);
   const [selectedAlbums, setSelectedAlbums] = useState<string[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [albums, setAlbums] = useState([
@@ -30,15 +33,35 @@ export default function EditAlbumScreen() {
   ]);
 
   const toggleAlbum = (name: string) => {
-    setSelectedAlbums((prev) =>
-      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
-    );
+    setSelectedAlbums((prev) => {
+      const updated = prev.includes(name)
+        ? prev.filter((n) => n !== name)
+        : [...prev, name];
+
+      if (updated.length === 0) {
+        setEditMode(false);
+      }
+
+      return updated;
+    });
   };
 
   const deleteSelected = () => {
     setAlbums((prev) => prev.filter((album) => !selectedAlbums.includes(album.name)));
     setSelectedAlbums([]);
     setShowDeleteModal(false);
+    setEditMode(false);
+  };
+
+  const allSelected = selectedAlbums.length === albums.length;
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelectedAlbums([]);
+      setEditMode(false); // Automatisch uitzetten
+    } else {
+      setSelectedAlbums(albums.map((a) => a.name));
+    }
   };
 
   return (
@@ -51,7 +74,36 @@ export default function EditAlbumScreen() {
         </Svg>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Photo Albums</Text>
+      <Text style={styles.title}>Photo albums</Text>
+
+      {!editMode && (
+        <TouchableOpacity style={styles.editIcon} onPress={() => setEditMode(true)}>
+          <Feather name="edit" size={24} color="#fff" />
+        </TouchableOpacity>
+      )}
+
+     <View style={[styles.allSelectWrapper, !editMode && { opacity: 0 }]}>
+  <TouchableOpacity
+    style={styles.selectAllBtn}
+    onPress={() => {
+      if (allSelected) {
+        setSelectedAlbums([]);
+        setEditMode(false);
+      } else {
+        setSelectedAlbums(albums.map((a) => a.name));
+      }
+    }}
+    disabled={!editMode}
+  >
+    <View
+      style={[
+        styles.selectAllCircle,
+        allSelected && styles.selectAllCircleActive,
+      ]}
+    />
+    <Text style={styles.selectAllText}>All</Text>
+  </TouchableOpacity>
+</View>
 
       <FlatList
         data={albums}
@@ -63,19 +115,22 @@ export default function EditAlbumScreen() {
           return (
             <TouchableOpacity
               style={styles.albumCard}
-              onPress={() => toggleAlbum(item.name)}
+              onPress={() => editMode && toggleAlbum(item.name)}
+              activeOpacity={editMode ? 0.6 : 1}
             >
               {item.image ? (
                 <Image source={item.image} style={styles.albumImage} />
               ) : (
                 <View style={[styles.albumImage, { backgroundColor: "#999", opacity: 0.2 }]} />
               )}
-              <View
-                style={[
-                  styles.radioCircle,
-                  isSelected && styles.radioCircleActive,
-                ]}
-              />
+              {editMode && (
+                <View
+                  style={[
+                    styles.radioCircle,
+                    isSelected && styles.radioCircleActive,
+                  ]}
+                />
+              )}
               <Text style={styles.albumTitle}>{item.name}</Text>
               <Text style={styles.albumCount}>{item.count}</Text>
             </TouchableOpacity>
@@ -83,19 +138,28 @@ export default function EditAlbumScreen() {
         }}
       />
 
-      {selectedAlbums.length > 0 && (
+      {editMode && selectedAlbums.length > 0 && (
         <TouchableOpacity style={styles.footerBar} onPress={() => setShowDeleteModal(true)}>
           <Feather name="trash-2" size={20} color="#fff" style={{ marginRight: 10 }} />
           <Text style={styles.footerText}>
-            {selectedAlbums.length} photo{selectedAlbums.length !== 1 ? "’s" : ""} selected
+            {selectedAlbums.length} album{selectedAlbums.length !== 1 ? "s" : ""} selected
           </Text>
         </TouchableOpacity>
       )}
 
+{!editMode && (
+  <View style={styles.plusWrapper}>
+    <TouchableOpacity onPress={() => console.log("Add new album")}>
+      <PlusIcon width={50} height={50} />
+    </TouchableOpacity>
+  </View>
+)}
+
+
       <Modal visible={showDeleteModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalText}>Are you sure you want to delete these photos?</Text>
+            <Text style={styles.modalText}>Are you sure you want to delete these albums?</Text>
             <View style={styles.modalButtons}>
               <TouchableOpacity onPress={() => setShowDeleteModal(false)} style={styles.modalBtn}>
                 <Text style={styles.modalCancel}>Cancel</Text>
@@ -120,8 +184,42 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontFamily: "Alice-Regular",
   },
+  editIcon: {
+    position: "absolute",
+    top: 100,
+    right: 20,
+    zIndex: 10,
+  },
+  allSelectWrapper: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    marginTop: 28,
+    marginHorizontal: 16,
+  },
+  selectAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  selectAllCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: "#fff",
+    backgroundColor: "transparent",
+  },
+  selectAllCircleActive: {
+    backgroundColor: "#FEEDB6",
+  },
+  selectAllText: {
+    fontFamily: "Alice-Regular",
+    color: "#fff",
+    fontSize: 18,
+    marginLeft: 10,
+  },
   grid: {
-    paddingTop: 100,
+    paddingTop: 40,
     paddingHorizontal: 16,
     paddingBottom: 120,
   },
@@ -177,6 +275,13 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontFamily: "Alice-Regular",
     fontSize: 16,
+  },
+  plusWrapper: {
+    position: "absolute",
+    bottom: 100,
+    width: "100%",
+    alignItems: "center",
+    zIndex: 10,
   },
   modalOverlay: {
     flex: 1,

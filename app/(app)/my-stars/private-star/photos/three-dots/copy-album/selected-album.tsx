@@ -1,3 +1,4 @@
+// als je op "copy x photo to album" klikt kom je op deze pagina
 import React, { useState } from "react";
 import {
   View,
@@ -22,6 +23,7 @@ export default function SelectAlbumScreen() {
   const [selectedAlbums, setSelectedAlbums] = useState<string[]>([]);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [albums, setAlbums] = useState([
+    // dit is een voorbeeld van hoe de albums eruit zien, moet in de backend veranderd worden
     { name: "Our memories", count: 7, image: require("@/assets/images/private-star-images/img-1.png") },
     { name: "Summer ‘24", count: 24, image: require("@/assets/images/private-star-images/img-2.png") },
     { name: "Thailand 2016", count: 36, image: require("@/assets/images/private-star-images/img-3.png") },
@@ -41,7 +43,25 @@ export default function SelectAlbumScreen() {
       </TouchableOpacity>
 
       <Text style={styles.title}>Photo albums</Text>
-      <Text style={styles.allText}>All</Text>
+<View style={styles.allSelectWrapper}>
+  <TouchableOpacity
+    style={styles.selectAllBtn}
+    onPress={() => {
+      const allAlbumNames = albums.map((a) => a.name);
+      const allSelected = allAlbumNames.every((name) => selectedAlbums.includes(name));
+      setSelectedAlbums(allSelected ? [] : allAlbumNames);
+    }}
+  >
+    <View
+      style={[
+        styles.selectAllCircle,
+        albums.every((a) => selectedAlbums.includes(a.name)) && styles.selectAllCircleActive,
+      ]}
+    />
+    <Text style={styles.selectAllText}>All</Text>
+  </TouchableOpacity>
+</View>
+
 
       <FlatList
         data={albums}
@@ -119,7 +139,8 @@ export default function SelectAlbumScreen() {
                   setConfirmVisible(false);
 
                   router.push({
-                    pathname: "/my-stars/private-star/photos/created-album",
+                    // dit is hoe een foto album eruit ziet
+                    pathname: "/my-stars/private-star/photos/three-dots/copy-album/edit-albums",
                     params: {
                       selected: selected,
                       targetAlbums: JSON.stringify(selectedAlbums),
@@ -147,15 +168,8 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontFamily: "Alice-Regular",
   },
-  allText: {
-    position: "absolute",
-    top: 100,
-    right: 20,
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-  },
   grid: {
-    paddingTop: 100,
+    paddingTop: 32,
     paddingHorizontal: 16,
     paddingBottom: 120,
   },
@@ -257,4 +271,34 @@ const styles = StyleSheet.create({
     width: 1,
     backgroundColor: "#ccc",
   },
+allSelectWrapper: {
+  flexDirection: "row",
+  justifyContent: "flex-end",
+  alignItems: "center",
+  marginTop: 16,
+  marginHorizontal: 20,
+},
+selectAllBtn: {
+  flexDirection: "row",
+  alignItems: "center",
+},
+selectAllCircle: {
+  width: 16,
+  height: 16,
+  borderRadius: 8,
+  borderWidth: 1.5,
+  borderColor: "#fff",
+  backgroundColor: "transparent",
+},
+selectAllCircleActive: {
+  backgroundColor: "#FEEDB6",
+},
+selectAllText: {
+  fontFamily: "Alice-Regular",
+  color: "#fff",
+  fontSize: 14,
+  marginLeft: 10,
+},
+
+
 });

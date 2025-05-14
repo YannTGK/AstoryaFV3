@@ -1,3 +1,4 @@
+// een uitnodiging sturen, dus als je op "invite" klikt
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, Modal, KeyboardAvoidingView, Platform } from "react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";

@@ -1,5 +1,4 @@
-// app/(app)/dedicates/created-dedicates/add-people/AddMembersDedicate.tsx
-
+//  als je op + klikt bij AddPeoplePage, deze pagina is om meer mensen toe te voegen
 import React, { useState, useEffect } from "react";
 import {
   View,
