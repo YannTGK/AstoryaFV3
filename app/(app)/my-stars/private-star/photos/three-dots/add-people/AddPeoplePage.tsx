@@ -42,7 +42,7 @@ export default function AddPeoplePage() {
 
       <TouchableOpacity
   style={styles.addNewBtn}
-  onPress={() => router.push("/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/add-people/AddMorePeople")}
+  onPress={() => router.push("/(app)/my-stars/private-star/photos/three-dots/add-people/AddMorePeople")}
 >
   <Text style={styles.plus}>＋</Text>
 </TouchableOpacity>
@@ -99,11 +99,11 @@ export default function AddPeoplePage() {
 const styles = StyleSheet.create({
   backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
   title: {
-    marginTop: 50,
-    textAlign: "center",
+    fontFamily: "Alice-Regular",
     fontSize: 20,
     color: "#fff",
-    fontFamily: "Alice-Regular",
+    textAlign: "center",
+    marginTop: 50,
   },
   subtitle: {
     color: "#fff",

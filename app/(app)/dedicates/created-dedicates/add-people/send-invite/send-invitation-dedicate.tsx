@@ -116,16 +116,16 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
   subtitle: {
-    marginTop: 20,
-    marginHorizontal: 24,
-    fontFamily: "Alice-Regular",
-    fontSize: 14,
     color: "#fff",
-    textAlign: "center",
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+    marginTop: 32,
+    textAlign: "left",
+    paddingHorizontal: 16,
   },
   formWrapper: {
     marginTop: 25,
-    marginHorizontal: 24,
+    marginHorizontal: 16,
   },
   label: {
     fontFamily: "Alice-Regular",
@@ -135,20 +135,22 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: "#fff",
-    borderRadius: 10,
+    borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
     fontFamily: "Alice-Regular",
     fontSize: 14,
     color: "#11152A",
   },
-  button: {
-    backgroundColor: "#FEEDB6",
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginTop: 25,
-    marginHorizontal: 20,
-  },
+button: {
+  backgroundColor: "#FEEDB6",
+  paddingVertical: 16,
+  borderRadius: 8,
+  position: "absolute",
+  left: 20,
+  right: 20,
+  bottom: Platform.OS === "android" ? 100 : 100, // lager op Android
+},
   buttonText: {
     fontFamily: "Alice-Regular",
     fontSize: 16,

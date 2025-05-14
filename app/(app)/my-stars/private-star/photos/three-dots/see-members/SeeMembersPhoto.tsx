@@ -40,7 +40,7 @@ export default function SeeMembersDedicate() {
       <Text style={styles.title}>Members</Text>
 
       {/* Plus knop */}
-      <TouchableOpacity style={styles.plusBtn} onPress={() => router.push("/(app)/dedicates/created-dedicates/content-maps/photos/three-dots/add-people/AddMorePeople")}>
+      <TouchableOpacity style={styles.plusBtn} onPress={() => router.push("/(app)/my-stars/private-star/photos/three-dots/add-people/AddMorePeople")}>
         <PlusIcon width={36} height={36} />
       </TouchableOpacity>
 
