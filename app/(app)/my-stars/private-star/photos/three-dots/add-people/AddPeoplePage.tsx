@@ -1,3 +1,4 @@
+//  add members (three dots) --> eerste pagina
 import React, { useState } from "react";
 import {
   View,
@@ -78,7 +79,7 @@ export default function AddPeoplePage() {
     setTimeout(() => {
       setShowPopup(false);
       router.back(); // of gebruik router.push() als je een specifieke pagina wil
-    }, 8000); // 12 seconden
+    }, 6000); // 12 seconden
   }}
 >
   <Text style={styles.submitText}>Add to photo’s</Text>
@@ -153,7 +154,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FEEDB6",
   },
   submitBtn: {
-    
     backgroundColor: "#FEEDB6",
     paddingVertical: 16,
     marginHorizontal: 16,

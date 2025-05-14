@@ -52,7 +52,7 @@ export default function AddMembersDedicate() {
     );
 
   useEffect(() => {
-    const q = debounced.trim();
+const q = (debounced || "").trim();
     if (!q) {
       setResults([]);
       return;
@@ -241,7 +241,7 @@ export default function AddMembersDedicate() {
               (selected.length === 0 || busyAdd) && styles.buttonTextDisabled,
             ]}
           >
-            {busyAdd ? "Adding…" : "Add"}
+            {busyAdd ? "Adding…" : "add"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   },
   fixedButtonWrapper: {
     position: "absolute",
-    bottom: 100,
+    bottom: 20,
     left: 20,
     right: 20,
   },
@@ -404,7 +404,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#11152A",
     fontFamily: "Alice-Regular",
-    fontSize: 16,
+    fontSize: 18,
     textAlign: "center",
   },
   buttonTextDisabled: {},

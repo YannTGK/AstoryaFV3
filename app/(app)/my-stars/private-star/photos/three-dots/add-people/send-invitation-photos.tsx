@@ -38,6 +38,7 @@ export default function SendInvitationDedicate() {
           <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
         </Svg>
       </TouchableOpacity>
+
       <Text style={styles.title}>Add members</Text>
 
       <Text style={styles.subtitle}>
@@ -60,7 +61,7 @@ export default function SendInvitationDedicate() {
 
           <Text style={[styles.label, { marginTop: 20 }]}>Phone number</Text>
           <TextInput
-            placeholder="+32 45 67 89 00"
+            placeholder="Phone number"
             placeholderTextColor="#999"
             style={styles.input}
             value={phoneNumber}
@@ -108,7 +109,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   title: {
-        position: "absolute",
     fontFamily: "Alice-Regular",
     fontSize: 20,
     color: "#fff",
@@ -116,40 +116,37 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
   subtitle: {
-        position: "absolute",
-    marginTop: 32,
-    marginHorizontal: 16,
+    marginTop: 20,
+    marginHorizontal: 24,
     fontFamily: "Alice-Regular",
-    fontSize: 18,
+    fontSize: 14,
     color: "#fff",
-    textAlign: "left",
-    lineHeight: 24,
+    textAlign: "center",
   },
   formWrapper: {
     marginTop: 25,
-    marginHorizontal: 16,
+    marginHorizontal: 24,
   },
   label: {
     fontFamily: "Alice-Regular",
-    fontSize: 16,
+    fontSize: 14,
     color: "#fff",
     marginBottom: 8,
   },
   input: {
     backgroundColor: "#fff",
-    borderRadius: 8,
+    borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 16,
     fontFamily: "Alice-Regular",
-    fontSize: 16,
+    fontSize: 14,
     color: "#11152A",
   },
   button: {
-        position: "absolute",
     backgroundColor: "#FEEDB6",
-    paddingVertical: 16,
-    borderRadius: 8,
-    marginTop: 330,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 25,
     marginHorizontal: 20,
   },
   buttonText: {

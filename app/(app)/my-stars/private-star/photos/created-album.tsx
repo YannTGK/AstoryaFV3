@@ -1,3 +1,4 @@
+// gemaakte foto album (empty state)
 import React, { useState } from "react";
 import {
   View,
@@ -298,8 +299,8 @@ export default function AlbumPage() {
 
 const styles = StyleSheet.create({
   headerContainer: {
-    marginTop: 50,
-    marginBottom: 20,
+    marginTop: 32,
+    marginBottom: 0,
     position: "relative",
   },
   headerRow: {
@@ -318,7 +319,7 @@ const styles = StyleSheet.create({
   menuDots: {
     position: "absolute",
     right: 16,
-    top: 72,
+    top: 53,
   },
   menuDotsText: {
     color: "#fff",
@@ -330,7 +331,7 @@ const styles = StyleSheet.create({
     fontFamily: "Alice-Regular",
     color: "#fff",
     textAlign: "center",
-    marginTop: 32,
+    marginTop: 16,
     flex: 1, // belangrijk voor centrering
   },
   albumTitleRow: {
@@ -413,6 +414,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     paddingHorizontal: 20,
+    lineHeight: 20,
   },
   addButton: {
     position: "absolute",

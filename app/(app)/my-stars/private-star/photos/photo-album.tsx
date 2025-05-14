@@ -127,7 +127,6 @@ modalBox: {
   paddingBottom: 16,
   paddingHorizontal: 24,
   borderWidth: 1,
-  borderColor: "#007AFF",
   alignItems: "center",
   overflow: "hidden",
   shadowColor: "#000",
