@@ -7,12 +7,12 @@ import {
   StyleSheet,
   Platform,
   KeyboardAvoidingView,
+  ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
 
-// Import jouw twee oog-iconen
 import EyeVisibleIcon from "@/assets/images/svg-icons/eye-visible.svg";
 import EyeNotVisibleIcon from "@/assets/images/svg-icons/not-visible.svg";
 
@@ -27,8 +27,18 @@ export default function EditPasswordScreen() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  const isStrongPassword = (password: string) => {
+    return (
+      password.length >= 6 &&
+      /[A-Z]/.test(password) &&
+      /[a-z]/.test(password) &&
+      /[0-9]/.test(password) &&
+      /[^A-Za-z0-9]/.test(password)
+    );
+  };
+
   const isFormValid =
-    newPassword.length >= 6 &&
+    isStrongPassword(newPassword) &&
     newPassword !== oldPassword &&
     newPassword === confirmPassword;
 
@@ -44,7 +54,7 @@ export default function EditPasswordScreen() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Header met back button en gecentreerde titel */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
@@ -60,13 +70,13 @@ export default function EditPasswordScreen() {
         <Text style={styles.headerTitle}>Edit password</Text>
       </View>
 
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.description}>
           Your new password must be at least 6 characters long and different from previously used password.
         </Text>
 
-        {/* Old password input */}
-        <View style={{ position: "relative" }}>
+        {/* Old password */}
+        <View style={styles.inputWrapper}>
           <TextInput
             style={styles.input}
             placeholder="Old password"
@@ -75,20 +85,13 @@ export default function EditPasswordScreen() {
             value={oldPassword}
             onChangeText={setOldPassword}
           />
-          <TouchableOpacity
-            style={styles.eyeIcon}
-            onPress={() => setShowOld(!showOld)}
-          >
-            {showOld ? (
-              <EyeVisibleIcon width={22} height={22} />
-            ) : (
-              <EyeNotVisibleIcon width={22} height={22} />
-            )}
+          <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowOld(!showOld)}>
+            {showOld ? <EyeVisibleIcon width={22} height={22} /> : <EyeNotVisibleIcon width={22} height={22} />}
           </TouchableOpacity>
         </View>
 
-        {/* New password input */}
-        <View style={{ position: "relative" }}>
+        {/* New password */}
+        <View style={styles.inputWrapper}>
           <TextInput
             style={styles.input}
             placeholder="Password"
@@ -97,20 +100,19 @@ export default function EditPasswordScreen() {
             value={newPassword}
             onChangeText={setNewPassword}
           />
-          <TouchableOpacity
-            style={styles.eyeIcon}
-            onPress={() => setShowNew(!showNew)}
-          >
-            {showNew ? (
-              <EyeVisibleIcon width={22} height={22} />
-            ) : (
-              <EyeNotVisibleIcon width={22} height={22} />
-            )}
+          <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowNew(!showNew)}>
+            {showNew ? <EyeVisibleIcon width={22} height={22} /> : <EyeNotVisibleIcon width={22} height={22} />}
           </TouchableOpacity>
         </View>
 
-        {/* Confirm password input */}
-        <View style={{ position: "relative" }}>
+        {newPassword.length > 0 && !isStrongPassword(newPassword) && (
+          <Text style={styles.errorText}>
+            Password must be at least 6 characters and include uppercase, lowercase, number and special character.
+          </Text>
+        )}
+
+        {/* Confirm password */}
+        <View style={styles.inputWrapper}>
           <TextInput
             style={styles.input}
             placeholder="Confirm password"
@@ -119,34 +121,32 @@ export default function EditPasswordScreen() {
             value={confirmPassword}
             onChangeText={setConfirmPassword}
           />
-          <TouchableOpacity
-            style={styles.eyeIcon}
-            onPress={() => setShowConfirm(!showConfirm)}
-          >
-            {showConfirm ? (
-              <EyeVisibleIcon width={22} height={22} />
-            ) : (
-              <EyeNotVisibleIcon width={22} height={22} />
-            )}
+          <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowConfirm(!showConfirm)}>
+            {showConfirm ? <EyeVisibleIcon width={22} height={22} /> : <EyeNotVisibleIcon width={22} height={22} />}
           </TouchableOpacity>
         </View>
 
-        {/* Foutmelding */}
         {confirmPassword.length > 0 && confirmPassword !== newPassword && (
           <Text style={styles.errorText}>Passwords do not match</Text>
         )}
 
+        {/* Bottom padding for fixed button */}
+        <View style={{ height: 120 }} />
+      </ScrollView>
+
+      {/* Fixed Save Button */}
+      <View style={styles.footer}>
         <TouchableOpacity
           disabled={!isFormValid}
           style={[
             styles.saveButton,
-            !isFormValid ? styles.saveButtonDisabled : styles.saveButtonEnabled,
+            isFormValid ? styles.saveButtonEnabled : styles.saveButtonDisabled,
           ]}
         >
           <Text
             style={[
               styles.saveButtonText,
-              !isFormValid ? styles.saveButtonTextDisabled : styles.saveButtonTextEnabled,
+              isFormValid ? styles.saveButtonTextEnabled : styles.saveButtonTextDisabled,
             ]}
           >
             Save
@@ -184,7 +184,6 @@ const styles = StyleSheet.create({
     left: 20,
   },
   container: {
-    flex: 1,
     paddingTop: 124,
     paddingHorizontal: 16,
   },
@@ -192,21 +191,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#fff",
     marginBottom: 24,
-    lineHeight: 20,
     fontFamily: "Alice-Regular",
   },
-  label: {
-    fontSize: 18,
-    color: "#fff",
-    marginBottom: 6,
-    fontFamily: "Alice-Regular",
+  inputWrapper: {
+    position: "relative",
+    marginBottom: 16,
   },
   input: {
     backgroundColor: "#fff",
     borderRadius: 8,
     height: 44,
     paddingHorizontal: 12,
-    marginBottom: 16,
     fontSize: 16,
     fontFamily: "Alice-Regular",
   },
@@ -216,21 +211,32 @@ const styles = StyleSheet.create({
     top: 10,
     padding: 4,
   },
+  errorText: {
+    color: "#FF7466",
+    fontSize: 12,
+    fontFamily: "Alice-Regular",
+    marginTop: -8,
+    marginBottom: 12,
+  },
+  footer: {
+    position: "absolute",
+    bottom: 100,
+    left: 16,
+    right: 16,
+  },
   saveButton: {
     paddingVertical: 16,
     borderRadius: 8,
-    marginTop: Platform.OS === "ios" ? 300 : 220,
     alignItems: "center",
   },
-saveButtonEnabled: {
-  backgroundColor: "#FEEDB6",
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.2,
-  shadowRadius: 4,
-  elevation: 4, // Android shadow
-},
-
+  saveButtonEnabled: {
+    backgroundColor: "#FEEDB6",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
   saveButtonDisabled: {
     backgroundColor: "#d8ccb0",
   },
@@ -243,12 +249,5 @@ saveButtonEnabled: {
   },
   saveButtonTextDisabled: {
     color: "#7c715f",
-  },
-  errorText: {
-    color: "#FF7466",
-    fontSize: 12,
-    fontFamily: "Alice-Regular",
-    marginTop: -8,
-    marginBottom: 12,
   },
 });
