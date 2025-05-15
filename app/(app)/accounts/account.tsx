@@ -66,7 +66,7 @@ export default function AccountScreen() {
         <AccountLink
           icon={<PrivacyIcon width={22} height={22} />}
           label="Privacy"
-          onPress={() => handleNavigate("/accounts/privacy")}
+          onPress={() => handleNavigate("/accounts/settings/privacy-policy/main-page")}
         />
         <AccountLink
           icon={<ContactIcon width={22} height={22} />}
