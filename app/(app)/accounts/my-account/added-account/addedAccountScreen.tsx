@@ -1,3 +1,4 @@
+// als je op added account drukt, kom je op deze pagina
 import React, { useState } from "react";
 import {
   View,
@@ -225,14 +226,17 @@ const styles = StyleSheet.create({
     marginTop: 50,
     marginBottom: 30,
   },
-  section: { paddingHorizontal: 16, marginBottom: 24 },
+  section: { 
+    paddingHorizontal: 16, 
+    marginBottom: 24 
+  },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
   },
-  sectionTitle: { fontFamily: "Alice-Regular", fontSize: 20, color: "#fff" },
+  sectionTitle: { fontFamily: "Alice-Regular", fontSize: 20, color: "#fff"},
   accountItem: {
     flexDirection: "row",
     alignItems: "center",
