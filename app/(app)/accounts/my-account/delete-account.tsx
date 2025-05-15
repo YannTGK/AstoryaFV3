@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Platform,
   KeyboardAvoidingView,
+  Modal,
 } from "react-native";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
@@ -19,8 +20,21 @@ export default function DeletePasswordScreen() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const isValid = password.length > 0;
+
+  const handleDelete = () => {
+    if (isValid) {
+      setShowConfirm(true);
+    }
+  };
+
+  const confirmDelete = () => {
+    setShowConfirm(false);
+    // hier komt jouw delete functionaliteit
+    router.replace("/(auth)/(login)/login"); // Ensure this route exists in your configuration
+  };
 
   return (
     <KeyboardAvoidingView
@@ -34,7 +48,6 @@ export default function DeletePasswordScreen() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
@@ -50,7 +63,6 @@ export default function DeletePasswordScreen() {
         <Text style={styles.headerTitle}>Delete account</Text>
       </View>
 
-      {/* Content */}
       <View style={styles.container}>
         <Text style={styles.description}>
           To delete your account, you must first enter your current password.
@@ -80,9 +92,12 @@ export default function DeletePasswordScreen() {
 
         <TouchableOpacity
           disabled={!isValid}
+          onPress={handleDelete}
           style={[
             styles.deleteButton,
-            { marginTop: Platform.OS === "ios" ? 420 : 330 },
+            {
+              marginTop: Platform.OS === "ios" ? 420 : 335,
+            },
             isValid ? styles.deleteButtonActive : styles.deleteButtonDisabled,
           ]}
         >
@@ -98,6 +113,33 @@ export default function DeletePasswordScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Popup bevestiging */}
+      <Modal transparent visible={showConfirm} animationType="fade">
+  <View style={styles.modalBackdrop}>
+    <View style={styles.modalContent}>
+      <Text style={styles.modalText}>
+        Are you sure you want to delete your account?
+      </Text>
+      <View style={styles.modalButtons}>
+        <TouchableOpacity
+          style={styles.modalButton}
+          onPress={() => setShowConfirm(false)} // No
+        >
+          <Text style={styles.modalNo}>No</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.modalButton}
+          onPress={confirmDelete} // Yes
+        >
+          <Text style={styles.modalYes}>Yes</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+
+
     </KeyboardAvoidingView>
   );
 }
@@ -183,5 +225,48 @@ const styles = StyleSheet.create({
   },
   deleteButtonTextDisabled: {
     color: "#7c715f",
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    width: 280,
+    alignItems: "center",
+  },
+  modalText: {
+    fontSize: 16,
+    fontFamily: "Alice-Regular",
+    color: "#000",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    borderTopWidth: 1,
+    borderColor: "#ccc",
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  modalYes: {
+    color: "#4973F2",
+    fontSize: 16,
+    fontFamily: "Alice-Regular",
+  },
+  modalNo: {
+    color: "#4973F2",
+    fontSize: 16,
+    fontFamily: "Alice-Regular",
   },
 });
