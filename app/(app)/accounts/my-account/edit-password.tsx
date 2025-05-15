@@ -8,6 +8,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   ScrollView,
+  Modal,
 } from "react-native";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
@@ -27,6 +28,8 @@ export default function EditPasswordScreen() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
   const isStrongPassword = (password: string) => {
     return (
       password.length >= 6 &&
@@ -41,6 +44,15 @@ export default function EditPasswordScreen() {
     isStrongPassword(newPassword) &&
     newPassword !== oldPassword &&
     newPassword === confirmPassword;
+
+const handleSave = () => {
+  setShowSuccessModal(true);
+  setTimeout(() => {
+    setShowSuccessModal(false);
+    router.replace("/(app)/explores/public"); // navigeer naar Explore
+  }, 5000);
+};
+
 
   return (
     <KeyboardAvoidingView
@@ -130,7 +142,7 @@ export default function EditPasswordScreen() {
           <Text style={styles.errorText}>Passwords do not match</Text>
         )}
 
-        {/* Bottom padding for fixed button */}
+        {/* Spacing for button */}
         <View style={{ height: 120 }} />
       </ScrollView>
 
@@ -142,6 +154,7 @@ export default function EditPasswordScreen() {
             styles.saveButton,
             isFormValid ? styles.saveButtonEnabled : styles.saveButtonDisabled,
           ]}
+          onPress={handleSave}
         >
           <Text
             style={[
@@ -153,6 +166,15 @@ export default function EditPasswordScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Popup Modal */}
+      <Modal visible={showSuccessModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.successPopup}>
+            <Text style={styles.successText}>Password successfully changed!</Text>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -249,5 +271,29 @@ const styles = StyleSheet.create({
   },
   saveButtonTextDisabled: {
     color: "#7c715f",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  successPopup: {
+    backgroundColor: "#fff",
+    padding: 24,
+    borderRadius: 12,
+    width: "80%",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  successText: {
+    fontSize: 16,
+    fontFamily: "Alice-Regular",
+    color: "#000",
+    textAlign: "center",
   },
 });
