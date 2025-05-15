@@ -53,7 +53,7 @@ export default function Account2Screen() {
       <Option icon={<VisibilityIcon width={22} height={22} />} label="Visibility options" onPress={() => router.push("/(app)/accounts/my-account/visibility")} />
       <Option icon={<AddedAccountsIcon width={22} height={22} />} label="Added accounts" onPress={() => router.push("/(app)/accounts/my-account/added-account/addedAccountScreen")} />
       <Option icon={<PaymentMethodsIcon width={22} height={22} />} label="Payment methods" onPress={() => router.push("/(app)/accounts/my-account/payment-methods")}/>
-      <Option icon={<EditPasswordIcon width={22} height={22} />} label="Edit password" />
+      <Option icon={<EditPasswordIcon width={22} height={22} />} label="Edit password" onPress={() => router.push("/(app)/accounts/my-account/edit-password")}/>
       <Option icon={<DeleteAccountIcon width={22} height={22} />} label="Delete account" />
     </View>
   );
