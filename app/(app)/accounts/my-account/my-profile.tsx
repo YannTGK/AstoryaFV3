@@ -114,11 +114,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   form: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    marginTop: 32,
   },
   label: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 18,
     fontFamily: "Alice-Regular",
     marginBottom: 4,
   },
@@ -126,7 +127,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 8,
     paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     fontSize: 14,
     fontFamily: "Alice-Regular",
   },
@@ -135,11 +136,11 @@ const styles = StyleSheet.create({
     color: "#555",
   },
   saveBtn: {
-    marginTop: 12,
+    marginTop: 130,
     backgroundColor: "#FEEDB6",
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     borderRadius: 10,
-    paddingVertical: 14,
+    paddingVertical: 16,
   },
   saveText: {
     color: "#000",
