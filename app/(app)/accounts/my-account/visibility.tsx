@@ -1,3 +1,4 @@
+// visibility pagina: Pagina waar je kan kiezen wat anderen zien van je naam
 import React, { useState } from "react";
 import {
   View,
@@ -127,14 +128,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   form: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   description: {
     color: "#fff",
     fontSize: 18,
     fontFamily: "Alice-Regular",
     marginTop: 20,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   label: {
     color: "#fff",
@@ -148,9 +149,9 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: "#c4c4c4aa", // zacht grijs met transparantie
-    borderRadius: 10,
+    borderRadius: 8,
     paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     fontSize: 16,
     color: "#000",
     fontFamily: "Alice-Regular",
@@ -160,7 +161,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     backgroundColor: "rgba(196, 196, 196, 0.3)", // semi-transparant grijs-blauw
     borderRadius: 8,
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -195,10 +196,10 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   confirmBtn: {
-    marginTop: 260,
-    marginHorizontal: 20,
+    marginTop: 250,
+    marginHorizontal: 16,
     backgroundColor: "#FEEDB6",
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderRadius: 8,
   },
   confirmText: {
