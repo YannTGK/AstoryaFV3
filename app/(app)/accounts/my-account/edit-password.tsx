@@ -131,6 +131,11 @@ export default function EditPasswordScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Foutmelding */}
+        {confirmPassword.length > 0 && confirmPassword !== newPassword && (
+          <Text style={styles.errorText}>Passwords do not match</Text>
+        )}
+
         <TouchableOpacity
           disabled={!isFormValid}
           style={[
@@ -217,9 +222,15 @@ const styles = StyleSheet.create({
     marginTop: Platform.OS === "ios" ? 300 : 220,
     alignItems: "center",
   },
-  saveButtonEnabled: {
-    backgroundColor: "#FEEDB6",
-  },
+saveButtonEnabled: {
+  backgroundColor: "#FEEDB6",
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.2,
+  shadowRadius: 4,
+  elevation: 4, // Android shadow
+},
+
   saveButtonDisabled: {
     backgroundColor: "#d8ccb0",
   },
@@ -232,5 +243,12 @@ const styles = StyleSheet.create({
   },
   saveButtonTextDisabled: {
     color: "#7c715f",
+  },
+  errorText: {
+    color: "#FF7466",
+    fontSize: 12,
+    fontFamily: "Alice-Regular",
+    marginTop: -8,
+    marginBottom: 12,
   },
 });
