@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#11152A",
     paddingVertical: 14,
     borderRadius: 12,
-    marginTop: 40,
+    marginTop: 220,
   },
   upgradeText: {
     color: "#fff",
