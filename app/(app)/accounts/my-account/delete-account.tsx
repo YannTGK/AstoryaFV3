@@ -21,6 +21,7 @@ export default function DeletePasswordScreen() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const isValid = password.length > 0;
 
@@ -32,8 +33,11 @@ export default function DeletePasswordScreen() {
 
   const confirmDelete = () => {
     setShowConfirm(false);
-    // hier komt jouw delete functionaliteit
-    router.replace("/(auth)/(login)/login"); // Ensure this route exists in your configuration
+    setShowDeleted(true);
+    setTimeout(() => {
+      setShowDeleted(false);
+      router.replace("/(auth)/(login)/login");
+    }, 6000);
   };
 
   return (
@@ -114,32 +118,36 @@ export default function DeletePasswordScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Popup bevestiging */}
+      {/* Confirm Modal */}
       <Modal transparent visible={showConfirm} animationType="fade">
-  <View style={styles.modalBackdrop}>
-    <View style={styles.modalContent}>
-      <Text style={styles.modalText}>
-        Are you sure you want to delete your account?
-      </Text>
-      <View style={styles.modalButtons}>
-        <TouchableOpacity
-          style={styles.modalButton}
-          onPress={() => setShowConfirm(false)} // No
-        >
-          <Text style={styles.modalNo}>No</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.modalButton}
-          onPress={confirmDelete} // Yes
-        >
-          <Text style={styles.modalYes}>Yes</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </View>
-</Modal>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalText}>
+              Are you sure you want to delete your account?
+            </Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={() => setShowConfirm(false)}
+              >
+                <Text style={styles.modalNo}>No</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalButton} onPress={confirmDelete}>
+                <Text style={styles.modalYes}>Yes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
-
+      {/* Deleted Modal */}
+      <Modal transparent visible={showDeleted} animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalText}>Account successfully deleted!</Text>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
