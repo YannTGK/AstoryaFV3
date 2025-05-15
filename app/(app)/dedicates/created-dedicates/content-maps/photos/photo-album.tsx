@@ -26,7 +26,7 @@ export default function PhotosPage() {
 
       <View style={styles.centered}>
         {/* Vervang dit met je eigen icoon later */}
-        <Image source={require("@/assets/images/icons/no-album-found.png")} style={{ width: 130, height: 130 }} />
+        <Image source={require("@/assets/images/svg-icons/no-album.svg")} style={{ width: 130, height: 130 }} />
         <Text style={styles.noAlbumText}>No photo album found</Text>
       </View>
 

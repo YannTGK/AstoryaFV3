@@ -6,7 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import { TextInput } from "react-native";
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
-import NoAlbumIcon from "@/assets/images/svg-icons/no-album.svg";
+import NoVideoIcon from "@/assets/images/svg-icons/no-album.svg";
 
 export default function PhotosPage() {
   const router = useRouter();
@@ -27,14 +27,13 @@ export default function PhotosPage() {
         </Svg>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Photo albums</Text>
+      <Text style={styles.title}>Video albums</Text>
 
       <View style={styles.centered}>
         {/* Vervang dit met je eigen icoon later */}
-<NoAlbumIcon width={130} height={130} />
+  <NoVideoIcon width={130} height={130} />
 
-        
-        <Text style={styles.noAlbumText}>No photo album found</Text>
+        <Text style={styles.noAlbumText}>No video albums found</Text>
       </View>
 
       {/* Plus-knop */}
@@ -70,7 +69,7 @@ export default function PhotosPage() {
 
                   setShowModal(false);
                   router.push({
-                    pathname: "/my-stars/private-star/photos/created-album",
+                    pathname: "/my-stars/private-star/videos/created-video-album",
                     params: { albumName: encodedName },
                   });
                 }}

@@ -1,0 +1,11 @@
+<svg width="116" height="120" viewBox="0 0 116 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M91.6675 17.8301H19.3325C13.7641 17.8301 9.25 22.3442 9.25 27.9126V100.248C9.25 105.816 13.7641 110.33 19.3325 110.33H91.6675C97.2359 110.33 101.75 105.816 101.75 100.248V27.9126C101.75 22.3442 97.2359 17.8301 91.6675 17.8301Z" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M32.375 17.8301V110.33" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M78.625 17.8301V110.33" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M9.25 64.0801H101.75" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M9.25 40.9551H32.375" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M9.25 87.2051H32.375" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M78.625 87.2051H101.75" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M78.625 40.9551H101.75" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<line x1="2.12132" y1="2.87868" x2="113.121" y2="113.879" stroke="white" stroke-width="6"/>
+</svg>

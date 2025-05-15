@@ -212,7 +212,7 @@ const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
         ListEmptyComponent={
           <View style={styles.emptyStateWrapper}>
             <Image
-              source={require("@/assets/images/icons/no-pictures.png")}
+              source={require("@/assets/images/svg-icons/no-picture.svg")}
               style={{ width: 130, height: 130 }}
             />
             <Text style={styles.noMemoriesText}>

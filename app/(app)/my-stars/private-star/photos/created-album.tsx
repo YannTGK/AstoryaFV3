@@ -16,6 +16,7 @@ import * as ImagePicker from "expo-image-picker";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { Feather } from "@expo/vector-icons";
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
+import NoPictureIcon from "@/assets/images/svg-icons/no-picture.svg";
 
 export default function AlbumPage() {
   const router = useRouter();
@@ -215,10 +216,8 @@ export default function AlbumPage() {
         }}
         ListEmptyComponent={
           <View style={styles.emptyStateWrapper}>
-            <Image
-              source={require("@/assets/images/svg-icons/no-picture.svg")}
-              style={{ width: 130, height: 130 }}
-            />
+<NoPictureIcon width={130} height={130} />
+
             <Text style={styles.noMemoriesText}>
               Every story starts with a moment.{"\n"}Upload your first memory now.
             </Text>

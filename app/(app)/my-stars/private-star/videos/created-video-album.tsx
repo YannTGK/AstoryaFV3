@@ -1,3 +1,4 @@
+// gemaakte album
 import React, { useState } from "react";
 import {
   View,
@@ -14,6 +15,8 @@ import Svg, { Path } from "react-native-svg";
 import * as ImagePicker from "expo-image-picker";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { Feather } from "@expo/vector-icons";
+import PlusIcon from "@/assets/images/svg-icons/plus.svg";
+import NoCreatedVideoIcon from "@/assets/images/svg-icons/no-video.svg";
 
 export default function AlbumPage() {
   const router = useRouter();
@@ -91,12 +94,12 @@ export default function AlbumPage() {
       {/* HEADER */}
       <View style={styles.headerContainer}>
         <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <Svg width={24} height={24}>
               <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
             </Svg>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Photo’s</Text>
+          <Text style={styles.title}>Photo's</Text>
         </View>
 
         <View style={styles.albumTitleRow}>
@@ -131,7 +134,7 @@ export default function AlbumPage() {
               style={styles.menuItem}
               onPress={() => router.push("/(app)/my-stars/private-star/photos/three-dots/add-people/AddPeoplePage")}
             >
-              <Feather name="user-plus" size={16} color="#11152A" />
+              <Feather name="user-plus" size={16} color="#11152A" style={{ marginRight: 10 }} />
               <Text style={styles.menuText}>Add people</Text>
             </TouchableOpacity>
 
@@ -139,7 +142,7 @@ export default function AlbumPage() {
               style={styles.menuItem}
               onPress={() => router.push("/(app)/my-stars/private-star/photos/three-dots/see-members/SeeMembersPhoto")}
             >
-              <Feather name="users" size={16} color="#11152A" />
+              <Feather name="users" size={16} color="#11152A" style={{ marginRight: 10 }} />
               <Text style={styles.menuText}>See members</Text>
             </TouchableOpacity>
 
@@ -155,7 +158,12 @@ export default function AlbumPage() {
                   setShowMoveButton(action === "Move to album");
                 }}
               >
-                <Feather name={["trash-2", "copy", "folder-minus"][idx] as any} size={16} color="#11152A" />
+                <Feather
+                  name={["trash-2", "copy", "folder-minus"][idx] as any}
+                  size={16}
+                  color="#11152A"
+                  style={{ marginRight: 10 }}
+                />
                 <Text style={styles.menuText}>{action}</Text>
               </TouchableOpacity>
             ))}
@@ -163,7 +171,7 @@ export default function AlbumPage() {
         )}
       </View>
 
-      {/* GRID */}
+      {/* IMAGE GRID */}
       <FlatList
         data={images}
         keyExtractor={(item, index) => item + index}
@@ -208,10 +216,8 @@ export default function AlbumPage() {
         }}
         ListEmptyComponent={
           <View style={styles.emptyStateWrapper}>
-            <Image
-              source={require("@/assets/images/icons/no-pictures.png")}
-              style={{ width: 130, height: 130 }}
-            />
+<NoCreatedVideoIcon width={130} height={130} />
+
             <Text style={styles.noMemoriesText}>
               Every story starts with a moment.{"\n"}Upload your first memory now.
             </Text>
@@ -254,7 +260,7 @@ export default function AlbumPage() {
       )}
 
       {/* IMAGE MODAL */}
-      <Modal visible={modalVisible} transparent={true}>
+      <Modal visible={modalVisible} transparent>
         <ImageViewer
           imageUrls={imageViewerData}
           index={selectedIndex}
@@ -268,11 +274,11 @@ export default function AlbumPage() {
       </Modal>
 
       {/* ADD BUTTON */}
-      {!isDeleteMode && (
-        <TouchableOpacity style={styles.addButton} onPress={pickImage}>
-          <Text style={styles.plus}>＋</Text>
+      <View style={styles.plusWrapper}>
+        <TouchableOpacity onPress={pickImage}>
+          <PlusIcon width={50} height={50} />
         </TouchableOpacity>
-      )}
+      </View>
 
       {/* CONFIRM DELETE MODAL */}
       <Modal visible={confirmDeleteVisible} transparent animationType="fade">
@@ -294,11 +300,10 @@ export default function AlbumPage() {
   );
 }
 
-
+// === STYLES ===
 const styles = StyleSheet.create({
   headerContainer: {
     marginTop: 50,
-    marginBottom: 20,
     position: "relative",
   },
   headerRow: {
@@ -307,45 +312,37 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontFamily: "Alice-Regular",
-    color: "#fff",
+  backBtn: {
+    zIndex: 10,
+  },
+  title: {
     textAlign: "center",
+    fontSize: 20,
+    color: "#fff",
+    fontFamily: "Alice-Regular",
     flex: 1,
   },
-  menuDots: {
-    position: "absolute",
-    right: 16,
-    top: 72,
-  },
-  menuDotsText: {
-    color: "#fff",
-    fontSize: 28,
-    lineHeight: 28,
+  albumTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 28,
+    marginHorizontal: 20,
+    position: "relative",
   },
   albumTitle: {
     fontSize: 20,
     fontFamily: "Alice-Regular",
     color: "#fff",
     textAlign: "center",
-    marginTop: 32,
-    flex: 1, // belangrijk voor centrering
-  },
-  albumTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 16,
-    marginHorizontal: 20,
-    position: "relative",
+    flex: 1,
   },
   selectAllBtn: {
     flexDirection: "row",
     alignItems: "center",
     position: "absolute",
     right: 0,
-  },  
+  },
   selectAllCircle: {
     width: 16,
     height: 16,
@@ -356,12 +353,22 @@ const styles = StyleSheet.create({
   },
   selectAllCircleActive: {
     backgroundColor: "#FEEDB6",
-  },  
+  },
   selectAllText: {
     fontFamily: "Alice-Regular",
     color: "#fff",
     fontSize: 14,
     marginLeft: 10,
+  },
+  menuDots: {
+    position: "absolute",
+    right: 16,
+    top: 53,
+  },
+  menuDotsText: {
+    color: "#fff",
+    fontSize: 28,
+    lineHeight: 28,
   },
   menuBox: {
     position: "absolute",
@@ -381,7 +388,6 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
     paddingVertical: 8,
   },
   menuText: {
@@ -391,7 +397,7 @@ const styles = StyleSheet.create({
   },
   gridContainer: {
     paddingBottom: 180,
-    paddingTop: 32,
+    paddingTop: 68,
   },
   gridImage: {
     width: 109,
@@ -412,22 +418,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     paddingHorizontal: 20,
+    lineHeight: 20,
   },
-  addButton: {
+  plusWrapper: {
     position: "absolute",
-    bottom: 110,
-    alignSelf: "center",
-    backgroundColor: "#FEEDB6",
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    justifyContent: "center",
+    bottom: 100,
+    width: "100%",
     alignItems: "center",
-    zIndex: 20,
-  },
-  plus: {
-    fontSize: 48,
-    color: "#11152A",
+    zIndex: 10,
   },
   closeBtn: {
     position: "absolute",
@@ -466,43 +464,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   confirmOverlay: {
-  flex: 1,
-  justifyContent: "center",
-  alignItems: "center",
-  backgroundColor: "rgba(0,0,0,0.5)",
-},
-confirmBox: {
-  backgroundColor: "#fff",
-  borderRadius: 16,
-  paddingVertical: 20,
-  paddingHorizontal: 20,
-  width: 280,
-  alignItems: "center",
-},
-confirmText: {
-  fontFamily: "Alice-Regular",
-  fontSize: 16,
-  textAlign: "center",
-  color: "#11152A",
-  marginBottom: 20,
-},
-confirmButtons: {
-  flexDirection: "row",
-  borderTopWidth: 1,
-  borderColor: "#ccc",
-  width: "100%",
-},
-confirmBtn: {
-  flex: 1,
-  alignItems: "center",
-  paddingVertical: 12,
-  borderRightWidth: 0.5,
-  borderColor: "#ccc",
-},
-confirmBtnText: {
-  fontFamily: "Alice-Regular",
-  fontSize: 16,
-},
-
-  
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  confirmBox: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    width: 280,
+    alignItems: "center",
+  },
+  confirmText: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+    textAlign: "center",
+    color: "#11152A",
+    marginBottom: 20,
+  },
+  confirmButtons: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderColor: "#ccc",
+    width: "100%",
+  },
+  confirmBtn: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 12,
+    borderRightWidth: 0.5,
+    borderColor: "#ccc",
+  },
+  confirmBtnText: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+  },
 });
