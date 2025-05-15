@@ -12,7 +12,7 @@ import { LinearGradient } from "expo-linear-gradient";
 
 // SVG icon imports
 import NotificationIcon from "@/assets/images/svg-icons/notification.svg";
-import JoystickIcon from "@/assets/images/svg-icons/joystick.svg";
+import JoystickIcon from "@/assets/images/svg-icons/speed.svg";
 import LanguageIcon from "@/assets/images/svg-icons/language.svg";
 import ArrowIcon from "@/assets/images/svg-icons/arrow-right.svg";
 
