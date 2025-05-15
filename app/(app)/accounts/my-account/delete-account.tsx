@@ -12,9 +12,13 @@ import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
 
+import EyeVisibleIcon from "@/assets/images/svg-icons/eye-visible.svg";
+import EyeNotVisibleIcon from "@/assets/images/svg-icons/not-visible.svg";
+
 export default function DeletePasswordScreen() {
   const router = useRouter();
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const isValid = password.length > 0;
 
@@ -43,7 +47,7 @@ export default function DeletePasswordScreen() {
             />
           </Svg>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Delete Account</Text>
+        <Text style={styles.headerTitle}>Delete account</Text>
       </View>
 
       {/* Content */}
@@ -53,20 +57,32 @@ export default function DeletePasswordScreen() {
         </Text>
 
         <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#999"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+        <View style={styles.inputWrapper}>
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor="#999"
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={setPassword}
+          />
+          <TouchableOpacity
+            style={styles.eyeIcon}
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? (
+              <EyeVisibleIcon width={22} height={22} />
+            ) : (
+              <EyeNotVisibleIcon width={22} height={22} />
+            )}
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           disabled={!isValid}
           style={[
             styles.deleteButton,
-            { marginTop: Platform.OS === "ios" ? 400 : 320 },
+            { marginTop: Platform.OS === "ios" ? 420 : 330 },
             isValid ? styles.deleteButtonActive : styles.deleteButtonDisabled,
           ]}
         >
@@ -130,6 +146,9 @@ const styles = StyleSheet.create({
     fontFamily: "Alice-Regular",
     marginBottom: 6,
   },
+  inputWrapper: {
+    position: "relative",
+  },
   input: {
     backgroundColor: "#fff",
     borderRadius: 8,
@@ -137,7 +156,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 16,
     fontFamily: "Alice-Regular",
-    marginBottom: 16,
+  },
+  eyeIcon: {
+    position: "absolute",
+    right: 12,
+    top: 10,
+    padding: 4,
   },
   deleteButton: {
     paddingVertical: 16,
