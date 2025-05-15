@@ -61,7 +61,7 @@ export default function AccountScreen() {
         <AccountLink
           icon={<SettingsIcon width={22} height={22} />}
           label="Settings"
-          onPress={() => handleNavigate("/accounts/settings")}
+          onPress={() => handleNavigate("/accounts/settings/settings")}
         />
         <AccountLink
           icon={<PrivacyIcon width={22} height={22} />}
