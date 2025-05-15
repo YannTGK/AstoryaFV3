@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useRef } from "react";
 import {
+  Animated,
+  ScrollView,
   View,
   Text,
-  ScrollView,
-  StyleSheet,
   TouchableOpacity,
+  StyleSheet,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
@@ -12,9 +14,16 @@ import { LinearGradient } from "expo-linear-gradient";
 
 export default function PrivacyPolicyScreen() {
   const router = useRouter();
+  const scrollY = useRef(new Animated.Value(0)).current;
+
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, 50],
+    outputRange: [1, 0],
+    extrapolate: "clamp",
+  });
 
   return (
-    <View style={styles.wrapper}>
+    <View style={{ flex: 1 }}>
       <LinearGradient
         colors={["#000000", "#273166", "#000000"]}
         style={StyleSheet.absoluteFill}
@@ -22,8 +31,7 @@ export default function PrivacyPolicyScreen() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Header */}
-      <View style={styles.header}>
+      <Animated.View style={[styles.header, { opacity: headerOpacity }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
             <Path
@@ -36,59 +44,65 @@ export default function PrivacyPolicyScreen() {
           </Svg>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Privacy Policy</Text>
-      </View>
+      </Animated.View>
 
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <Text style={styles.date}>Effective Date: 08/06/2025</Text>
+      <Animated.ScrollView
+        contentContainerStyle={styles.container}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
+      >
+        <Text style={styles.text}>
+          Effective Date: 04/05/2025{"\n\n"}
 
-        <Text style={styles.title}>1. Information we collect</Text>
-        <Text style={styles.text}>- Account Information: First- and lastname, email, phone number, date of birth, and password.</Text>
-        <Text style={styles.text}>- Profile Information: Profile pictures, messages, and memories you upload.</Text>
-        <Text style={styles.text}>- Technical Data: Device information, IP address, and usage data.</Text>
+          1. Information we collect:{"\n"}
+          • Account Information: First- and lastname, email, phone number, date of birth, and password.{"\n"}
+          • Profile Information: Profile pictures, messages, and memories you upload.{"\n"}
+          • Technical Data: Device information, IP address, and usage data.{"\n\n"}
 
-        <Text style={styles.title}>2. How we use your information</Text>
-        <Text style={styles.text}>- To create and manage your account.</Text>
-        <Text style={styles.text}>- To allow you to make and reserve a star and create digital memories.</Text>
-        <Text style={styles.text}>- To communicate with you about updates and support.</Text>
+          2. How we use your information:{"\n"}
+          • To create and manage your account.{"\n"}
+          • To allow you to make and reserve a star and create digital memories.{"\n"}
+          • To communicate with you about updates and support.{"\n\n"}
 
-        <Text style={styles.title}>3. Sharing your information</Text>
-        <Text style={styles.text}>- We do not sell your information.</Text>
-        <Text style={styles.text}>- We may share your data with trusted third-party service providers (like hosting services) under strict confidentiality agreements.</Text>
+          3. Sharing your information:{"\n"}
+          • We do not sell your information.{"\n"}
+          • We may share your data with trusted third-party service providers under strict confidentiality agreements.{"\n\n"}
 
-        <Text style={styles.title}>4. Data Protection</Text>
-        <Text style={styles.text}>- We use encryption and secure servers to protect your data.</Text>
-        <Text style={styles.text}>- Access to your data is limited to authorised personnel only.</Text>
+          4. Data Protection:{"\n"}
+          • We use encryption and secure servers to protect your data.{"\n"}
+          • Access to your data is limited to authorized personnel only.{"\n\n"}
 
-        <Text style={styles.title}>5. Your rights</Text>
-        <Text style={styles.text}>You have the right to:</Text>
-        <Text style={styles.text}>- Access, update, or delete your personal information.</Text>
-        <Text style={styles.text}>- Withdraw consent at any time (this may affect your ability to use the app).</Text>
-        <Text style={styles.text}>- Request a copy of your stored data.</Text>
+          5. Your rights:{"\n"}
+          You have the right to:{"\n"}
+          • Access, update, or delete your personal information.{"\n"}
+          • Withdraw consent at any time (this may affect your ability to use the app).{"\n"}
+          • Request a copy of your stored data.{"\n\n"}
 
-        <Text style={styles.title}>6. Cookies and tracking</Text>
-        <Text style={styles.text}>- We may use cookies to improve your experience.</Text>
-        <Text style={styles.text}>- You can control cookies through your device settings.</Text>
+          6. Cookies and tracking:{"\n"}
+          • We may use cookies to improve your experience.{"\n"}
+          • You can control cookies through your device settings.{"\n\n"}
 
-        <Text style={styles.title}>7. Data Retention</Text>
-        <Text style={styles.text}>- We retain your data for as long as your account is active or as needed to provide services.</Text>
-        <Text style={styles.text}>- Upon account deletion, your personal data will be deleted within 30 days.</Text>
+          7. Data Retention:{"\n"}
+          • We retain your data for as long as your account is active or as needed to provide services.{"\n"}
+          • Upon account deletion, your personal data will be deleted within 30 days.{"\n\n"}
 
-        <Text style={styles.title}>8. Changes to this privacy policy</Text>
-        <Text style={styles.text}>- We may update this Privacy Policy occasionally. You will be notified of any major changes.</Text>
+          8. Changes to this privacy policy:{"\n"}
+          • We may update this Privacy Policy occasionally. You will be notified of any major changes.{"\n\n"}
 
-        <Text style={styles.title}>9. Contact</Text>
-        <Text style={styles.text}>For questions about these Terms, please contact us at: Astorya.official@gmail.com</Text>
-      </ScrollView>
+          9. Contact:{"\n"}
+          For questions about these Terms, please contact us at: Astorya.official@gmail.com
+        </Text>
+      </Animated.ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
   header: {
+    position: "absolute",
     top: 50,
     left: 0,
     right: 0,
@@ -110,27 +124,13 @@ const styles = StyleSheet.create({
   },
   container: {
     paddingTop: 124,
-    paddingBottom: 64,
     paddingHorizontal: 16,
-  },
-  date: {
-    fontSize: 14,
-    color: "#fff",
-    marginBottom: 16,
-    fontFamily: "Alice-Regular",
-  },
-  title: {
-    fontSize: 16,
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-    marginTop: 20,
-    marginBottom: 6,
+    paddingBottom: 100,
   },
   text: {
     fontSize: 14,
     color: "#fff",
     fontFamily: "Alice-Regular",
-    lineHeight: 20,
-    marginBottom: 6,
+    lineHeight: 22,
   },
 });
