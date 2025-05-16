@@ -18,14 +18,16 @@ const { width } = Dimensions.get("window");
 
 export default function FinalMyStarPrivate() {
   const router = useRouter();
-  const { name, emissive, starId } = useLocalSearchParams<{
+  const { name, emissive, id } = useLocalSearchParams<{
     name?: string;
     emissive?: string;
-    starId?: string;
+    id?: string;
   }>();
+
   const { user } = useAuthStore();
   const [isPrivate, setIsPrivate] = useState(true);
 
+  /* ───────── navigatie helpers ───────── */
   const handleToggleToPublic = () => {
     setIsPrivate(false);
     router.push({
@@ -33,25 +35,26 @@ export default function FinalMyStarPrivate() {
       params: {
         name: user?.firstName + " " + user?.lastName,
         emissive,
-        starId,
+        id,                           // meegeven!
       },
     });
   };
 
   const icons = [
-    { label: "Photo's", route: "/(app)/my-stars/private-star/photos/photo-album", icon: <PhotosIcon width={60} height={60} /> },
-    { label: "Video’s", route: "/(app)/my-stars/private-star/videos/video-album",           icon: <VideosIcon width={60} height={60} /> },
-    { label: "Audio’s", route: "/(app)/my-stars/private-star/audios/no-audios",           icon: <AudiosIcon width={60} height={60} /> },
-    { label: "Messages", route: "/(app)/my-stars/private-star/messages/no-messages",      icon: <MessagesIcon width={60} height={60} /> },
-    { label: "Documents",route: "/(app)/my-stars/private-star/documents/no-documents",    icon: <DocumentsIcon width={60} height={60} /> },
-    { label: "3D VR Space", route: "/(app)/my-stars/private-star/vr-space",               icon: <VRSpaceIcon width={60} height={60} /> },
+    { label: "Photo's",    route: "/(app)/my-stars/private-star/photos/photo-album",              icon: <PhotosIcon    width={60} height={60} /> },
+    { label: "Video’s",    route: "/(app)/my-stars/private-star/videos/video-album",  icon: <VideosIcon    width={60} height={60} /> },
+    { label: "Audio’s",    route: "/(app)/my-stars/private-star/audios/no-audios",    icon: <AudiosIcon    width={60} height={60} /> },
+    { label: "Messages",   route: "/(app)/my-stars/private-star/messages/no-messages",icon: <MessagesIcon  width={60} height={60} /> },
+    { label: "Documents",  route: "/(app)/my-stars/private-star/documents/no-documents", icon: <DocumentsIcon width={60} height={60} /> },
+    { label: "3D VR Space",route: "/(app)/my-stars/private-star/vr-space",            icon: <VRSpaceIcon   width={60} height={60} /> },
   ];
 
   const handlePress = (route: string) => {
-    router.push({
-      pathname: route,
-      params: { starId },
-    });
+    if (!id) {
+      console.warn("Cannot navigate: id is undefined");
+      return;
+    }
+    router.push({ pathname: route, params: { id } });
   };
 
   return (

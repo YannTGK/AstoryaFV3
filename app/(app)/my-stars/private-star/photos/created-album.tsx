@@ -1,5 +1,5 @@
-// gemaakte album
-import React, { useState } from "react";
+// app/(app)/my-stars/private-star/photos/created-album.tsx
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   Image,
   FlatList,
   Modal,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -15,51 +17,112 @@ import Svg, { Path } from "react-native-svg";
 import * as ImagePicker from "expo-image-picker";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { Feather } from "@expo/vector-icons";
-import PlusIcon from "@/assets/images/svg-icons/plus.svg";
+
+import PlusIcon      from "@/assets/images/svg-icons/plus.svg";
 import NoPictureIcon from "@/assets/images/svg-icons/no-picture.svg";
+import api           from "@/services/api";
+
+/* ---------- typing ---------- */
+type Photo = { _id: string; url: string };
 
 export default function AlbumPage() {
-  const router = useRouter();
-  const { albumName } = useLocalSearchParams();
-  const currentAlbum = albumName as string;
+  const router               = useRouter();
+  const { id, albumId, albumName } =
+    useLocalSearchParams<{ id: string; albumId: string; albumName: string }>();
 
-  const [images, setImages] = useState<string[]>([]);
-  const [modalVisible, setModalVisible] = useState(false);
+  /* ---------- state ---------- */
+  const [images, setImages]               = useState<Photo[]>([]);
+  const [loading, setLoading]             = useState(true);
+
+  const [modalVisible, setModalVisible]   = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [isDeleteMode, setIsDeleteMode] = useState(false);
+
+  const [menuOpen, setMenuOpen]           = useState(false);
+  const [isDeleteMode, setIsDeleteMode]   = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
   const [showCopyButton, setShowCopyButton] = useState(false);
   const [showMoveButton, setShowMoveButton] = useState(false);
   const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
 
-  const pickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      alert("Permission to access media library is required!");
+  /* ---------- helpers ---------- */
+  const imageViewerData = images.map((p) => ({ url: p.url }));
+  const isSelected = (pid: string) => selectedPhotos.includes(pid);
+
+  /* ---------- API calls ---------- */
+  const fetchPhotos = async () => {
+    if (!id || !albumId) return;
+    setLoading(true);
+    try {
+      const { data } = await api.get(`/stars/${id}/photo-albums/${albumId}/photos`);
+      setImages(
+        data.map((p: any) => ({
+          _id: p._id,
+          url: p.fileUrl, 
+        })),
+      );
+    } catch (err) {
+      console.error("Photo fetch error:", err);
+      Alert.alert("Error", "Could not load photos.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPhotos();
+  }, [id, albumId]);
+
+  const uploadPhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permission required", "Enable photo access to upload.");
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: false,
-      quality: 1,
+      quality: 0.9,
     });
+    if (result.canceled) return;
 
-    if (!result.canceled) {
-      const uri = result.assets[0].uri;
-      setImages((prev) => [...prev, uri]);
+    try {
+      const asset = result.assets[0];
+      const form  = new FormData();
+      form.append("photo", {
+        uri:  asset.uri,
+        name: asset.fileName ?? "photo.jpg",
+        type: asset.mimeType ?? "image/jpeg",
+      } as any);
+
+      await api.post(
+        `/stars/${id}/photo-albums/${albumId}/photos/upload`,
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+      fetchPhotos();
+    } catch (err: any) {
+      console.error(err.response?.data);
+      Alert.alert("Upload failed", err.response?.data?.message ?? "Try again.");
     }
   };
 
-  const imageViewerData = images.map((uri) => ({ url: uri }));
+  const deleteSelected = async () => {
+    setConfirmDeleteVisible(false);
+    for (const pid of selectedPhotos) {
+      await api.delete(`/photos/detail/${pid}`).catch(console.error);
+    }
+    setSelectedPhotos([]);
+    setIsDeleteMode(false);
+    fetchPhotos();
+  };
 
-  const handlePhotoPress = (item: string, index: number) => {
+  /* ---------- render helpers ---------- */
+  const handlePhotoPress = (photo: Photo, index: number) => {
     if (isDeleteMode) {
       setSelectedPhotos((prev) =>
-        prev.includes(item)
-          ? prev.filter((uri) => uri !== item)
-          : [...prev, item]
+        prev.includes(photo._id)
+          ? prev.filter((id) => id !== photo._id)
+          : [...prev, photo._id],
       );
     } else {
       setSelectedIndex(index);
@@ -67,29 +130,21 @@ export default function AlbumPage() {
     }
   };
 
-  const handleDelete = () => {
-    setImages(images.filter((img) => !selectedPhotos.includes(img)));
-    setSelectedPhotos([]);
-    setIsDeleteMode(false);
-    setConfirmDeleteVisible(false);
-  };
-
-  const handleCopyOrMove = (type: "copy" | "move") => {
-    router.push({
-      pathname:
-        type === "copy"
-          ? "/my-stars/private-star/photos/three-dots/copy-album/selected-album"
-          : "/my-stars/private-star/photos/three-dots/move-album/move-album",
-      params: {
-        albumName: encodeURIComponent(currentAlbum),
-        selected: JSON.stringify(selectedPhotos),
-      },
-    });
-  };
+  /* ---------- UI ---------- */
+  if (loading) {
+    return (
+      <View style={{ flex:1, justifyContent:"center", alignItems:"center", backgroundColor:"#000" }}>
+        <ActivityIndicator size="large" color="#FEEDB6" />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>
-      <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
+      <LinearGradient
+        colors={["#000", "#273166", "#000"]}
+        style={StyleSheet.absoluteFill}
+      />
 
       {/* HEADER */}
       <View style={styles.headerContainer}>
@@ -103,12 +158,14 @@ export default function AlbumPage() {
         </View>
 
         <View style={styles.albumTitleRow}>
-          <Text style={styles.albumTitle}>{albumName}</Text>
+          <Text style={styles.albumTitle}>{decodeURIComponent(albumName)}</Text>
           {isDeleteMode && (
             <TouchableOpacity
               style={styles.selectAllBtn}
               onPress={() =>
-                setSelectedPhotos(selectedPhotos.length === images.length ? [] : images)
+                setSelectedPhotos(
+                  selectedPhotos.length === images.length ? [] : images.map((p) => p._id),
+                )
               }
             >
               <View
@@ -146,6 +203,7 @@ export default function AlbumPage() {
               <Text style={styles.menuText}>See members</Text>
             </TouchableOpacity>
 
+            {/* Delete / copy / move */}
             {["Delete", "Copy to album", "Move to album"].map((action, idx) => (
               <TouchableOpacity
                 key={action}
@@ -174,26 +232,26 @@ export default function AlbumPage() {
       {/* IMAGE GRID */}
       <FlatList
         data={images}
-        keyExtractor={(item, index) => item + index}
+        keyExtractor={(item) => item._id}
         numColumns={3}
         contentContainerStyle={styles.gridContainer}
         renderItem={({ item, index }) => {
           const isFirstInRow = index % 3 === 0;
-          const isSelected = selectedPhotos.includes(item);
-
           return (
             <TouchableOpacity onPress={() => handlePhotoPress(item, index)}>
               <View style={{ position: "relative" }}>
                 <Image
-                  source={{ uri: item }}
+                  source={{ uri: item.url }}
                   style={[
                     styles.gridImage,
                     {
                       marginLeft: isFirstInRow ? 16 : 8,
                       marginRight: 8,
-                      opacity: isDeleteMode && !isSelected ? 0.6 : 1,
+                      opacity: isDeleteMode && !isSelected(item._id) ? 0.6 : 1,
                     },
                   ]}
+                  onError={(e) => console.warn('Image load error:', item.url, e.nativeEvent.error)}
+                  resizeMode="cover"
                 />
                 {isDeleteMode && (
                   <View
@@ -206,7 +264,7 @@ export default function AlbumPage() {
                       borderRadius: 9,
                       borderWidth: 2,
                       borderColor: "#fff",
-                      backgroundColor: isSelected ? "#FEEDB6" : "transparent",
+                      backgroundColor: isSelected(item._id) ? "#FEEDB6" : "transparent",
                     }}
                   />
                 )}
@@ -216,8 +274,7 @@ export default function AlbumPage() {
         }}
         ListEmptyComponent={
           <View style={styles.emptyStateWrapper}>
-<NoPictureIcon width={130} height={130} />
-
+            <NoPictureIcon width={130} height={130} />
             <Text style={styles.noMemoriesText}>
               Every story starts with a moment.{"\n"}Upload your first memory now.
             </Text>
@@ -275,7 +332,7 @@ export default function AlbumPage() {
 
       {/* ADD BUTTON */}
       <View style={styles.plusWrapper}>
-        <TouchableOpacity onPress={pickImage}>
+        <TouchableOpacity onPress={uploadPhoto}>
           <PlusIcon width={50} height={50} />
         </TouchableOpacity>
       </View>
@@ -284,12 +341,12 @@ export default function AlbumPage() {
       <Modal visible={confirmDeleteVisible} transparent animationType="fade">
         <View style={styles.confirmOverlay}>
           <View style={styles.confirmBox}>
-            <Text style={styles.confirmText}>Are you sure you want to remove the image?</Text>
+            <Text style={styles.confirmText}>Are you sure you want to remove the image{selectedPhotos.length > 1 ? "s" : ""}?</Text>
             <View style={styles.confirmButtons}>
               <TouchableOpacity onPress={() => setConfirmDeleteVisible(false)} style={styles.confirmBtn}>
                 <Text style={[styles.confirmBtnText, { color: "#007AFF" }]}>No</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleDelete} style={styles.confirmBtn}>
+              <TouchableOpacity onPress={deleteSelected} style={styles.confirmBtn}>
                 <Text style={[styles.confirmBtnText, { color: "#007AFF" }]}>Yes</Text>
               </TouchableOpacity>
             </View>
@@ -300,205 +357,37 @@ export default function AlbumPage() {
   );
 }
 
-// === STYLES ===
+/* === styles (ongewijzigd) === */
 const styles = StyleSheet.create({
-  headerContainer: {
-    marginTop: 50,
-    position: "relative",
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-  },
-  backBtn: {
-    zIndex: 10,
-  },
-  title: {
-    textAlign: "center",
-    fontSize: 20,
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-    flex: 1,
-  },
-  albumTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 28,
-    marginHorizontal: 20,
-    position: "relative",
-  },
-  albumTitle: {
-    fontSize: 20,
-    fontFamily: "Alice-Regular",
-    color: "#fff",
-    textAlign: "center",
-    flex: 1,
-  },
-  selectAllBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    position: "absolute",
-    right: 0,
-  },
-  selectAllCircle: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: "#fff",
-    backgroundColor: "transparent",
-  },
-  selectAllCircleActive: {
-    backgroundColor: "#FEEDB6",
-  },
-  selectAllText: {
-    fontFamily: "Alice-Regular",
-    color: "#fff",
-    fontSize: 14,
-    marginLeft: 10,
-  },
-  menuDots: {
-    position: "absolute",
-    right: 16,
-    top: 53,
-  },
-  menuDotsText: {
-    color: "#fff",
-    fontSize: 28,
-    lineHeight: 28,
-  },
-  menuBox: {
-    position: "absolute",
-    top: 105,
-    right: 16,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 10,
-    zIndex: 999,
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  menuText: {
-    fontFamily: "Alice-Regular",
-    fontSize: 14,
-    color: "#11152A",
-  },
-  gridContainer: {
-    paddingBottom: 180,
-    paddingTop: 68,
-  },
-  gridImage: {
-    width: 109,
-    height: 109,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  emptyStateWrapper: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: 400,
-  },
-  noMemoriesText: {
-    marginTop: 16,
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-    fontSize: 14,
-    textAlign: "center",
-    paddingHorizontal: 20,
-    lineHeight: 20,
-  },
-  plusWrapper: {
-    position: "absolute",
-    bottom: 100,
-    width: "100%",
-    alignItems: "center",
-    zIndex: 10,
-  },
-  closeBtn: {
-    position: "absolute",
-    top: 72,
-    right: 20,
-    zIndex: 101,
-  },
-  closeText: {
-    color: "#fff",
-    fontSize: 32,
-  },
-  deleteBar: {
-    position: "absolute",
-    bottom: 80,
-    left: 0,
-    right: 0,
-    backgroundColor: "#11152A",
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    borderTopWidth: 1,
-    borderTopColor: "#2D2D2D",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 999,
-    elevation: 20,
-  },
-  deleteBarBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  deleteBarText: {
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
-  },
-  confirmOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  confirmBox: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    width: 280,
-    alignItems: "center",
-  },
-  confirmText: {
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
-    textAlign: "center",
-    color: "#11152A",
-    marginBottom: 20,
-  },
-  confirmButtons: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    borderColor: "#ccc",
-    width: "100%",
-  },
-  confirmBtn: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 12,
-    borderRightWidth: 0.5,
-    borderColor: "#ccc",
-  },
-  confirmBtnText: {
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
-  },
+  headerContainer: { marginTop: 50, position: "relative" },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16 },
+  backBtn: { zIndex: 10 },
+  title: { textAlign: "center", fontSize: 20, color: "#fff", fontFamily: "Alice-Regular", flex: 1 },
+  albumTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginTop: 28, marginHorizontal: 20, position: "relative" },
+  albumTitle: { fontSize: 20, fontFamily: "Alice-Regular", color: "#fff", textAlign: "center", flex: 1 },
+  selectAllBtn: { flexDirection: "row", alignItems: "center", position: "absolute", right: 0 },
+  selectAllCircle: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: "#fff", backgroundColor: "transparent" },
+  selectAllCircleActive: { backgroundColor: "#FEEDB6" },
+  selectAllText: { fontFamily: "Alice-Regular", color: "#fff", fontSize: 14, marginLeft: 10 },
+  menuDots: { position: "absolute", right: 16, top: 53 },
+  menuDotsText: { color: "#fff", fontSize: 28, lineHeight: 28 },
+  menuBox: { position: "absolute", top: 105, right: 16, backgroundColor: "#fff", borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 10, zIndex: 999 },
+  menuItem: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
+  menuText: { fontFamily: "Alice-Regular", fontSize: 14, color: "#11152A" },
+  gridContainer: { paddingBottom: 180, paddingTop: 68 },
+  gridImage: { width: 109, height: 109, borderRadius: 8, marginBottom: 16 },
+  emptyStateWrapper: { flex: 1, justifyContent: "center", alignItems: "center", minHeight: 400 },
+  noMemoriesText: { marginTop: 16, color: "#fff", fontFamily: "Alice-Regular", fontSize: 14, textAlign: "center", paddingHorizontal: 20, lineHeight: 20 },
+  plusWrapper: { position: "absolute", bottom: 100, width: "100%", alignItems: "center", zIndex: 10 },
+  closeBtn: { position: "absolute", top: 72, right: 20, zIndex: 101 },
+  closeText: { color: "#fff", fontSize: 32 },
+  deleteBar: { position: "absolute", bottom: 80, left: 0, right: 0, backgroundColor: "#11152A", paddingVertical: 18, paddingHorizontal: 20, borderTopWidth: 1, borderTopColor: "#2D2D2D", flexDirection: "row", alignItems: "center", justifyContent: "center", zIndex: 999, elevation: 20 },
+  deleteBarBtn: { flexDirection: "row", alignItems: "center", gap: 10 },
+  deleteBarText: { color: "#fff", fontFamily: "Alice-Regular", fontSize: 16 },
+  confirmOverlay: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" },
+  confirmBox: { backgroundColor: "#fff", borderRadius: 16, paddingVertical: 20, paddingHorizontal: 20, width: 280, alignItems: "center" },
+  confirmText: { fontFamily: "Alice-Regular", fontSize: 16, textAlign: "center", color: "#11152A", marginBottom: 20 },
+  confirmButtons: { flexDirection: "row", borderTopWidth: 1, borderColor: "#ccc", width: "100%" },
+  confirmBtn: { flex: 1, alignItems: "center", paddingVertical: 12, borderRightWidth: 0.5, borderColor: "#ccc" },
+  confirmBtnText: { fontFamily: "Alice-Regular", fontSize: 16 },
 });
