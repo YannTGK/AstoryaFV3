@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -8,13 +9,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  FlatList,
   Image,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import type { ImageSourcePropType } from "react-native";
+import TrashIcon from "@/assets/images/svg-icons/trash-white.svg";
 
 const isValidCardNumber = (num: string) =>
   /^\d{16}$/.test(num.replace(/\s/g, ""));
@@ -55,7 +56,6 @@ export default function PaymentMethodsScreen() {
     value: string;
     icon: ImageSourcePropType;
   } | null>(null);
-
   const [showDropdown, setShowDropdown] = useState(false);
   const [cardNumber, setCardNumber] = useState("");
   const [cardholderName, setCardholderName] = useState("");
@@ -65,7 +65,7 @@ export default function PaymentMethodsScreen() {
   const [savedCards, setSavedCards] = useState<any[]>([]);
 
   const isFormComplete =
-    selectedCard &&
+    !!selectedCard &&
     isValidCardNumber(cardNumber) &&
     isValidName(cardholderName) &&
     isValidExpiryDate(expiryDate) &&
@@ -81,16 +81,9 @@ export default function PaymentMethodsScreen() {
   };
 
   const handleExpiryInput = (text: string) => {
-    let cleaned = text.replace(/[^\d]/g, "");
-    if (cleaned.length === 0) {
-      setExpiryDate("");
-    } else if (cleaned.length <= 2) {
-      setExpiryDate(cleaned);
-    } else {
-      const month = cleaned.slice(0, 2);
-      const year = cleaned.slice(2, 4);
-      setExpiryDate(`${month}/${year}`);
-    }
+    const cleaned = text.replace(/[^\d]/g, "");
+    if (cleaned.length <= 2) setExpiryDate(cleaned);
+    else setExpiryDate(`${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}`);
   };
 
   const handleConfirm = () => {
@@ -99,23 +92,45 @@ export default function PaymentMethodsScreen() {
       number: cardNumber,
       holder: cardholderName,
       expiry: expiryDate,
-      type: selectedCard,
+      type: selectedCard!,
     };
+
     if (editingIndex !== null) {
-      const updated = [...savedCards];
-      updated[editingIndex] = newCard;
-      setSavedCards(updated);
+      const copy = [...savedCards];
+      copy[editingIndex] = newCard;
+      setSavedCards(copy);
     } else {
       setSavedCards([...savedCards, newCard]);
     }
 
+    resetForm();
+  };
+
+  const confirmDelete = () => {
+    Alert.alert(
+      "Delete card",
+      "Are you sure you want to delete this card?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: handleDelete },
+      ]
+    );
+  };
+
+  const handleDelete = () => {
+    if (editingIndex === null) return;
+    setSavedCards((cards) => cards.filter((_, i) => i !== editingIndex));
+    resetForm();
+  };
+
+  const resetForm = () => {
     setCardNumber("");
     setCardholderName("");
     setExpiryDate("");
     setCvv("");
     setSelectedCard(null);
     setShowForm(false);
-    setEditingIndex(null); // resetten
+    setEditingIndex(null);
   };
 
   return (
@@ -130,8 +145,11 @@ export default function PaymentMethodsScreen() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <TouchableOpacity
+        style={styles.backBtn}
+        onPress={() => router.back()}
+      >
+        <Svg width={24} height={24} viewBox="0 0 24 24">
           <Path
             d="M15 18l-6-6 6-6"
             stroke="#FEEDB6"
@@ -150,19 +168,35 @@ export default function PaymentMethodsScreen() {
         <Text style={styles.subTitle}>Add card</Text>
 
         {savedCards.map((card, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.cardItem}
-            onPress={() => {
-              const card = savedCards[index];
-              setCardNumber(card.number);
-              setCardholderName(card.holder);
-              setExpiryDate(card.expiry);
-              setSelectedCard(card.type);
-              setEditingIndex(index);
-              setShowForm(true);
-            }}
-          >
+          <View key={index} style={styles.cardItem}>
+            <TouchableOpacity
+              style={styles.editIcon}
+              onPress={() => {
+                setCardNumber(card.number);
+                setCardholderName(card.holder);
+                setExpiryDate(card.expiry);
+                setSelectedCard(card.type);
+                setEditingIndex(index);
+                setShowForm(true);
+              }}
+            >
+              <Svg width={20} height={20} viewBox="0 0 24 24">
+                <Path
+                  d="M12 20h9"
+                  stroke="#FEEDB6"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                />
+                <Path
+                  d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4L16.5 3.5z"
+                  stroke="#FEEDB6"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            </TouchableOpacity>
+
             <View style={styles.cardHeader}>
               <Image
                 source={require("@/assets/images/payment-cards/chip.png")}
@@ -170,6 +204,7 @@ export default function PaymentMethodsScreen() {
               />
               <Text style={styles.cardNumber}>{card.number}</Text>
             </View>
+
             <View style={styles.cardFooter}>
               <View>
                 <Text style={styles.cardLabel}>Card Holder</Text>
@@ -180,7 +215,7 @@ export default function PaymentMethodsScreen() {
                 <Text style={styles.cardValue}>{card.expiry}</Text>
               </View>
             </View>
-          </TouchableOpacity>
+          </View>
         ))}
 
         {!showForm ? (
@@ -192,12 +227,12 @@ export default function PaymentMethodsScreen() {
           </TouchableOpacity>
         ) : (
           <>
-            {/* Dropdown */}
+            {/* Card Type Dropdown */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Card</Text>
               <TouchableOpacity
                 style={styles.dropdown}
-                onPress={() => setShowDropdown(!showDropdown)}
+                onPress={() => setShowDropdown((v) => !v)}
               >
                 <Text style={styles.dropdownText}>
                   {selectedCard?.label || "Select a card type"}
@@ -211,37 +246,34 @@ export default function PaymentMethodsScreen() {
                       style={styles.dropdownItem}
                       onPress={() => handleSelectCardType(type)}
                     >
-                      <View style={styles.dropdownItemContent}>
-                        <Image source={type.icon} style={styles.cardIcon} />
-                        <Text style={styles.dropdownItemText}>
-                          {type.label}
-                        </Text>
-                      </View>
+                      <Image source={type.icon} style={styles.cardIcon} />
+                      <Text style={styles.dropdownItemText}>
+                        {type.label}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               )}
             </View>
 
-            {/* Card number */}
+            {/* Number, Name, Expiry, CVV */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Card number</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Card number"
                 placeholderTextColor="#999"
+                keyboardType="number-pad"
                 value={cardNumber}
                 onChangeText={setCardNumber}
-                keyboardType="number-pad"
               />
-              {cardNumber.length > 0 && !isValidCardNumber(cardNumber) && (
+              {cardNumber && !isValidCardNumber(cardNumber) && (
                 <Text style={styles.errorText}>
                   Card number must be 16 digits
                 </Text>
               )}
             </View>
 
-            {/* Cardholder name */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Cardholder name</Text>
               <TextInput
@@ -251,14 +283,13 @@ export default function PaymentMethodsScreen() {
                 value={cardholderName}
                 onChangeText={setCardholderName}
               />
-              {cardholderName.length > 0 && !isValidName(cardholderName) && (
+              {cardholderName && !isValidName(cardholderName) && (
                 <Text style={styles.errorText}>
                   Only letters and spaces allowed
                 </Text>
               )}
             </View>
 
-            {/* Expiry & CVV */}
             <View style={styles.row}>
               <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
                 <Text style={styles.label}>Expiry date</Text>
@@ -266,27 +297,26 @@ export default function PaymentMethodsScreen() {
                   style={styles.input}
                   placeholder="MM/YY"
                   placeholderTextColor="#999"
+                  keyboardType="number-pad"
                   value={expiryDate}
                   onChangeText={handleExpiryInput}
-                  keyboardType="number-pad"
                 />
-                {expiryDate.length > 0 && !isValidExpiryDate(expiryDate) && (
+                {expiryDate && !isValidExpiryDate(expiryDate) && (
                   <Text style={styles.errorText}>Use MM/YY format</Text>
                 )}
               </View>
-
               <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
                 <Text style={styles.label}>CVV</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="CVV"
                   placeholderTextColor="#999"
-                  value={cvv}
-                  onChangeText={setCvv}
                   secureTextEntry
                   keyboardType="number-pad"
+                  value={cvv}
+                  onChangeText={setCvv}
                 />
-                {cvv.length > 0 && !isValidCVV(cvv) && (
+                {cvv && !isValidCVV(cvv) && (
                   <Text style={styles.errorText}>
                     CVV must be 3 or 4 digits
                   </Text>
@@ -294,44 +324,50 @@ export default function PaymentMethodsScreen() {
               </View>
             </View>
 
-            <TouchableOpacity
-              style={[
-                styles.confirmButton,
-                isFormComplete && styles.confirmButtonActive,
-                savedCards.length > 0
-                  ? styles.confirmButtonCompact
-                  : styles.confirmButtonInitial,
-              ]}
-              disabled={!isFormComplete}
-              onPress={handleConfirm}
-            >
-              <Text
-                style={[
-                  styles.confirmButtonText,
-                  isFormComplete && styles.confirmButtonTextActive,
-                ]}
+            {/* Delete with confirmation */}
+            {editingIndex !== null && (
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={confirmDelete}
               >
-                Confirm
-              </Text>
-            </TouchableOpacity>
+                <TrashIcon width={20} height={20} />
+                <Text style={styles.deleteText}>Delete</Text>
+              </TouchableOpacity>
+            )}
           </>
         )}
       </ScrollView>
+
+      {/* Confirm button fixed */}
+      {showForm && (
+        <TouchableOpacity
+          style={[
+            styles.confirmButton,
+            isFormComplete && styles.confirmButtonActive,
+          ]}
+          disabled={!isFormComplete}
+          onPress={handleConfirm}
+        >
+          <Text
+            style={[
+              styles.confirmButtonText,
+              isFormComplete && styles.confirmButtonTextActive,
+            ]}
+          >
+            Confirm
+          </Text>
+        </TouchableOpacity>
+      )}
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   wrapper: { flex: 1 },
-  backBtn: {
-    position: "absolute",
-    top: 50,
-    left: 20,
-    zIndex: 10,
-  },
+  backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
   scrollContainer: {
     paddingTop: 50,
-    paddingBottom: 60,
+    paddingBottom: 100,
     paddingHorizontal: 20,
   },
   title: {
@@ -343,10 +379,9 @@ const styles = StyleSheet.create({
   },
   subTitle: {
     fontSize: 18,
-    textAlign: "center",
     color: "#fff",
+    textAlign: "center",
     fontFamily: "Alice-Regular",
-    marginTop: 16,
     marginBottom: 20,
   },
   cardBox: {
@@ -357,18 +392,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 20,
   },
-  plus: {
-    fontSize: 48,
-    color: "#fff",
-  },
+  plus: { fontSize: 48, color: "#fff" },
+  inputGroup: { marginBottom: 16 },
   label: {
     fontSize: 14,
     color: "#fff",
     fontFamily: "Alice-Regular",
     marginBottom: 6,
-  },
-  inputGroup: {
-    marginBottom: 16,
   },
   input: {
     backgroundColor: "#fff",
@@ -378,36 +408,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#000",
   },
-  row: {
-    flexDirection: "row",
-  },
-  confirmButton: {
-    backgroundColor: "#666",
-    borderRadius: 8,
-    paddingVertical: 16,
-    alignItems: "center",
-    marginBottom: "auto", // <-- ruimte onderaan zodat hij niet verdwijnt
-  },
-
-  confirmButtonInitial: {
-    marginTop: 210, // grote ruimte als er nog geen kaarten zijn
-  },
-
-  confirmButtonCompact: {
-    marginTop: 60, // compactere ruimte als er al kaarten zijn
-  },
-
-  confirmButtonActive: {
-    backgroundColor: "#FEEDB6",
-  },
-  confirmButtonText: {
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
-    color: "#888",
-  },
-  confirmButtonTextActive: {
-    color: "#000",
-  },
+  row: { flexDirection: "row" },
   dropdown: {
     backgroundColor: "#fff",
     borderRadius: 6,
@@ -429,24 +430,10 @@ const styles = StyleSheet.create({
   dropdownItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    padding: 12,
   },
-  dropdownItemContent: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  cardIcon: {
-    width: 24,
-    height: 16,
-    resizeMode: "contain",
-    marginRight: 8,
-  },
-  dropdownItemText: {
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
-    color: "#000",
-  },
+  cardIcon: { width: 24, height: 16, resizeMode: "contain", marginRight: 8 },
+  dropdownItemText: { fontFamily: "Alice-Regular", fontSize: 16, flex: 1 },
   errorText: {
     color: "#FF7466",
     fontSize: 12,
@@ -459,26 +446,16 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 20,
   },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  chip: {
-    width: 32,
-    height: 24,
-  },
-
+  editIcon: { position: "absolute", top: 12, right: 12, padding: 6, zIndex: 2 },
+  cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
+  chip: { width: 32, height: 24 },
   cardNumber: {
     color: "#fff",
     fontSize: 18,
     marginLeft: 12,
     fontFamily: "Alice-Regular",
   },
-  cardFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
+  cardFooter: { flexDirection: "row", justifyContent: "space-between" },
   cardLabel: {
     color: "#aaa",
     fontSize: 16,
@@ -491,4 +468,32 @@ const styles = StyleSheet.create({
     fontFamily: "Alice-Regular",
     marginTop: 4,
   },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 16,
+    marginTop: 0,
+  },
+  deleteText: {
+    color: "#fff",
+    fontFamily: "Alice-Regular",
+    marginLeft: 8,
+  },
+  confirmButton: {
+    position: "absolute",
+    bottom: 100,
+    left: 16,
+    right: 16,
+    backgroundColor: "#666",
+    borderRadius: 8,
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  confirmButtonActive: { backgroundColor: "#FEEDB6" },
+  confirmButtonText: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+    color: "#888",
+  },
+  confirmButtonTextActive: { color: "#000" },
 });
