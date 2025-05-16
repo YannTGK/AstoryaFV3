@@ -55,7 +55,7 @@ export default function PrivacyPolicyScreen() {
         scrollEventThrottle={16}
       >
         <Text style={styles.text}>
-          Effective Date: 04/05/2025{"\n\n"}
+          Effective Date: 08/06/2025{"\n\n"}
 
           1. Information we collect:{"\n"}
           • Account Information: First- and lastname, email, phone number, date of birth, and password.{"\n"}

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -24,13 +24,21 @@ export default function AccountScreen() {
     router.replace("/(auth)/entry");
   };
 
-  const handleNavigate = (path: string) => {
-    if (path.startsWith("http")) {
-      Linking.openURL(path);
+ const handleNavigate = (path: string) => {
+    if (Platform.OS === "ios") {
+      // iOS: gewoon router.push of Linking.openURL zoals nu
+      if (path.startsWith("http")) return Linking.openURL(path);
+      return router.push(path as any);
     } else {
-      router.push(path as any); // fix rode lijn
+      // Android: pak een andere flow, bijv. met Intent of via WebView
+      if (path.startsWith("http")) {
+        // voorbeeld: open in in-app browser op Android
+        return Linking.openURL(`https://your-android-wrapping-service?url=${encodeURIComponent(path)}`);
+      }
+      // of gebruik een native StackNavigator op Android
+      return router.push(path as any);
     }
-  };  
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -170,7 +178,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#11152A",
     paddingVertical: 14,
     borderRadius: 12,
-    marginTop: 220,
+    marginTop: Platform.OS === "ios" ? 220 : 140,
   },
   upgradeText: {
     color: "#fff",
