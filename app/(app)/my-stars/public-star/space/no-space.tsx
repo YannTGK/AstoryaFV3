@@ -1,26 +1,42 @@
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native";
+import { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
-import NoDocumentsIcon from "@/assets/images/svg-icons/no-documents.svg";
-import PlusIcon from "@/assets/images/svg-icons/plus.svg";
-import { useState } from "react";
 
-export default function NoDocuments() {
+import PlusIcon from "@/assets/images/svg-icons/plus.svg";
+
+export default function NoVRSpace() {
   const router = useRouter();
   const [showPopup, setShowPopup] = useState(false);
+  const [spaceName, setSpaceName] = useState("");
 
-  const handleUploadPress = () => {
+  const handleCreatePress = () => {
     setShowPopup(true);
   };
 
   const handleConfirm = () => {
+    if (!spaceName.trim()) return;
     setShowPopup(false);
-    router.push("/(app)/my-stars/private-star/documents/documents");
+
+    const encoded = encodeURIComponent(spaceName.trim());
+
+    router.push({
+      pathname: "/(app)/my-stars/public-star/space/chose-vr-space",
+      params: { name: encoded },
+    });
   };
 
   const handleCancel = () => {
     setShowPopup(false);
+    setSpaceName("");
   };
 
   return (
@@ -46,17 +62,18 @@ export default function NoDocuments() {
       </TouchableOpacity>
 
       {/* Titel */}
-      <Text style={styles.title}>Documenten</Text>
+      <Text style={styles.title}>3D/VR - space</Text>
 
-      {/* Geen documenten - GECENTREERD */}
+      {/* Lege toestand */}
       <View style={styles.centeredContent}>
-        <NoDocumentsIcon width={140} height={140} />
-        <Text style={styles.messageText}>No documents found</Text>
+        <Text style={styles.messageText}>
+          No 3D/VR-space created yet.{"\n"}Create your public VR-space!
+        </Text>
       </View>
 
-      {/* Plus-knop onderaan */}
+      {/* Plus-knop */}
       <View style={styles.plusWrapper}>
-        <TouchableOpacity onPress={handleUploadPress}>
+        <TouchableOpacity onPress={handleCreatePress}>
           <PlusIcon width={50} height={50} />
         </TouchableOpacity>
       </View>
@@ -65,16 +82,28 @@ export default function NoDocuments() {
       <Modal transparent visible={showPopup} animationType="fade">
         <View style={styles.popupOverlay}>
           <View style={styles.popupBox}>
-            <Text style={styles.popupText}>Open documents</Text>
+            <Text style={styles.popupTitle}>Create 3D/VR - space</Text>
+
+            <TextInput
+              value={spaceName}
+              onChangeText={setSpaceName}
+              placeholder="Enter a name"
+              placeholderTextColor="#999"
+              style={styles.input}
+            />
+
             <View style={styles.popupButtons}>
               <TouchableOpacity
                 style={[styles.popupButton, styles.rightBorder]}
-                onPress={handleYes}
+                onPress={handleCancel}
               >
-                <Text style={styles.popupButtonTextYes}>Yes</Text>
+                <Text style={styles.popupButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.popupButton} onPress={handleNo}>
-                <Text style={styles.popupButtonTextNo}>No</Text>
+              <TouchableOpacity
+                style={styles.popupButton}
+                onPress={handleConfirm}
+              >
+                <Text style={styles.popupButtonText}>Create</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -82,14 +111,6 @@ export default function NoDocuments() {
       </Modal>
     </View>
   );
-
-  function handleYes() {
-    handleConfirm();
-  }
-
-  function handleNo() {
-    handleCancel();
-  }
 }
 
 const styles = StyleSheet.create({
@@ -111,12 +132,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 80,
+    paddingHorizontal: 40,
   },
   messageText: {
     color: "#fff",
     fontFamily: "Alice-Regular",
     fontSize: 14,
-    marginTop: 0,
+    textAlign: "center",
   },
   plusWrapper: {
     position: "absolute",
@@ -139,12 +161,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     alignItems: "center",
   },
-  popupText: {
+  popupTitle: {
     fontFamily: "Alice-Regular",
     fontSize: 16,
     color: "#11152A",
+    marginBottom: 16,
+  },
+  input: {
+    width: "100%",
+    fontSize: 16,
+    fontFamily: "Alice-Regular",
+    color: "#11152A",
+    borderBottomWidth: 1,
+    borderBottomColor: "#aaa",
+    paddingBottom: 4,
+    marginBottom: 20,
     textAlign: "center",
-    marginBottom: 24,
   },
   popupButtons: {
     flexDirection: "row",
@@ -161,12 +193,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: "#eee",
   },
-  popupButtonTextYes: {
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
-    color: "#0A84FF",
-  },
-  popupButtonTextNo: {
+  popupButtonText: {
     fontFamily: "Alice-Regular",
     fontSize: 16,
     color: "#0A84FF",

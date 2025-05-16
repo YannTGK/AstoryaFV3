@@ -75,8 +75,13 @@ export default function MyStarPublic2() {
           </View>
 
           <View style={styles.ctaWrapper}>
-            <TouchableOpacity style={styles.button}>
-              <Text style={styles.buttonTxt}>Add 3D/VR - space</Text>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() =>
+                router.push("/(app)/my-stars/public-star/space/no-space")
+              }
+            >
+              <Text style={styles.buttonTxt}>Add 3D/VR - space //Zie Note in code!!!</Text>  Note:  See 3D/VR - space" (na flow space gdn is)
             </TouchableOpacity>
           </View>
         </>
