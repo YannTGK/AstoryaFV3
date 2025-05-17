@@ -64,7 +64,7 @@ export default function PhotoAlbumsScreen() {
     try {
       const res = await api.post(`/stars/${id}/photo-albums`, { name });
       setShowNew(false); setAlbumName(""); fetchAlbums();
-      router.push({ pathname: "/my-stars/private-star/photos/album",
+      router.push({ pathname: "/my-stars/private-star/photos/created-album",
         params:{ id, albumId:res.data._id, albumName:res.data.name } });
     } catch (err:any) {
       Alert.alert("Error", err.response?.data?.message ?? "Could not create album.");
