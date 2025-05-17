@@ -8,25 +8,32 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
         "NSMicrophoneUsageDescription": "This app needs access to your microphone for recording and playback."
       }
     },
+
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.anonymous.AstoryaFV3",
-            "permissions": ["RECORD_AUDIO", "READ_EXTERNAL_STORAGE"]
+      "permissions": [
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE"
+      ]
     },
+
     "web": {
       "bundler": "metro",
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+
     "plugins": [
       "expo-router",
       [
@@ -40,8 +47,26 @@
       ],
       "expo-asset"
     ],
+
     "experiments": {
       "typedRoutes": true
+    },
+
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "62a7188b-a540-4459-b2f7-d054e6bc489d"
+      }
+    },
+
+    /* ▶️ Belangrijk: runtimeVersion = sdkVersion  */
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+
+    "updates": {
+      "url": "https://u.expo.dev/62a7188b-a540-4459-b2f7-d054e6bc489d",
+      "fallbackToCacheTimeout": 0               /* direct nieuwe bundle laden */
     }
   }
 }
