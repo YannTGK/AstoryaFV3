@@ -40,19 +40,22 @@ const useAuthStore = create<AuthState>((set) => ({
     set({ user: null, token: null, isAuthenticated: false });
   },
 
+  // useAuthStore.ts
   loadToken: async () => {
     const token = await AsyncStorage.getItem("authToken");
-    if (!token) return;
 
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    if (!token) return;
+    api.defaults.headers.common.Authorization = `Bearer ${token}`;
+
     try {
       const res = await api.get("/auth/me");
       set({ token, user: res.data.user, isAuthenticated: true });
-    } catch (e) {
+    } catch (e: any) {
+      console.log("❌ /auth/me fout:", e?.response?.status, e?.message); // <—
       await AsyncStorage.removeItem("authToken");
       set({ user: null, token: null, isAuthenticated: false });
     }
-  },
+  }
 }));
 
 export default useAuthStore;

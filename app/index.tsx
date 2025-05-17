@@ -1,20 +1,19 @@
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { View, ActivityIndicator } from "react-native";
+import useAuthStore from "@/lib/store/useAuthStore";
 
 export default function Index() {
   const router = useRouter();
-  const [isMounted, setIsMounted] = useState(false);
+  const { isAuthenticated } = useAuthStore();
 
   useEffect(() => {
-    setIsMounted(true); // Ensure first render happens before navigation
-  }, []);
-
-  useEffect(() => {
-    if (isMounted) {
-      router.replace("/(auth)/entry"); // Navigate only after first render
+    if (isAuthenticated) {
+      router.replace("/explores/public");
+    } else {
+      router.replace("/(auth)/entry");
     }
-  }, [isMounted]);
+  }, [isAuthenticated]);
 
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
