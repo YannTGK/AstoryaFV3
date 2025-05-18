@@ -186,9 +186,20 @@ export default function AlbumPage() {
               <Text style={styles.menuText}>Add people</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.menuItem}
-              onPress={()=>router.push("/(app)/my-stars/private-star/photos/three-dots/see-members/SeeMembersPhoto")}>
-              <Feather name="users" size={16} color="#11152A" style={{marginRight:10}}/>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() =>
+                router.push({
+                  pathname:
+                    "/(app)/my-stars/private-star/photos/three-dots/see-members/SeeMembersPhoto",
+                  params: {
+                    id,            // ster-id (handig als je later nog iets nodig hebt)
+                    albumId,       // ← nodig om de members op te halen
+                    albumName,     // puur voor de titel; mag je weglaten
+                  },
+                })
+              }>
+              <Feather name="users" size={16} color="#11152A" style={{ marginRight: 10 }} />
               <Text style={styles.menuText}>See members</Text>
             </TouchableOpacity>
 
