@@ -1,3 +1,4 @@
+// app/(app)/my-stars/private-star/photos/three-dots/move-album/move-album.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -31,19 +32,35 @@ export default function MoveAlbumScreen() {
   const { id, albumId: currentAlbum, selected } =
     useLocalSearchParams<{ id: string; albumId: string; selected: string }>();
 
-  /* ── state ────────────────────────────────────────── */
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
   const [picked, setPicked] = useState<string[]>([]);
   const [ask, setAsk] = useState(false);
   const [toast, setToast] = useState(false);
 
-  /* ── fetch albums (excl. huidige) ─────────────────── */
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await api.get(`/stars/${id}/photo-albums`);
-        setAlbums((data as Album[]).filter((a) => a._id !== currentAlbum));
+        const base = (await api.get(`/stars/${id}/photo-albums`)).data as Album[];
+        const filtered = base.filter((a) => a._id !== currentAlbum);
+
+        const full = await Promise.all(
+          filtered.map(async (album) => {
+            try {
+              const photos = (await api.get(`/stars/${id}/photo-albums/${album._id}/photos`)).data;
+              return {
+                _id: album._id,
+                name: album.name,
+                coverUrl: photos[0]?.url ?? null,
+                photoCount: photos.length,
+              };
+            } catch {
+              return { _id: album._id, name: album.name, coverUrl: null, photoCount: 0 };
+            }
+          })
+        );
+
+        setAlbums(full);
       } catch (err) {
         console.error("albums fetch:", err);
         Alert.alert("Error", "Could not load albums.");
@@ -53,7 +70,6 @@ export default function MoveAlbumScreen() {
     })();
   }, [id, currentAlbum]);
 
-  /* ── toggle helpers ───────────────────────────────── */
   const toggle = (aid: string) =>
     setPicked((prev) =>
       prev.includes(aid) ? prev.filter((x) => x !== aid) : [...prev, aid]
@@ -62,7 +78,6 @@ export default function MoveAlbumScreen() {
   const toggleAll = () =>
     setPicked(picked.length === albums.length ? [] : albums.map((a) => a._id));
 
-  /* ── move call ────────────────────────────────────── */
   const doMove = async () => {
     setAsk(false);
     try {
@@ -72,11 +87,10 @@ export default function MoveAlbumScreen() {
           api.post(`/stars/${id}/photo-albums/${dest}/photos/move`, { photoIds })
         )
       );
-      /* korte “gelukt”-overlay */
       setToast(true);
       setTimeout(() => {
         setToast(false);
-        router.back(); // terug naar created-album
+        router.back();
       }, 1400);
     } catch (err) {
       console.error("move error:", err);
@@ -84,7 +98,6 @@ export default function MoveAlbumScreen() {
     }
   };
 
-  /* ── loader ───────────────────────────────────────── */
   if (loading) {
     return (
       <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill}>
@@ -93,12 +106,10 @@ export default function MoveAlbumScreen() {
     );
   }
 
-  /* ── UI ───────────────────────────────────────────── */
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
 
-      {/* ← back */}
       <TouchableOpacity style={st.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24}>
           <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
@@ -107,7 +118,6 @@ export default function MoveAlbumScreen() {
 
       <Text style={st.title}>Photo albums</Text>
 
-      {/* select-all */}
       <View style={st.allSelectWrapper}>
         <TouchableOpacity style={st.selectAllBtn} onPress={toggleAll}>
           <View
@@ -120,7 +130,6 @@ export default function MoveAlbumScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* grid */}
       <FlatList
         data={albums}
         keyExtractor={(a) => a._id}
@@ -143,7 +152,6 @@ export default function MoveAlbumScreen() {
         }}
       />
 
-      {/* footer bar */}
       {picked.length > 0 && (
         <TouchableOpacity style={st.footerBar} onPress={() => setAsk(true)}>
           <Feather name="folder-minus" size={20} color="#fff" style={{ marginRight: 10 }} />
@@ -153,7 +161,6 @@ export default function MoveAlbumScreen() {
         </TouchableOpacity>
       )}
 
-      {/* confirm modal */}
       {ask && (
         <View style={st.modalOverlay}>
           <View style={st.modalBox}>
@@ -172,7 +179,6 @@ export default function MoveAlbumScreen() {
         </View>
       )}
 
-      {/* success toast */}
       {toast && (
         <View style={st.toastOverlay}>
           <View style={st.toastBox}>
@@ -184,7 +190,6 @@ export default function MoveAlbumScreen() {
   );
 }
 
-/* ── styles (identiek aan copy-screen waar mogelijk) ─────────── */
 const st = StyleSheet.create({
   backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
   title: {
@@ -228,7 +233,6 @@ const st = StyleSheet.create({
     justifyContent: "center",
   },
   footerText: { color: "#fff", fontFamily: "Alice-Regular", fontSize: 16 },
-  /* select-all */
   allSelectWrapper: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -247,7 +251,6 @@ const st = StyleSheet.create({
   },
   selectAllCircleActive: { backgroundColor: "#FEEDB6" },
   selectAllText: { fontFamily: "Alice-Regular", color: "#fff", fontSize: 14, marginLeft: 10 },
-  /* modal */
   modalOverlay: {
     position: "absolute",
     top: 0,
@@ -270,13 +273,9 @@ const st = StyleSheet.create({
   modalActions: { flexDirection: "row", borderTopWidth: 1, borderColor: "#ccc", width: "100%" },
   modalBtn: { flex: 1, alignItems: "center", paddingVertical: 12 },
   modalBtnText: { fontFamily: "Alice-Regular", fontSize: 16 },
-  /* toast */
   toastOverlay: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 0, left: 0, right: 0, bottom: 0,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.2)",

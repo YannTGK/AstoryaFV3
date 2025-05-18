@@ -30,26 +30,37 @@ type Album = {
 export default function SelectAlbumScreen() {
   const router = useRouter();
   const { id, albumId: currentAlbum, selected } =
-    useLocalSearchParams<{
-      id: string;
-      albumId: string;
-      selected: string;
-    }>();
+    useLocalSearchParams<{ id: string; albumId: string; selected: string }>();
 
-  /* ── state ─────────────────────────────────────────────── */
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
   const [picked, setPicked] = useState<string[]>([]);
   const [confirm, setConfirm] = useState(false);
-  const [done, setDone] = useState(false); // toast
+  const [done, setDone] = useState(false);
 
-  /* ── fetch albums (excl. huidige) ─────────────────────── */
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await api.get(`/stars/${id}/photo-albums`);
-        const list = (data as Album[]).filter((a) => a._id !== currentAlbum);
-        setAlbums(list);
+        const base = (await api.get(`/stars/${id}/photo-albums`)).data as Album[];
+        const filtered = base.filter((a) => a._id !== currentAlbum);
+
+        const full = await Promise.all(
+          filtered.map(async (album) => {
+            try {
+              const photos = (await api.get(`/stars/${id}/photo-albums/${album._id}/photos`)).data;
+              return {
+                _id: album._id,
+                name: album.name,
+                coverUrl: photos[0]?.url ?? null,
+                photoCount: photos.length,
+              };
+            } catch {
+              return { _id: album._id, name: album.name, coverUrl: null, photoCount: 0 };
+            }
+          })
+        );
+
+        setAlbums(full);
       } catch (err) {
         console.error("albums fetch:", err);
         Alert.alert("Error", "Could not load albums.");
@@ -59,13 +70,11 @@ export default function SelectAlbumScreen() {
     })();
   }, [id, currentAlbum]);
 
-  /* ── helpers ───────────────────────────────────────────── */
   const toggle = (albumId: string) =>
     setPicked((prev) =>
       prev.includes(albumId) ? prev.filter((a) => a !== albumId) : [...prev, albumId]
     );
 
-  /* ── copy call ─────────────────────────────────────────── */
   const doCopy = async () => {
     try {
       const photoIds: string[] = JSON.parse(selected as string);
@@ -89,7 +98,6 @@ export default function SelectAlbumScreen() {
     }
   };
 
-  /* ── loading state ─────────────────────────────────────── */
   if (loading) {
     return (
       <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill}>
@@ -102,12 +110,10 @@ export default function SelectAlbumScreen() {
     );
   }
 
-  /* ── UI ───────────────────────────────────────────────── */
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
 
-      {/* ← back */}
       <TouchableOpacity style={st.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24}>
           <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
@@ -116,7 +122,6 @@ export default function SelectAlbumScreen() {
 
       <Text style={st.title}>Photo albums</Text>
 
-      {/* select-all */}
       <View style={st.allSelectWrapper}>
         <TouchableOpacity
           style={st.selectAllBtn}
@@ -147,13 +152,9 @@ export default function SelectAlbumScreen() {
               {item.coverUrl ? (
                 <Image source={{ uri: item.coverUrl }} style={st.albumImage} />
               ) : (
-                <View
-                  style={[st.albumImage, { backgroundColor: "#999", opacity: 0.2 }]}
-                />
+                <View style={[st.albumImage, { backgroundColor: "#999", opacity: 0.2 }]} />
               )}
-              <View
-                style={[st.radioCircle, chosen && st.radioCircleActive]}
-              />
+              <View style={[st.radioCircle, chosen && st.radioCircleActive]} />
               <Text style={st.albumTitle}>{item.name}</Text>
               <Text style={st.albumCount}>{item.photoCount}</Text>
             </TouchableOpacity>
@@ -161,7 +162,6 @@ export default function SelectAlbumScreen() {
         }}
       />
 
-      {/* footer */}
       {picked.length > 0 && (
         <TouchableOpacity style={st.footerBar} onPress={() => setConfirm(true)}>
           <Feather name="copy" size={20} color="#fff" style={{ marginRight: 10 }} />
@@ -171,7 +171,6 @@ export default function SelectAlbumScreen() {
         </TouchableOpacity>
       )}
 
-      {/* confirm modal */}
       {confirm && (
         <View style={st.modalOverlay}>
           <View style={st.modalBox}>
@@ -190,7 +189,6 @@ export default function SelectAlbumScreen() {
         </View>
       )}
 
-      {/* toast */}
       {done && (
         <View style={st.toastWrap}>
           <View style={st.toastBox}>
@@ -202,7 +200,6 @@ export default function SelectAlbumScreen() {
   );
 }
 
-/* styles identiek aan je vorige versies + toast styles */
 const st = StyleSheet.create({
   backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
   title: {
@@ -256,8 +253,6 @@ const st = StyleSheet.create({
     justifyContent: "center",
   },
   footerText: { color: "#fff", fontFamily: "Alice-Regular", fontSize: 16 },
-
-  /* select-all */
   allSelectWrapper: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -276,8 +271,6 @@ const st = StyleSheet.create({
   },
   selectAllCircleActive: { backgroundColor: "#FEEDB6" },
   selectAllText: { fontFamily: "Alice-Regular", color: "#fff", fontSize: 14, marginLeft: 10 },
-
-  /* modal */
   modalOverlay: {
     position: "absolute",
     top: 0,
@@ -310,14 +303,9 @@ const st = StyleSheet.create({
   },
   modalBtn: { flex: 1, alignItems: "center", paddingVertical: 14 },
   modalBtnText: { fontFamily: "Alice-Regular", fontSize: 16 },
-
-  /* toast */
   toastWrap: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 0, left: 0, right: 0, bottom: 0,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.25)",
