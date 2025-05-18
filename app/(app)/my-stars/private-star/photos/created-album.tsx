@@ -170,8 +170,18 @@ export default function AlbumPage() {
 
         {menuOpen && (
           <View style={styles.menuBox}>
-            <TouchableOpacity style={styles.menuItem}
-              onPress={()=>router.push("/(app)/my-stars/private-star/photos/three-dots/add-people/AddPeoplePage")}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={() =>
+                router.push({
+                  pathname:
+                    "/(app)/my-stars/private-star/photos/three-dots/add-people/AddPeoplePage",
+                  params: {
+                    id,          // ←  star-id  (blijft handig voor back-navigatie)
+                    albumId,     // ←  belangrijk voor AddPeoplePage
+                  },
+                })
+              }>
               <Feather name="user-plus" size={16} color="#11152A" style={{marginRight:10}}/>
               <Text style={styles.menuText}>Add people</Text>
             </TouchableOpacity>
