@@ -1,5 +1,5 @@
-// kopiëren van de foto's naar een album
-import React, { useState } from "react";
+// app/(app)/my-stars/private-star/photos/three-dots/copy-album/selected-album.tsx
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,156 +8,193 @@ import {
   FlatList,
   Image,
   Dimensions,
+  ActivityIndicator,
   Alert,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Path } from "react-native-svg";
 import { Feather } from "@expo/vector-icons";
+import api from "@/services/api";
 
 const { width } = Dimensions.get("window");
 const CARD_SIZE = (width - 64) / 3;
 
+type Album = {
+  _id: string;
+  name: string;
+  coverUrl?: string;
+  photoCount: number;
+};
+
 export default function SelectAlbumScreen() {
   const router = useRouter();
-  const { selected } = useLocalSearchParams();
-  const [selectedAlbums, setSelectedAlbums] = useState<string[]>([]);
-  const [confirmVisible, setConfirmVisible] = useState(false);
-  const [albums, setAlbums] = useState([
-    // dit is een voorbeeld, moet aangepast worden naar de echte albums via de backend
-    { name: "Our memories", count: 7, image: require("@/assets/images/private-star-images/img-1.png") },
-    { name: "Summer ‘24", count: 24, image: require("@/assets/images/private-star-images/img-2.png") },
-    { name: "Thailand 2016", count: 36, image: require("@/assets/images/private-star-images/img-3.png") },
-    { name: "3 of us", count: 28, image: require("@/assets/images/private-star-images/img-4.png") },
-    { name: "Empty", count: 0, image: null },
-  ]);
+  const { id, albumId: currentAlbum, selected } =
+    useLocalSearchParams<{
+      id: string;
+      albumId: string;
+      selected: string;
+    }>();
 
+  /* ── state ─────────────────────────────────────────────── */
+  const [albums, setAlbums] = useState<Album[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [confirm, setConfirm] = useState(false);
+  const [done, setDone] = useState(false); // toast
+
+  /* ── fetch albums (excl. huidige) ─────────────────────── */
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await api.get(`/stars/${id}/photo-albums`);
+        const list = (data as Album[]).filter((a) => a._id !== currentAlbum);
+        setAlbums(list);
+      } catch (err) {
+        console.error("albums fetch:", err);
+        Alert.alert("Error", "Could not load albums.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id, currentAlbum]);
+
+  /* ── helpers ───────────────────────────────────────────── */
+  const toggle = (albumId: string) =>
+    setPicked((prev) =>
+      prev.includes(albumId) ? prev.filter((a) => a !== albumId) : [...prev, albumId]
+    );
+
+  /* ── copy call ─────────────────────────────────────────── */
+  const doCopy = async () => {
+    try {
+      const photoIds: string[] = JSON.parse(selected as string);
+      if (!photoIds.length) return;
+
+      await Promise.all(
+        picked.map((dest) =>
+          api.post(`/stars/${id}/photo-albums/${dest}/photos/copy`, { photoIds })
+        )
+      );
+
+      setConfirm(false);
+      setDone(true);
+      setTimeout(() => {
+        setDone(false);
+        router.back();
+      }, 1200);
+    } catch (err) {
+      console.error("copy error:", err);
+      Alert.alert("Error", "Copy failed, please try again.");
+    }
+  };
+
+  /* ── loading state ─────────────────────────────────────── */
+  if (loading) {
+    return (
+      <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill}>
+        <ActivityIndicator
+          size="large"
+          color="#FEEDB6"
+          style={{ flex: 1, justifyContent: "center" }}
+        />
+      </LinearGradient>
+    );
+  }
+
+  /* ── UI ───────────────────────────────────────────────── */
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
 
-      {/* Terugknop */}
-      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+      {/* ← back */}
+      <TouchableOpacity style={st.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24}>
           <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
         </Svg>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Photo albums</Text>
+      <Text style={st.title}>Photo albums</Text>
 
-      <View style={styles.allSelectWrapper}>
+      {/* select-all */}
+      <View style={st.allSelectWrapper}>
         <TouchableOpacity
-          style={styles.selectAllBtn}
+          style={st.selectAllBtn}
           onPress={() => {
-            const allAlbumNames = albums.map((a) => a.name);
-            const allSelected = allAlbumNames.every((name) => selectedAlbums.includes(name));
-            setSelectedAlbums(allSelected ? [] : allAlbumNames);
+            const all = albums.map((a) => a._id);
+            setPicked(picked.length === all.length ? [] : all);
           }}
         >
           <View
             style={[
-              styles.selectAllCircle,
-              albums.every((a) => selectedAlbums.includes(a.name)) && styles.selectAllCircleActive,
+              st.selectAllCircle,
+              picked.length === albums.length && st.selectAllCircleActive,
             ]}
           />
-          <Text style={styles.selectAllText}>All</Text>
+          <Text style={st.selectAllText}>All</Text>
         </TouchableOpacity>
       </View>
 
       <FlatList
         data={albums}
-        keyExtractor={(item) => item.name}
+        keyExtractor={(a) => a._id}
         numColumns={3}
-        contentContainerStyle={styles.grid}
+        contentContainerStyle={st.grid}
         renderItem={({ item }) => {
-          const isSelected = selectedAlbums.includes(item.name);
+          const chosen = picked.includes(item._id);
           return (
-            <TouchableOpacity
-              style={styles.albumCard}
-              onPress={() => {
-                setSelectedAlbums((prev) =>
-                  prev.includes(item.name)
-                    ? prev.filter((name) => name !== item.name)
-                    : [...prev, item.name]
-                );
-              }}
-            >
-              {item.image ? (
-                <Image source={item.image} style={styles.albumImage} />
+            <TouchableOpacity style={st.albumCard} onPress={() => toggle(item._id)}>
+              {item.coverUrl ? (
+                <Image source={{ uri: item.coverUrl }} style={st.albumImage} />
               ) : (
-                <View style={[styles.albumImage, { backgroundColor: "#999", opacity: 0.2 }]} />
+                <View
+                  style={[st.albumImage, { backgroundColor: "#999", opacity: 0.2 }]}
+                />
               )}
               <View
-                style={[
-                  styles.radioCircle,
-                  isSelected && styles.radioCircleActive,
-                ]}
+                style={[st.radioCircle, chosen && st.radioCircleActive]}
               />
-              <Text style={styles.albumTitle}>{item.name}</Text>
-              <Text style={styles.albumCount}>{item.count}</Text>
+              <Text style={st.albumTitle}>{item.name}</Text>
+              <Text style={st.albumCount}>{item.photoCount}</Text>
             </TouchableOpacity>
           );
         }}
       />
 
-      {/* Footerbalk alleen als er selectie is */}
-      {selectedAlbums.length > 0 && (
-        <TouchableOpacity
-          style={styles.footerBar}
-          onPress={() => setConfirmVisible(true)}
-        >
+      {/* footer */}
+      {picked.length > 0 && (
+        <TouchableOpacity style={st.footerBar} onPress={() => setConfirm(true)}>
           <Feather name="copy" size={20} color="#fff" style={{ marginRight: 10 }} />
-          <Text style={styles.footerText}>
-            Copy to {selectedAlbums.length} album{selectedAlbums.length !== 1 ? "s" : ""}
+          <Text style={st.footerText}>
+            Copy to {picked.length} album{picked.length !== 1 ? "s" : ""}
           </Text>
         </TouchableOpacity>
       )}
 
-      {/* Bevestigingspopup */}
-      {confirmVisible && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalText}>
-              Copy to {selectedAlbums.length} album{selectedAlbums.length !== 1 ? "s" : "}"}?
+      {/* confirm modal */}
+      {confirm && (
+        <View style={st.modalOverlay}>
+          <View style={st.modalBox}>
+            <Text style={st.modalText}>
+              Copy to {picked.length} album{picked.length !== 1 ? "s" : ""}?
             </Text>
-            <View style={styles.modalActions}>
-              <TouchableOpacity onPress={() => setConfirmVisible(false)} style={styles.modalBtn}>
-                <Text style={[styles.modalBtnText, { color: "#007AFF" }]}>No</Text>
+            <View style={st.modalActions}>
+              <TouchableOpacity onPress={() => setConfirm(false)} style={st.modalBtn}>
+                <Text style={[st.modalBtnText, { color: "#007AFF" }]}>No</Text>
               </TouchableOpacity>
-              <View style={styles.modalDivider} />
-              <TouchableOpacity
-                onPress={() => {
-                  if (selectedAlbums.length === 0) {
-                    Alert.alert("No albums selected", "Please select at least one album to continue.");
-                    setConfirmVisible(false);
-                    return;
-                  }
-
-                  const photosToCopy = JSON.parse(selected as string);
-
-                  const updatedAlbums = albums.map((album) =>
-                    selectedAlbums.includes(album.name)
-                      ? { ...album, count: album.count + photosToCopy.length }
-                      : album
-                  );
-
-                  setAlbums(updatedAlbums);
-                  setSelectedAlbums([]);
-                  setConfirmVisible(false);
-
-                  router.push({
-                    pathname: "/my-stars/private-star/photos/three-dots/copy-album/edit-albums",
-                    params: {
-                      selected: selected,
-                      targetAlbums: JSON.stringify(selectedAlbums),
-                    },
-                  });
-                }}
-                style={styles.modalBtn}
-              >
-                <Text style={[styles.modalBtnText, { color: "#007AFF" }]}>Yes</Text>
+              <TouchableOpacity onPress={doCopy} style={st.modalBtn}>
+                <Text style={[st.modalBtnText, { color: "#007AFF" }]}>Yes</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      )}
+
+      {/* toast */}
+      {done && (
+        <View style={st.toastWrap}>
+          <View style={st.toastBox}>
+            <Text style={st.toastTxt}>Copied ✔︎</Text>
           </View>
         </View>
       )}
@@ -165,7 +202,8 @@ export default function SelectAlbumScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+/* styles identiek aan je vorige versies + toast styles */
+const st = StyleSheet.create({
   backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
   title: {
     textAlign: "center",
@@ -174,11 +212,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontFamily: "Alice-Regular",
   },
-  grid: {
-    paddingTop: 32,
-    paddingHorizontal: 16,
-    paddingBottom: 120,
-  },
+  grid: { paddingTop: 32, paddingHorizontal: 16, paddingBottom: 120 },
   albumCard: {
     width: CARD_SIZE,
     marginBottom: 20,
@@ -192,11 +226,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 6,
   },
-  albumTitle: {
-    fontSize: 14,
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-  },
+  albumTitle: { fontSize: 14, color: "#fff", fontFamily: "Alice-Regular" },
   albumCount: {
     fontSize: 12,
     color: "#fff",
@@ -214,25 +244,40 @@ const styles = StyleSheet.create({
     borderColor: "#fff",
     backgroundColor: "transparent",
   },
-  radioCircleActive: {
-    backgroundColor: "#FEEDB6",
-  },
+  radioCircleActive: { backgroundColor: "#FEEDB6" },
   footerBar: {
     position: "absolute",
     bottom: 80,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
     left: 0,
     right: 0,
     padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  footerText: { color: "#fff", fontFamily: "Alice-Regular", fontSize: 16 },
+
+  /* select-all */
+  allSelectWrapper: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    marginTop: 16,
+    marginHorizontal: 20,
+  },
+  selectAllBtn: { flexDirection: "row", alignItems: "center" },
+  selectAllCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: "#fff",
     backgroundColor: "transparent",
   },
-  footerText: {
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
-  },
+  selectAllCircleActive: { backgroundColor: "#FEEDB6" },
+  selectAllText: { fontFamily: "Alice-Regular", color: "#fff", fontSize: 14, marginLeft: 10 },
+
+  /* modal */
   modalOverlay: {
     position: "absolute",
     top: 0,
@@ -241,8 +286,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    zIndex: 100,
+    backgroundColor: "rgba(0,0,0,0.4)",
   },
   modalBox: {
     backgroundColor: "#fff",
@@ -261,48 +305,32 @@ const styles = StyleSheet.create({
   modalActions: {
     flexDirection: "row",
     borderTopWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#eee",
     width: "100%",
   },
-  modalBtn: {
-    flex: 1,
+  modalBtn: { flex: 1, alignItems: "center", paddingVertical: 14 },
+  modalBtnText: { fontFamily: "Alice-Regular", fontSize: 16 },
+
+  /* toast */
+  toastWrap: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 12,
+    backgroundColor: "rgba(0,0,0,0.25)",
   },
-  modalBtnText: {
+  toastBox: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 30,
+  },
+  toastTxt: {
     fontFamily: "Alice-Regular",
     fontSize: 16,
-  },
-  modalDivider: {
-    width: 1,
-    backgroundColor: "#ccc",
-  },
-  allSelectWrapper: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    marginTop: 16,
-    marginHorizontal: 20,
-  },
-  selectAllBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  selectAllCircle: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: "#fff",
-    backgroundColor: "transparent",
-  },
-  selectAllCircleActive: {
-    backgroundColor: "#FEEDB6",
-  },
-  selectAllText: {
-    fontFamily: "Alice-Regular",
-    color: "#fff",
-    fontSize: 14,
-    marginLeft: 10,
+    color: "#11152A",
   },
 });
