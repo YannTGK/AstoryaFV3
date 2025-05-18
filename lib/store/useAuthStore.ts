@@ -11,6 +11,7 @@ type User = {
   phoneNumber: string;
   dob: string;
   plan: "EXPLORER" | "PREMIUM" | "LEGACY";
+  activationCode?: string; // ✅ voeg deze regel toe
 };
 
 type AuthState = {
