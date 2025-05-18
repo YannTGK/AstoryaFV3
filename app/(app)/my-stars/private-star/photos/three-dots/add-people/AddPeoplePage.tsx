@@ -1,125 +1,195 @@
-//  add members (three dots) --> eerste pagina
-import React, { useState } from "react";
+// app/(app)/my-stars/private-star/photos/three-dots/add-people/AddPeoplePage.tsx
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import Svg, { Path } from "react-native-svg";
+import api from "@/services/api";
 
-const mockUsers = ["Annie", "Mary", "Louis", "Noah", "James"];
+type Contact = { _id: string; username: string };
 
 export default function AddPeoplePage() {
+  /* ── routing & params ──────────────────────────────── */
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { id, albumId, albumName } = useLocalSearchParams<{ id:string; albumId:string; albumName:string }>();
+
+  /* ── state ─────────────────────────────────────────── */
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
-  const [showPopup, setShowPopup] = useState(false);
+  const [loading, setLoading]   = useState(true);
+  const [popup,   setPopup]     = useState(false);
 
+  /* ── fetch mijn contacten ──────────────────────────── */
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.get("/users/me/contacts");
+        setContacts(res.data.contacts);
+      } catch (err) {
+        console.error("contacts fetch:", err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
-  const toggleSelect = (name: string) => {
-    setSelected((prev) =>
-      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
-    );
+  /* ── toggle selectie ───────────────────────────────── */
+  const toggleSelect = (id: string) => {
+    setSelected(prev => (prev[0] === id ? [] : [id]));
   };
 
+  /* ── Add ⇒ album.canView patch ─────────────────────── */
+  const addMembers = async () => {
+    try {
+      /* 1️⃣ eerst huidige album ophalen om overlap te vermijden */
+      const detail = await api.get(`/photo-albums/detail/${albumId}`);
+      const current: string[] = detail.data.canView ?? [];
+
+      /* 2️⃣ array-union */
+      const updated = Array.from(new Set([...current, ...selected]));
+
+      /* 3️⃣ opslaan */
+      await api.put(`/photo-albums/detail/${albumId}`, { canView: updated });
+
+      /* 4️⃣ feedback + terug */
+      setPopup(true);
+      setTimeout(() => {
+        setPopup(false);
+        router.push({
+           pathname: "/(app)/my-stars/private-star/photos/created-album",
+           params:   { id, albumId, albumName },   // ← alles meegeven
+         });
+      }, 2500);
+    } catch (err) {
+      console.error("add-to-album:", err);
+    }
+  };
+
+  /* ── loader ────────────────────────────────────────── */
+  if (loading) {
+    return (
+      <SafeAreaView edges={["top", "left", "right"]} style={styles.center}>
+        <ActivityIndicator size="large" color="#FEEDB6" />
+      </SafeAreaView>
+    );
+  }
+
+  /* ── UI ────────────────────────────────────────────── */
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView edges={["top", "left", "right"]} style={{ flex: 1 }}>
       <LinearGradient
         colors={["#000", "#273166", "#000"]}
         style={StyleSheet.absoluteFill}
       />
 
-      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+      {/* ← back */}
+      <TouchableOpacity
+        style={[styles.backBtn, { top: insets.top + 10 }]}
+        onPress={() => router.back()}
+      >
         <Svg width={24} height={24}>
           <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
         </Svg>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Add people to album</Text>
-
+      {/* ＋ plus */}
       <TouchableOpacity
-  style={styles.addNewBtn}
-  onPress={() => router.push("/(app)/my-stars/private-star/photos/three-dots/add-people/AddMorePeople")}
->
-  <Text style={styles.plus}>＋</Text>
-</TouchableOpacity>
+        style={[styles.addNewBtn, { top: insets.top + 0 }]}
+        onPress={() =>
+          router.push({
+            pathname:
+              "/(app)/my-stars/private-star/photos/three-dots/add-people/AddMorePeople",
+            params: { albumId }, // geef albumId door
+          })
+        }
+      >
+        <Text style={styles.plus}>＋</Text>
+      </TouchableOpacity>
+
+      <Text style={[styles.title, { marginTop: insets.top + 0 }]}>
+        Add people to album
+      </Text>
 
       <Text style={styles.subtitle}>
-        Select contacts to add to the album. Tap the plus icon to add someone new.
+        Select contacts to add to the album. Tap the plus icon to add someone
+        new.
       </Text>
 
       <FlatList
-        data={mockUsers}
-        keyExtractor={(item) => item}
+        data={contacts}
+        keyExtractor={(item) => item._id}
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16 }}
         renderItem={({ item }) => {
-          const isSelected = selected.includes(item);
+          const chosen = selected.includes(item._id);
           return (
             <TouchableOpacity
-              onPress={() => toggleSelect(item)}
-              style={[styles.userItem, isSelected && styles.userItemSelected]}
+              onPress={() => toggleSelect(item._id)}
+              style={[styles.userItem, chosen && styles.userItemSelected]}
             >
-              <Text style={styles.userText}>@{item}</Text>
+              <Text style={styles.userText}>@{item.username}</Text>
               <View style={styles.radioOuter}>
-                {isSelected && <View style={styles.radioInner} />}
+                {chosen && <View style={styles.radioInner} />}
               </View>
             </TouchableOpacity>
           );
         }}
       />
 
-<TouchableOpacity
-  style={[styles.submitBtn, selected.length === 0 && { opacity: 0.4 }]}
-  disabled={selected.length === 0}
-  onPress={() => {
-    setShowPopup(true);
-    setTimeout(() => {
-      setShowPopup(false);
-      router.back(); // of gebruik router.push() als je een specifieke pagina wil
-    }, 6000); // 12 seconden
-  }}
->
-  <Text style={styles.submitText}>Add to photo’s</Text>
-</TouchableOpacity>
-{showPopup && (
-  <View style={styles.popup}>
-    <Text style={styles.popupText}>
-      New people are added to the album. Click on the three dots to see the new members.
-    </Text>
-  </View>
-)}
+      <TouchableOpacity
+        style={[styles.submitBtn, selected.length === 0 && { opacity: 0.4 }]}
+        disabled={selected.length === 0}
+        onPress={addMembers}
+      >
+        <Text style={styles.submitText}>Add to album</Text>
+      </TouchableOpacity>
 
-    </View>
+      {popup && (
+        <View style={styles.popup}>
+          <Text style={styles.popupText}>
+            New people were added. Open the ⋯ menu to view members.
+          </Text>
+        </View>
+      )}
+    </SafeAreaView>
   );
 }
 
+/* ── STYLES (onveranderd) ─────────────────────────────── */
 const styles = StyleSheet.create({
-  backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
+  backBtn: { position: "absolute", left: 20, zIndex: 10 },
   title: {
     fontFamily: "Alice-Regular",
     fontSize: 20,
     color: "#fff",
     textAlign: "center",
-    marginTop: 50,
   },
   subtitle: {
     color: "#fff",
     fontFamily: "Alice-Regular",
     fontSize: 18,
-    marginTop: 88,
+    marginTop: 24,
     textAlign: "left",
     paddingHorizontal: 16,
   },
   addNewBtn: {
     position: "absolute",
     right: 16,
-    top: 100,
     zIndex: 10,
   },
   plus: { fontSize: 32, color: "#fff" },
+
   userItem: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderRadius: 8,
@@ -190,5 +260,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 24,
   },
-  
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#000",
+  },
 });
