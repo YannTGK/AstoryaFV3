@@ -1,4 +1,4 @@
-// app/(app)/my-stars/private-star/photos/three-dots/copy-album/selected-album.tsx
+// app/(app)/my-stars/private-star/videos/three-dots/copy-album/selected-album.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -24,10 +24,10 @@ type Album = {
   _id: string;
   name: string;
   coverUrl?: string;
-  photoCount: number;
+  videoCount: number;
 };
 
-export default function SelectAlbumScreen() {
+export default function SelectAlbumScreenVideo() {
   const router = useRouter();
   const { id, albumId: currentAlbum, selected } =
     useLocalSearchParams<{ id: string; albumId: string; selected: string }>();
@@ -41,21 +41,23 @@ export default function SelectAlbumScreen() {
   useEffect(() => {
     (async () => {
       try {
-        const base = (await api.get(`/stars/${id}/photo-albums`)).data as Album[];
+        const base = (await api.get(`/stars/${id}/video-albums`)).data as Album[];
         const filtered = base.filter((a) => a._id !== currentAlbum);
 
         const full = await Promise.all(
           filtered.map(async (album) => {
             try {
-              const photos = (await api.get(`/stars/${id}/photo-albums/${album._id}/photos`)).data;
+              const videos = (
+                await api.get(`/stars/${id}/video-albums/${album._id}/videos`)
+              ).data;
               return {
                 _id: album._id,
                 name: album.name,
-                coverUrl: photos[0]?.url ?? null,
-                photoCount: photos.length,
+                coverUrl: videos[0]?.url ?? null,
+                videoCount: videos.length,
               };
             } catch {
-              return { _id: album._id, name: album.name, coverUrl: null, photoCount: 0 };
+              return { _id: album._id, name: album.name, coverUrl: null, videoCount: 0 };
             }
           })
         );
@@ -63,7 +65,7 @@ export default function SelectAlbumScreen() {
         setAlbums(full);
       } catch (err) {
         console.error("albums fetch:", err);
-        Alert.alert("Error", "Could not load albums.");
+        Alert.alert("Error", "Could not load video albums.");
       } finally {
         setLoading(false);
       }
@@ -77,12 +79,15 @@ export default function SelectAlbumScreen() {
 
   const doCopy = async () => {
     try {
-      const photoIds: string[] = JSON.parse(selected as string);
-      if (!photoIds.length) return;
+      const videoIds: string[] = JSON.parse(selected as string);
+      if (!videoIds.length) return;
 
       await Promise.all(
         picked.map((dest) =>
-          api.post(`/stars/${id}/photo-albums/${dest}/photos/copy`, { photoIds })
+          api.post(`/stars/${id}/video-albums/${dest}/videos/copy`, {
+            videoIds,
+            targetAlbumId: dest,
+          })
         )
       );
 
@@ -120,7 +125,7 @@ export default function SelectAlbumScreen() {
         </Svg>
       </TouchableOpacity>
 
-      <Text style={st.title}>Photo albums</Text>
+      <Text style={st.title}>Video albums</Text>
 
       <View style={st.allSelectWrapper}>
         <TouchableOpacity
@@ -156,7 +161,7 @@ export default function SelectAlbumScreen() {
               )}
               <View style={[st.radioCircle, chosen && st.radioCircleActive]} />
               <Text style={st.albumTitle}>{item.name}</Text>
-              <Text style={st.albumCount}>{item.photoCount}</Text>
+              <Text style={st.albumCount}>{item.videoCount}</Text>
             </TouchableOpacity>
           );
         }}
@@ -273,10 +278,7 @@ const st = StyleSheet.create({
   selectAllText: { fontFamily: "Alice-Regular", color: "#fff", fontSize: 14, marginLeft: 10 },
   modalOverlay: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 0, left: 0, right: 0, bottom: 0,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.4)",

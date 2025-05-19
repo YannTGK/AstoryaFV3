@@ -1,4 +1,5 @@
-// app/(app)/my-stars/private-star/photos/three-dots/move-album/move-album.tsx
+// app/(app)/my-stars/private-star/videos/three-dots/move-album/move-album.tsx
+
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -24,7 +25,7 @@ type Album = {
   _id: string;
   name: string;
   coverUrl?: string;
-  photoCount: number;
+  videoCount: number;
 };
 
 export default function MoveAlbumScreen() {
@@ -41,21 +42,35 @@ export default function MoveAlbumScreen() {
   useEffect(() => {
     (async () => {
       try {
-        const base = (await api.get(`/stars/${id}/photo-albums`)).data as Album[];
+        // 1️⃣ fetch all video-albums for this star
+        const base = (await api.get(`/stars/${id}/video-albums`)).data as {
+          _id: string;
+          name: string;
+        }[];
+
+        // exclude the current album
         const filtered = base.filter((a) => a._id !== currentAlbum);
 
+        // 2️⃣ for each album fetch its videos to get cover & count
         const full = await Promise.all(
           filtered.map(async (album) => {
             try {
-              const photos = (await api.get(`/stars/${id}/photo-albums/${album._id}/photos`)).data;
+              const videos = (await api.get(
+                `/stars/${id}/video-albums/${album._id}/videos`
+              )).data as { _id: string; url: string }[];
               return {
                 _id: album._id,
                 name: album.name,
-                coverUrl: photos[0]?.url ?? null,
-                photoCount: photos.length,
+                coverUrl: videos[0]?.url ?? null,
+                videoCount: videos.length,
               };
             } catch {
-              return { _id: album._id, name: album.name, coverUrl: null, photoCount: 0 };
+              return {
+                _id: album._id,
+                name: album.name,
+                coverUrl: null,
+                videoCount: 0,
+              };
             }
           })
         );
@@ -76,15 +91,20 @@ export default function MoveAlbumScreen() {
     );
 
   const toggleAll = () =>
-    setPicked(picked.length === albums.length ? [] : albums.map((a) => a._id));
+    setPicked(
+      picked.length === albums.length ? [] : albums.map((a) => a._id)
+    );
 
   const doMove = async () => {
     setAsk(false);
     try {
-      const photoIds: string[] = JSON.parse(selected as string);
+      const videoIds: string[] = JSON.parse(selected as string);
       await Promise.all(
         picked.map((dest) =>
-          api.post(`/stars/${id}/photo-albums/${dest}/photos/move`, { photoIds })
+          api.post(
+            `/stars/${id}/video-albums/${dest}/videos/move`,
+            { videoIds }
+          )
         )
       );
       setToast(true);
@@ -100,15 +120,25 @@ export default function MoveAlbumScreen() {
 
   if (loading) {
     return (
-      <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill}>
-        <ActivityIndicator size="large" color="#FEEDB6" style={{ flex: 1 }} />
+      <LinearGradient
+        colors={["#000", "#273166", "#000"]}
+        style={StyleSheet.absoluteFill}
+      >
+        <ActivityIndicator
+          size="large"
+          color="#FEEDB6"
+          style={{ flex: 1 }}
+        />
       </LinearGradient>
     );
   }
 
   return (
     <View style={{ flex: 1 }}>
-      <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
+      <LinearGradient
+        colors={["#000", "#273166", "#000"]}
+        style={StyleSheet.absoluteFill}
+      />
 
       <TouchableOpacity style={st.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24}>
@@ -116,14 +146,15 @@ export default function MoveAlbumScreen() {
         </Svg>
       </TouchableOpacity>
 
-      <Text style={st.title}>Photo albums</Text>
+      <Text style={st.title}>Video albums</Text>
 
       <View style={st.allSelectWrapper}>
         <TouchableOpacity style={st.selectAllBtn} onPress={toggleAll}>
           <View
             style={[
               st.selectAllCircle,
-              picked.length === albums.length && st.selectAllCircleActive,
+              picked.length === albums.length &&
+                st.selectAllCircleActive,
             ]}
           />
           <Text style={st.selectAllText}>All</Text>
@@ -138,25 +169,47 @@ export default function MoveAlbumScreen() {
         renderItem={({ item }) => {
           const chosen = picked.includes(item._id);
           return (
-            <TouchableOpacity style={st.albumCard} onPress={() => toggle(item._id)}>
+            <TouchableOpacity
+              style={st.albumCard}
+              onPress={() => toggle(item._id)}
+            >
               {item.coverUrl ? (
-                <Image source={{ uri: item.coverUrl }} style={st.albumImage} />
+                <Image
+                  source={{ uri: item.coverUrl }}
+                  style={st.albumImage}
+                />
               ) : (
-                <View style={[st.albumImage, { backgroundColor: "#999", opacity: 0.2 }]} />
+                <View
+                  style={[
+                    st.albumImage,
+                    { backgroundColor: "#999", opacity: 0.2 },
+                  ]}
+                />
               )}
-              <View style={[st.radioCircle, chosen && st.radioCircleActive]} />
+              <View
+                style={[st.radioCircle, chosen && st.radioCircleActive]}
+              />
               <Text style={st.albumTitle}>{item.name}</Text>
-              <Text style={st.albumCount}>{item.photoCount}</Text>
+              <Text style={st.albumCount}>{item.videoCount}</Text>
             </TouchableOpacity>
           );
         }}
       />
 
       {picked.length > 0 && (
-        <TouchableOpacity style={st.footerBar} onPress={() => setAsk(true)}>
-          <Feather name="folder-minus" size={20} color="#fff" style={{ marginRight: 10 }} />
+        <TouchableOpacity
+          style={st.footerBar}
+          onPress={() => setAsk(true)}
+        >
+          <Feather
+            name="folder-minus"
+            size={20}
+            color="#fff"
+            style={{ marginRight: 10 }}
+          />
           <Text style={st.footerText}>
-            Move to {picked.length} album{picked.length !== 1 ? "s" : ""}
+            Move to {picked.length} album
+            {picked.length !== 1 ? "s" : ""}
           </Text>
         </TouchableOpacity>
       )}
@@ -165,14 +218,25 @@ export default function MoveAlbumScreen() {
         <View style={st.modalOverlay}>
           <View style={st.modalBox}>
             <Text style={st.modalText}>
-              Move to {picked.length} album{picked.length !== 1 ? "s" : ""}?
+              Move to {picked.length} album
+              {picked.length !== 1 ? "s" : ""}?
             </Text>
             <View style={st.modalActions}>
-              <TouchableOpacity onPress={() => setAsk(false)} style={st.modalBtn}>
-                <Text style={[st.modalBtnText, { color: "#007AFF" }]}>No</Text>
+              <TouchableOpacity
+                onPress={() => setAsk(false)}
+                style={st.modalBtn}
+              >
+                <Text style={[st.modalBtnText, { color: "#007AFF" }]}>
+                  No
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={doMove} style={st.modalBtn}>
-                <Text style={[st.modalBtnText, { color: "#007AFF" }]}>Yes</Text>
+              <TouchableOpacity
+                onPress={doMove}
+                style={st.modalBtn}
+              >
+                <Text style={[st.modalBtnText, { color: "#007AFF" }]}>
+                  Yes
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -182,7 +246,7 @@ export default function MoveAlbumScreen() {
       {toast && (
         <View style={st.toastOverlay}>
           <View style={st.toastBox}>
-            <Text style={st.toastTxt}>Photos moved</Text>
+            <Text style={st.toastTxt}>Videos moved</Text>
           </View>
         </View>
       )}
@@ -207,9 +271,19 @@ const st = StyleSheet.create({
     alignItems: "center",
     position: "relative",
   },
-  albumImage: { width: CARD_SIZE, height: CARD_SIZE, borderRadius: 8, marginBottom: 6 },
+  albumImage: {
+    width: CARD_SIZE,
+    height: CARD_SIZE,
+    borderRadius: 8,
+    marginBottom: 6,
+  },
   albumTitle: { fontSize: 14, color: "#fff", fontFamily: "Alice-Regular" },
-  albumCount: { fontSize: 12, color: "#fff", fontFamily: "Alice-Regular", opacity: 0.7 },
+  albumCount: {
+    fontSize: 12,
+    color: "#fff",
+    fontFamily: "Alice-Regular",
+    opacity: 0.7,
+  },
   radioCircle: {
     position: "absolute",
     top: 6,
@@ -250,7 +324,12 @@ const st = StyleSheet.create({
     backgroundColor: "transparent",
   },
   selectAllCircleActive: { backgroundColor: "#FEEDB6" },
-  selectAllText: { fontFamily: "Alice-Regular", color: "#fff", fontSize: 14, marginLeft: 10 },
+  selectAllText: {
+    fontFamily: "Alice-Regular",
+    color: "#fff",
+    fontSize: 14,
+    marginLeft: 10,
+  },
   modalOverlay: {
     position: "absolute",
     top: 0,
@@ -262,7 +341,13 @@ const st = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.4)",
     zIndex: 100,
   },
-  modalBox: { backgroundColor: "#fff", borderRadius: 16, padding: 20, width: 280, alignItems: "center" },
+  modalBox: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 20,
+    width: 280,
+    alignItems: "center",
+  },
   modalText: {
     fontFamily: "Alice-Regular",
     fontSize: 16,
@@ -270,12 +355,20 @@ const st = StyleSheet.create({
     textAlign: "center",
     marginBottom: 20,
   },
-  modalActions: { flexDirection: "row", borderTopWidth: 1, borderColor: "#ccc", width: "100%" },
+  modalActions: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderColor: "#ccc",
+    width: "100%",
+  },
   modalBtn: { flex: 1, alignItems: "center", paddingVertical: 12 },
   modalBtnText: { fontFamily: "Alice-Regular", fontSize: 16 },
   toastOverlay: {
     position: "absolute",
-    top: 0, left: 0, right: 0, bottom: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.2)",
