@@ -1,138 +1,180 @@
-// gemaakte album
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  FlatList,
-  Modal,
+  View, Text, StyleSheet, TouchableOpacity, FlatList,
+  Modal, ActivityIndicator, Alert,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import Svg, { Path } from "react-native-svg";
-import * as ImagePicker from "expo-image-picker";
-import ImageViewer from "react-native-image-zoom-viewer";
 import { Feather } from "@expo/vector-icons";
+import * as VideoPicker from "expo-image-picker";
+import { Video } from "expo-av";
+import api from "@/services/api";
+import { useFocusEffect } from "@react-navigation/native";
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
-import NoCreatedVideoIcon from "@/assets/images/svg-icons/no-video.svg";
+import NoVideoIcon from "@/assets/images/svg-icons/no-video.svg";
+import * as FileSystem from "expo-file-system";
 
-export default function AlbumPage() {
+type VideoItem = { _id: string; url: string };
+
+export default function CreatedVideoAlbum() {
   const router = useRouter();
-  const { albumName } = useLocalSearchParams();
-  const currentAlbum = albumName as string;
+  const { id: starId, albumId, albumName } = useLocalSearchParams<{
+    id: string;
+    albumId: string;
+    albumName: string;
+  }>();
 
-  const [images, setImages] = useState<string[]>([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [videos, setVideos] = useState<VideoItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [isDeleteMode, setIsDeleteMode] = useState(false);
-  const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
-  const [showCopyButton, setShowCopyButton] = useState(false);
-  const [showMoveButton, setShowMoveButton] = useState(false);
-  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [confirmDel, setConfirmDel] = useState(false);
 
-  const pickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      alert("Permission to access media library is required!");
-      return;
-    }
+  useFocusEffect(
+    useCallback(() => {
+      setMenuOpen(false);
+      setDeleteMode(false);
+      setSelected([]);
+      fetchVideos();
+    }, [starId, albumId])
+  );
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: false,
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      const uri = result.assets[0].uri;
-      setImages((prev) => [...prev, uri]);
-    }
-  };
-
-  const imageViewerData = images.map((uri) => ({ url: uri }));
-
-  const handlePhotoPress = (item: string, index: number) => {
-    if (isDeleteMode) {
-      setSelectedPhotos((prev) =>
-        prev.includes(item)
-          ? prev.filter((uri) => uri !== item)
-          : [...prev, item]
+  const fetchVideos = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get(
+        `/stars/${starId}/video-albums/${albumId}/videos`
       );
-    } else {
-      setSelectedIndex(index);
-      setModalVisible(true);
+      setVideos(data as VideoItem[]);
+    } catch {
+      Alert.alert("Error", "Could not load videos.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDelete = () => {
-    setImages(images.filter((img) => !selectedPhotos.includes(img)));
-    setSelectedPhotos([]);
-    setIsDeleteMode(false);
-    setConfirmDeleteVisible(false);
+  const uploadVideo = async () => {
+    console.log("[uploadVideo] Start");
+  
+    try {
+      const perm = await VideoPicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert("Permission required", "Enable media access.");
+        console.warn("[uploadVideo] Media permission not granted");
+        return;
+      }
+  
+      const res = await VideoPicker.launchImageLibraryAsync({
+        mediaTypes: VideoPicker.MediaTypeOptions.Videos,
+      });
+  
+      if (res.canceled) {
+        console.log("[uploadVideo] Video picker canceled");
+        return;
+      }
+  
+      const asset = res.assets[0];
+      if (!asset) {
+        console.error("[uploadVideo] No asset returned from picker");
+        Alert.alert("Error", "No video selected");
+        return;
+      }
+  
+      console.log("[uploadVideo] Picked video:", {
+        uri: asset.uri,
+        fileName: asset.fileName,
+        type: asset.mimeType,
+      });
+  
+      const fd = new FormData();
+      fd.append("video", {
+        uri: asset.uri,
+        name: asset.fileName ?? "video.mp4",
+        type: asset.mimeType ?? "video/mp4",
+      } as any);
+  
+      console.log("[uploadVideo] FormData constructed, sending request...");
+  
+      const response = await api.post(
+        `/stars/${starId}/video-albums/${albumId}/videos/upload`,
+        fd
+      );
+  
+      console.log("[uploadVideo] Upload success:", response.data);
+      fetchVideos();
+  
+    } catch (err: any) {
+      const status = err.response?.status;
+      const message = err.response?.data?.message ?? err.message;
+  
+      console.error("[uploadVideo] Upload failed:", {
+        status,
+        message,
+        response: err.response?.data,
+      });
+  
+      Alert.alert(
+        "Upload failed",
+        typeof message === "string" ? message : "Unexpected error"
+      );
+    }
   };
 
-  const handleCopyOrMove = (type: "copy" | "move") => {
-    router.push({
-      pathname:
-        type === "copy"
-          ? "/my-stars/private-star/photos/three-dots/copy-album/selected-album"
-          : "/my-stars/private-star/photos/three-dots/move-album/move-album",
-      params: {
-        albumName: encodeURIComponent(currentAlbum),
-        selected: JSON.stringify(selectedPhotos),
-      },
-    });
+  const deleteSelected = async () => {
+    setConfirmDel(false);
+    await Promise.all(
+      selected.map((vid) =>
+        api.delete(`/videos/detail/${vid}`).catch(console.error)
+      )
+    );
+    setSelected([]);
+    setDeleteMode(false);
+    fetchVideos();
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color="#FEEDB6" />
+      </View>
+    );
+  }
 
   return (
-    <View style={{ flex: 1 }}>
-      <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
+    <SafeAreaView style={{ flex: 1 }}>
+      <LinearGradient
+        colors={["#000", "#273166", "#000"]}
+        style={StyleSheet.absoluteFill}
+      />
 
       {/* HEADER */}
-      <View style={styles.headerContainer}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Svg width={24} height={24}>
-              <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
-            </Svg>
-          </TouchableOpacity>
-          <Text style={styles.title}>Photo's</Text>
-        </View>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Svg width={24} height={24}>
+            <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
+          </Svg>
+        </TouchableOpacity>
+        <Text style={styles.title}>{decodeURIComponent(albumName)}</Text>
+        <TouchableOpacity onPress={() => setMenuOpen((o) => !o)}>
+          <Text style={styles.menuDots}>⋮</Text>
+        </TouchableOpacity>
+      </View>
 
-        <View style={styles.albumTitleRow}>
-          <Text style={styles.albumTitle}>{albumName}</Text>
-          {isDeleteMode && (
-            <TouchableOpacity
-              style={styles.selectAllBtn}
-              onPress={() =>
-                setSelectedPhotos(selectedPhotos.length === images.length ? [] : images)
-              }
-            >
-              <View
-                style={[
-                  styles.selectAllCircle,
-                  selectedPhotos.length === images.length && styles.selectAllCircleActive,
-                ]}
-              />
-              <Text style={styles.selectAllText}>All</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {!isDeleteMode && (
-          <TouchableOpacity style={styles.menuDots} onPress={() => setMenuOpen(!menuOpen)}>
-            <Text style={styles.menuDotsText}>⋮</Text>
-          </TouchableOpacity>
-        )}
-
-        {menuOpen && (
+      {/* MENU */}
+      {menuOpen && (
           <View style={styles.menuBox}>
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => router.push("/(app)/my-stars/private-star/photos/three-dots/add-people/AddPeoplePage")}
+              onPress={() =>
+                router.push({
+                  pathname:
+                    "(app)/my-stars/private-star/videos/three-dots/add-people/VideoAddPeoplePage",
+                    params: { id: starId, albumId, albumName },
+                })
+              }
             >
               <Feather name="user-plus" size={16} color="#11152A" style={{ marginRight: 10 }} />
               <Text style={styles.menuText}>Add people</Text>
@@ -140,7 +182,13 @@ export default function AlbumPage() {
 
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => router.push("/(app)/my-stars/private-star/photos/three-dots/see-members/SeeMembersPhoto")}
+              onPress={() =>
+                router.push({
+                  pathname:
+                    "/(app)/my-stars/private-star/videos/three-dots/see-members/SeeMembersPhoto",
+                  params: { id, albumId, albumName },
+                })
+              }
             >
               <Feather name="users" size={16} color="#11152A" style={{ marginRight: 10 }} />
               <Text style={styles.menuText}>See members</Text>
@@ -152,10 +200,10 @@ export default function AlbumPage() {
                 style={styles.menuItem}
                 onPress={() => {
                   setMenuOpen(false);
-                  setIsDeleteMode(true);
-                  setSelectedPhotos([]);
-                  setShowCopyButton(action === "Copy to album");
-                  setShowMoveButton(action === "Move to album");
+                  setDeleteMode(true);
+                  setSelected([]);
+                  setShowCopy(action === "Copy to album");
+                  setShowMove(action === "Move to album");
                 }}
               >
                 <Feather
@@ -169,33 +217,44 @@ export default function AlbumPage() {
             ))}
           </View>
         )}
-      </View>
 
-      {/* IMAGE GRID */}
+      {/* GRID */}
       <FlatList
-        data={images}
-        keyExtractor={(item, index) => item + index}
+        data={videos}
+        keyExtractor={(i) => i._id}
         numColumns={3}
-        contentContainerStyle={styles.gridContainer}
+        contentContainerStyle={styles.grid}
         renderItem={({ item, index }) => {
-          const isFirstInRow = index % 3 === 0;
-          const isSelected = selectedPhotos.includes(item);
-
+          const first = index % 3 === 0;
+          const isSel = selected.includes(item._id);
           return (
-            <TouchableOpacity onPress={() => handlePhotoPress(item, index)}>
+            <TouchableOpacity
+              onPress={() => {
+                if (deleteMode) {
+                  setSelected((s) =>
+                    s.includes(item._id)
+                      ? s.filter((x) => x !== item._id)
+                      : [...s, item._id]
+                  );
+                }
+              }}
+            >
               <View style={{ position: "relative" }}>
-                <Image
-                  source={{ uri: item }}
+                <Video
+                  source={{ uri: item.url }}
                   style={[
-                    styles.gridImage,
+                    styles.thumb,
                     {
-                      marginLeft: isFirstInRow ? 16 : 8,
+                      marginLeft: first ? 16 : 8,
                       marginRight: 8,
-                      opacity: isDeleteMode && !isSelected ? 0.6 : 1,
+                      opacity: deleteMode && !isSel ? 0.6 : 1,
                     },
                   ]}
+                  shouldPlay={false}
+                  isMuted
+                  resizeMode="cover"
                 />
-                {isDeleteMode && (
+                {deleteMode && (
                   <View
                     style={{
                       position: "absolute",
@@ -206,7 +265,7 @@ export default function AlbumPage() {
                       borderRadius: 9,
                       borderWidth: 2,
                       borderColor: "#fff",
-                      backgroundColor: isSelected ? "#FEEDB6" : "transparent",
+                      backgroundColor: isSel ? "#FEEDB6" : "transparent",
                     }}
                   />
                 )}
@@ -215,290 +274,70 @@ export default function AlbumPage() {
           );
         }}
         ListEmptyComponent={
-          <View style={styles.emptyStateWrapper}>
-<NoCreatedVideoIcon width={130} height={130} />
-
-            <Text style={styles.noMemoriesText}>
-              Every story starts with a moment.{"\n"}Upload your first memory now.
+          <View style={styles.empty}>
+            <NoVideoIcon width={130} height={130} />
+            <Text style={styles.emptyText}>
+              No videos yet.{"\n"}Upload your first video now.
             </Text>
           </View>
         }
       />
 
-      {/* FOOTER ACTION BARS */}
-      {isDeleteMode && selectedPhotos.length > 0 && (
-        <TouchableOpacity style={styles.deleteBar} onPress={() => setConfirmDeleteVisible(true)}>
-          <View style={styles.deleteBarBtn}>
-            <Feather name="trash-2" size={20} color="#fff" />
-            <Text style={styles.deleteBarText}>
-              {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? "’s" : ""} selected
-            </Text>
-          </View>
+      {/* FOOTER ACTION */}
+      {deleteMode && selected.length > 0 && (
+        <TouchableOpacity style={styles.footer} onPress={() => setConfirmDel(true)}>
+          <Feather name="trash-2" size={20} color="#fff" style={{ marginRight: 10 }} />
+          <Text style={styles.footerText}>
+            {selected.length} video{selected.length !== 1 ? "s" : ""} selected
+          </Text>
         </TouchableOpacity>
       )}
 
-      {showCopyButton && selectedPhotos.length > 0 && (
-        <TouchableOpacity style={styles.deleteBar} onPress={() => handleCopyOrMove("copy")}>
-          <View style={styles.deleteBarBtn}>
-            <Feather name="copy" size={20} color="#fff" />
-            <Text style={styles.deleteBarText}>
-              Copy {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? "'s" : ""} to album
-            </Text>
-          </View>
-        </TouchableOpacity>
-      )}
-
-      {showMoveButton && selectedPhotos.length > 0 && (
-        <TouchableOpacity style={styles.deleteBar} onPress={() => handleCopyOrMove("move")}>
-          <View style={styles.deleteBarBtn}>
-            <Feather name="folder-minus" size={20} color="#fff" />
-            <Text style={styles.deleteBarText}>
-              Move {selectedPhotos.length} photo{selectedPhotos.length !== 1 ? "'s" : ""} to album
-            </Text>
-          </View>
-        </TouchableOpacity>
-      )}
-
-      {/* IMAGE MODAL */}
-      <Modal visible={modalVisible} transparent>
-        <ImageViewer
-          imageUrls={imageViewerData}
-          index={selectedIndex}
-          onCancel={() => setModalVisible(false)}
-          enableSwipeDown
-          onSwipeDown={() => setModalVisible(false)}
-        />
-        <TouchableOpacity style={styles.closeBtn} onPress={() => setModalVisible(false)}>
-          <Text style={styles.closeText}>×</Text>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* ADD BUTTON */}
-      <View style={styles.plusWrapper}>
-        <TouchableOpacity onPress={pickImage}>
+      {/* UPLOAD BUTTON */}
+      <View style={styles.plus}>
+        <TouchableOpacity onPress={uploadVideo}>
           <PlusIcon width={50} height={50} />
         </TouchableOpacity>
       </View>
 
-      {/* CONFIRM DELETE MODAL */}
-      <Modal visible={confirmDeleteVisible} transparent animationType="fade">
-        <View style={styles.confirmOverlay}>
-          <View style={styles.confirmBox}>
-            <Text style={styles.confirmText}>Are you sure you want to remove the image?</Text>
-            <View style={styles.confirmButtons}>
-              <TouchableOpacity onPress={() => setConfirmDeleteVisible(false)} style={styles.confirmBtn}>
-                <Text style={[styles.confirmBtnText, { color: "#007AFF" }]}>No</Text>
+      {/* DELETE CONFIRM */}
+      <Modal visible={confirmDel} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text>Delete selected video{selected.length !== 1 ? "s" : ""}?</Text>
+            <View style={styles.modalRow}>
+              <TouchableOpacity onPress={() => setConfirmDel(false)} style={styles.modalBtn}>
+                <Text style={{ color: "#007AFF" }}>No</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleDelete} style={styles.confirmBtn}>
-                <Text style={[styles.confirmBtnText, { color: "#007AFF" }]}>Yes</Text>
+              <View style={styles.divider} />
+              <TouchableOpacity onPress={deleteSelected} style={styles.modalBtn}>
+                <Text style={{ color: "#007AFF" }}>Yes</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
-// === STYLES ===
 const styles = StyleSheet.create({
-  headerContainer: {
-    marginTop: 50,
-    position: "relative",
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-  },
-  backBtn: {
-    zIndex: 10,
-  },
-  title: {
-    textAlign: "center",
-    fontSize: 20,
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-    flex: 1,
-  },
-  albumTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 28,
-    marginHorizontal: 20,
-    position: "relative",
-  },
-  albumTitle: {
-    fontSize: 20,
-    fontFamily: "Alice-Regular",
-    color: "#fff",
-    textAlign: "center",
-    flex: 1,
-  },
-  selectAllBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    position: "absolute",
-    right: 0,
-  },
-  selectAllCircle: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: "#fff",
-    backgroundColor: "transparent",
-  },
-  selectAllCircleActive: {
-    backgroundColor: "#FEEDB6",
-  },
-  selectAllText: {
-    fontFamily: "Alice-Regular",
-    color: "#fff",
-    fontSize: 14,
-    marginLeft: 10,
-  },
-  menuDots: {
-    position: "absolute",
-    right: 16,
-    top: 53,
-  },
-  menuDotsText: {
-    color: "#fff",
-    fontSize: 28,
-    lineHeight: 28,
-  },
-  menuBox: {
-    position: "absolute",
-    top: 105,
-    right: 16,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 10,
-    zIndex: 999,
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  menuText: {
-    fontFamily: "Alice-Regular",
-    fontSize: 14,
-    color: "#11152A",
-  },
-  gridContainer: {
-    paddingBottom: 180,
-    paddingTop: 68,
-  },
-  gridImage: {
-    width: 109,
-    height: 109,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
-  emptyStateWrapper: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: 400,
-  },
-  noMemoriesText: {
-    marginTop: 16,
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-    fontSize: 14,
-    textAlign: "center",
-    paddingHorizontal: 20,
-    lineHeight: 20,
-  },
-  plusWrapper: {
-    position: "absolute",
-    bottom: 100,
-    width: "100%",
-    alignItems: "center",
-    zIndex: 10,
-  },
-  closeBtn: {
-    position: "absolute",
-    top: 72,
-    right: 20,
-    zIndex: 101,
-  },
-  closeText: {
-    color: "#fff",
-    fontSize: 32,
-  },
-  deleteBar: {
-    position: "absolute",
-    bottom: 80,
-    left: 0,
-    right: 0,
-    backgroundColor: "#11152A",
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    borderTopWidth: 1,
-    borderTopColor: "#2D2D2D",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 999,
-    elevation: 20,
-  },
-  deleteBarBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  deleteBarText: {
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
-  },
-  confirmOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  confirmBox: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    width: 280,
-    alignItems: "center",
-  },
-  confirmText: {
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
-    textAlign: "center",
-    color: "#11152A",
-    marginBottom: 20,
-  },
-  confirmButtons: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    borderColor: "#ccc",
-    width: "100%",
-  },
-  confirmBtn: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 12,
-    borderRightWidth: 0.5,
-    borderColor: "#ccc",
-  },
-  confirmBtnText: {
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
-  },
+  loader: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#000" },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, marginTop: 0 },
+  title: { color: "#fff", fontSize: 20, fontFamily: "Alice-Regular" },
+  menuDots: { color: "#fff", fontSize: 28 },
+  menuBox: { position: "absolute", top: 90, right: 16, backgroundColor: "#fff", borderRadius: 8, padding: 8, zIndex: 10 },
+  menuItem: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
+  grid: { paddingTop: 68, paddingBottom: 180 },
+  thumb: { width: 109, height: 109, borderRadius: 8, marginBottom: 16 },
+  empty: { flex: 1, justifyContent: "center", alignItems: "center", minHeight: 400 },
+  emptyText: { marginTop: 16, color: "#fff", fontFamily: "Alice-Regular", textAlign: "center", lineHeight: 20 },
+  footer: { position: "absolute", bottom: 80, left: 0, right: 0, backgroundColor: "#11152A", padding: 18, flexDirection: "row", justifyContent: "center" },
+  footerText: { color: "#fff", fontFamily: "Alice-Regular", fontSize: 16 },
+  plus: { position: "absolute", bottom: 100, width: "100%", alignItems: "center" },
+  modalOverlay: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" },
+  modalBox: { backgroundColor: "#fff", borderRadius: 16, padding: 20, width: 280 },
+  modalRow: { flexDirection: "row", borderTopWidth: 1, borderColor: "#ccc", marginTop: 20 },
+  modalBtn: { flex: 1, alignItems: "center", paddingVertical: 12 },
+  divider: { width: 1, backgroundColor: "#ccc" },
 });

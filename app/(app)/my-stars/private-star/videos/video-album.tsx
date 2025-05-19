@@ -1,207 +1,328 @@
-// foto album (empty state) --> eerste pagina als je op "photos" klikt
-import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
-import { useRouter } from "expo-router";
+// app/(app)/my-stars/private-star/videos/three-dots/video-albums.tsx
+import React, { useEffect, useState } from "react";
+import {
+  View, Text, StyleSheet, TouchableOpacity, FlatList,
+  Dimensions, Modal, TextInput, ActivityIndicator, Alert,
+} from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import Svg, { Path } from "react-native-svg";
-import { TextInput } from "react-native";
-import PlusIcon from "@/assets/images/svg-icons/plus.svg";
+import { Feather } from "@expo/vector-icons";
+import { Video } from "expo-av"
+import api from "@/services/api";
 import NoVideoIcon from "@/assets/images/svg-icons/no-album.svg";
+import PlusIcon from "@/assets/images/svg-icons/plus.svg";
 
-export default function PhotosPage() {
+const { width } = Dimensions.get("window");
+const CARD_SIZE = (width - 64) / 3;
+
+type VideoAlbum = {
+  _id: string;
+  name: string;
+  coverUrl?: string;
+  videoCount: number;
+};
+
+export default function VideoAlbumsList() {
   const router = useRouter();
+  const { id: starId } = useLocalSearchParams<{ id: string }>();
+  const insets = useSafeAreaInsets();
 
-  const [showModal, setShowModal] = useState(false);
-  const [albumName, setAlbumName] = useState("");
+  const [albums, setAlbums] = useState<VideoAlbum[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+
+  const [showNew, setShowNew] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+
+  /** haal albums + eerste video + count */
+  const fetchAlbums = async () => {
+    if (!starId) return;
+    setLoading(true);
+    try {
+      const base = (await api.get(`/stars/${starId}/video-albums`)).data as any[];
+      const full = await Promise.all(
+        base.map(async (alb) => {
+          try {
+            const vids = (await api.get(
+              `/stars/${starId}/video-albums/${alb._id}/videos`
+            )).data as { _id: string; url: string }[];
+            return {
+              _id: alb._id,
+              name: alb.name,
+              coverUrl: vids[0]?.url ?? null,
+              videoCount: vids.length,
+            } as VideoAlbum;
+          } catch {
+            return {
+              _id: alb._id,
+              name: alb.name,
+              coverUrl: null,
+              videoCount: 0,
+            } as VideoAlbum;
+          }
+        })
+      );
+      setAlbums(full);
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Could not load video albums.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => { fetchAlbums(); }, [starId]);
+
+  const allSelected = selected.length === albums.length && albums.length > 0;
+  const toggleAlbum = (aid: string) =>
+    setSelected((prev) =>
+      prev.includes(aid) ? prev.filter((x) => x !== aid) : [...prev, aid]
+    );
+
+  /** maak nieuw album via API */
+  const createAlbum = async () => {
+    const name = newName.trim();
+    if (!name) return;
+    setCreating(true);
+    try {
+      const res = await api.post(`/stars/${starId}/video-albums`, { name });
+      setShowNew(false);
+      setNewName("");
+      fetchAlbums();
+      router.push({
+        pathname: "/my-stars/private-star/videos/created-video-album",
+        params: {
+          id: starId,
+          albumId: res.data._id,
+          albumName: res.data.name,
+        },
+      });
+    } catch (err: any) {
+      Alert.alert("Error", err.response?.data?.message ?? "Could not create album.");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  /** verwijder geselecteerde albums */
+  const deleteAlbums = async () => {
+    setShowDelete(false);
+    await Promise.all(
+      selected.map((aId) =>
+        api.delete(`/stars/${starId}/video-albums/${aId}`).catch(console.error)
+      )
+    );
+    setSelected([]);
+    setEditMode(false);
+    fetchAlbums();
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.loader}>
+        <ActivityIndicator size="large" color="#FEEDB6" />
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <View style={{ flex: 1, position: "relative" }}>
-      <LinearGradient
-        colors={["#000", "#273166", "#000"]}
-        style={StyleSheet.absoluteFill}
-      />
+    <SafeAreaView style={{ flex: 1 }} edges={["top","bottom"]}>
+      <LinearGradient colors={["#000","#273166","#000"]} style={StyleSheet.absoluteFill}/>
 
-      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+      {/* ← back */}
+      <TouchableOpacity
+        style={[styles.backBtn, { top: insets.top + 10 }]}
+        onPress={() => router.back()}
+      >
         <Svg width={24} height={24}>
-          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
+          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2}/>
         </Svg>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Video albums</Text>
+      <Text style={[styles.title, { marginTop: insets.top + 10 }]}>Video albums</Text>
 
-      <View style={styles.centered}>
-        {/* Vervang dit met je eigen icoon later */}
-  <NoVideoIcon width={130} height={130} />
+      {/* edit-icon */}
+      {!editMode && albums.length > 0 && (
+        <TouchableOpacity
+          style={[styles.editIcon, { top: insets.top + 60 }]}
+          onPress={() => setEditMode(true)}
+        >
+          <Feather name="edit" size={24} color="#fff"/>
+        </TouchableOpacity>
+      )}
 
-        <Text style={styles.noAlbumText}>No video albums found</Text>
-      </View>
+      {/* select-all */}
+      {editMode && albums.length > 0 && (
+        <View style={[styles.selectAllBar, { marginTop: insets.top + 38 }]}>
+          <TouchableOpacity
+            style={styles.selectAllBtn}
+            onPress={() => {
+              setSelected(allSelected ? [] : albums.map(a => a._id));
+              if (allSelected) setEditMode(false);
+            }}
+          >
+            <View style={[styles.circle, allSelected && styles.circleActive]}/>
+            <Text style={styles.selectAllText}>All</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-      {/* Plus-knop */}
-      <View style={styles.plusWrapper}>
-        <TouchableOpacity onPress={() => setShowModal(true)}>
-          <PlusIcon width={50} height={50} />
+      {/* lijst of empty state */}
+      {albums.length === 0 ? (
+        <View style={styles.empty}>
+          <NoVideoIcon width={130} height={130}/>
+          <Text style={styles.emptyText}>No video albums found</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={albums}
+          keyExtractor={i => i._id}
+          numColumns={3}
+          contentContainerStyle={styles.grid}
+          renderItem={({ item }) => {
+            const sel = selected.includes(item._id);
+            return (
+              <TouchableOpacity
+                style={styles.card}
+                onPress={() =>
+                  editMode
+                    ? toggleAlbum(item._id)
+                    : router.push({
+                        pathname: "/my-stars/private-star/videos/created-video-album",
+                        params:{
+                          id: starId,
+                          albumId: item._id,
+                          albumName: item.name
+                        }
+                      })
+                }
+              >
+                {item.coverUrl ? (
+                  <Video
+                    source={{ uri: item.coverUrl }}
+                    style={styles.thumbnail}
+                    paused
+                    resizeMode="cover"
+                    muted
+                  />
+                ) : (
+                  <View style={[styles.thumbnail, { backgroundColor:"#999", opacity:0.2 }]}/>
+                )}
+                {editMode && <View style={[styles.radio, sel && styles.radioActive]}/>}
+                <Text style={styles.name}>{item.name}</Text>
+                <Text style={styles.count}>{item.videoCount}</Text>
+              </TouchableOpacity>
+            );
+          }}
+        />
+      )}
+
+      {/* delete-bar */}
+      {editMode && selected.length > 0 && (
+        <TouchableOpacity
+          style={[styles.footer, { bottom: insets.bottom + 20 }]}
+          onPress={() => setShowDelete(true)}
+        >
+          <Feather name="trash-2" size={20} color="#fff" style={{ marginRight: 10 }}/>
+          <Text style={styles.footerText}>
+            {selected.length} album{selected.length!==1?"s":""} selected
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* plus-knop */}
+      <View style={[styles.plusWrap, { bottom: insets.bottom + 80 }]}>
+        <TouchableOpacity onPress={() => setShowNew(true)}>
+          <PlusIcon width={50} height={50}/>
         </TouchableOpacity>
       </View>
 
-      {showModal && (
+      {/* create-modal */}
+      <Modal visible={showNew} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>Create Album</Text>
-
             <TextInput
-              value={albumName}
-              onChangeText={setAlbumName}
+              value={newName}
+              onChangeText={setNewName}
               placeholder="Album Name"
               placeholderTextColor="#999"
               style={styles.input}
+              editable={!creating}
             />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity onPress={() => setShowModal(false)}>
-                <Text style={styles.modalCancel}>Cancel</Text>
+            <View style={styles.modalRow}>
+              <TouchableOpacity style={styles.modalBtn} disabled={creating}
+                onPress={() => setShowNew(false)}>
+                <Text style={styles.cancel}>Cancel</Text>
               </TouchableOpacity>
-              <View style={styles.buttonDivider} />
-              <TouchableOpacity
-                onPress={() => {
-                  if (!albumName.trim()) return; // alleen doorgaan als er iets is ingevuld
-
-                  // stel dat je albums opslaat of doorgeeft via params:
-                  const encodedName = encodeURIComponent(albumName.trim());
-
-                  setShowModal(false);
-                  router.push({
-                    pathname: "/my-stars/private-star/videos/created-video-album",
-                    params: { albumName: encodedName },
-                  });
-                }}
-              >
-                <Text style={styles.modalCreate}>Create</Text>
+              <View style={styles.divider}/>
+              <TouchableOpacity style={styles.modalBtn} disabled={creating}
+                onPress={createAlbum}>
+                {creating
+                  ? <ActivityIndicator color="#007AFF"/>
+                  : <Text style={styles.create}>Create</Text>}
               </TouchableOpacity>
             </View>
           </View>
         </View>
-      )}
-    </View>
+      </Modal>
+
+      {/* delete-confirm */}
+      <Modal visible={showDelete} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.confirm}>Delete selected album(s)?</Text>
+            <View style={styles.modalRow}>
+              <TouchableOpacity style={styles.modalBtn} onPress={()=>setShowDelete(false)}>
+                <Text style={styles.cancel}>No</Text>
+              </TouchableOpacity>
+              <View style={styles.divider}/>
+              <TouchableOpacity style={styles.modalBtn} onPress={deleteAlbums}>
+                <Text style={styles.delete}>Yes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  backBtn: { 
-    position: "absolute", 
-    top: 50, 
-    left: 20, 
-    zIndex: 10 
-  },
-  backText: { 
-    color: "#FEEDB6", 
-    fontSize: 20 
-  },
-  title: {
-    textAlign: "center",
-    marginTop: 50,
-    fontSize: 20,
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingBottom: 80,
-  },
-  noAlbumText: { marginTop: 16, color: "#fff", fontFamily: "Alice-Regular" },
-  addButton: {
-    position: "absolute",
-    bottom: 110,
-    alignSelf: "center",
-    backgroundColor: "#FEEDB6",
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 10, // 👈 toevoegen
-  },
-  plusWrapper: {
-    position: "absolute",
-    bottom: 100,
-    width: "100%",
-    alignItems: "center",
-    zIndex: 10,
-  },
-  modalOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    zIndex: 100,
-  },
-  modalBox: {
-    width: 300,
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    paddingTop: 24,
-    paddingBottom: 16,
-    paddingHorizontal: 24,
-    borderWidth: 1,
-    alignItems: "center",
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-
-  modalTitle: {
-    fontSize: 20,
-    fontFamily: "Alice-Regular",
-    color: "#11152A",
-    marginBottom: 20,
-  },
-
-  input: {
-    width: "100%",
-    fontSize: 16,
-    fontFamily: "Alice-Regular",
-    color: "#11152A",
-    borderBottomWidth: 1,
-    borderStyle: "dashed",
-    borderBottomColor: "#11152A",
-    paddingBottom: 8,
-    marginBottom: 24,
-    textAlign: "center",
-  },
-  modalButtons: {
-    borderTopWidth: 1,
-    flexDirection: "row",
-    justifyContent: "space-evenly",
-    alignItems: "center",
-    width: "100%",
-    paddingTop: 10,
-    paddingBottom: 10,
-    borderTopColor: "#ccc", // lijn boven cancel/create
-  },
-  modalCancel: {
-    fontSize: 18,
-    fontFamily: "Alice-Regular",
-    color: "#007AFF",
-    textAlign: "center",
-    paddingHorizontal: 20,
-  },
-
-  modalCreate: {
-    fontSize: 18,
-    fontFamily: "Alice-Regular",
-    color: "#007AFF",
-    textAlign: "center",
-    paddingHorizontal: 20,
-  },
-  buttonDivider: {
-    width: 1,
-    backgroundColor: "#ccc",
-    height: "100%",
-  },
+  loader:{ flex:1,justifyContent:"center",alignItems:"center",backgroundColor:"#000" },
+  backBtn:{ position:"absolute", left:20, zIndex:10 },
+  title:{ position:"absolute", alignSelf:"center", fontSize:20, color:"#fff", fontFamily:"Alice-Regular" },
+  editIcon:{ position:"absolute", right:20, zIndex:10 },
+  selectAllBar:{ position:"absolute", right:16 },
+  selectAllBtn:{ flexDirection:"row", alignItems:"center" },
+  circle:{ width:16,height:16,borderRadius:8,borderWidth:1.5,borderColor:"#fff" },
+  circleActive:{ backgroundColor:"#FEEDB6" },
+  selectAllText:{ marginLeft:10, color:"#fff", fontFamily:"Alice-Regular" },
+  empty:{ flex:1,justifyContent:"center",alignItems:"center" },
+  emptyText:{ marginTop:16, color:"#fff", fontFamily:"Alice-Regular" },
+  grid:{ paddingTop:90,paddingHorizontal:16,paddingBottom:160 },
+  card:{ width:CARD_SIZE,marginBottom:20,marginHorizontal:6,alignItems:"center",position:"relative" },
+  thumbnail:{ width:CARD_SIZE,height:CARD_SIZE,borderRadius:8,marginBottom:6 },
+  radio:{ position:"absolute",top:6,left:6,width:16,height:16,borderRadius:8,borderWidth:1.5,borderColor:"#fff" },
+  radioActive:{ backgroundColor:"#FEEDB6" },
+  name:{ fontSize:14,color:"#fff",fontFamily:"Alice-Regular" },
+  count:{ fontSize:12,color:"#fff",fontFamily:"Alice-Regular",opacity:0.7 },
+  footer:{ position:"absolute",left:0,right:0,flexDirection:"row",justifyContent:"center",alignItems:"center",padding:20,backgroundColor:"#11152A" },
+  footerText:{ color:"#fff",fontFamily:"Alice-Regular",fontSize:16 },
+  plusWrap:{ position:"absolute",width:"100%",alignItems:"center",zIndex:10 },
+  modalOverlay:{ flex:1,backgroundColor:"rgba(0,0,0,0.4)",justifyContent:"center",alignItems:"center" },
+  modalBox:{ width:300,backgroundColor:"#fff",borderRadius:16,padding:20,alignItems:"center" },
+  modalTitle:{ fontSize:20,fontFamily:"Alice-Regular",color:"#11152A",marginBottom:20 },
+  input:{ width:"100%",borderBottomWidth:1,borderBottomColor:"#11152A",paddingBottom:8,marginBottom:24,fontSize:16,textAlign:"center" },
+  modalRow:{ flexDirection:"row",borderTopWidth:1,borderTopColor:"#ccc",width:"100%" },
+  modalBtn:{ flex:1,alignItems:"center",paddingVertical:14 },
+  cancel:{ fontSize:16,color:"#007AFF",fontFamily:"Alice-Regular" },
+  create:{ fontSize:16,color:"#007AFF",fontFamily:"Alice-Regular" },
+  confirm:{ fontSize:16,color:"#11152A",fontFamily:"Alice-Regular",marginBottom:20,textAlign:"center" },
+  delete:{ fontSize:16,color:"#FF3B30",fontFamily:"Alice-Regular" },
+  divider:{ width:1,backgroundColor:"#ccc" },
 });
