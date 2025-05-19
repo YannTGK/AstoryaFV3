@@ -88,10 +88,11 @@ const handleSave = () => {
         </Text>
 
         {/* Old password */}
-        <View style={styles.inputWrapper}>
-          <TextInput
-            style={styles.input}
-            placeholder="Old password"
+<View style={styles.inputWrapper}>
+  <Text style={styles.inputLabel}>Old password</Text>
+  <TextInput
+    style={styles.input}
+    placeholder="Old password"
             placeholderTextColor="#999"
             secureTextEntry={!showOld}
             value={oldPassword}
@@ -104,6 +105,7 @@ const handleSave = () => {
 
         {/* New password */}
         <View style={styles.inputWrapper}>
+            <Text style={styles.inputLabel}>Old password</Text>
           <TextInput
             style={styles.input}
             placeholder="Password"
@@ -125,6 +127,7 @@ const handleSave = () => {
 
         {/* Confirm password */}
         <View style={styles.inputWrapper}>
+            <Text style={styles.inputLabel}>Old password</Text>
           <TextInput
             style={styles.input}
             placeholder="Confirm password"
@@ -215,6 +218,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     fontFamily: "Alice-Regular",
   },
+  inputLabel: {
+  fontSize: 18,
+  color: "#fff",
+  marginBottom: 4,
+  fontFamily: "Alice-Regular",
+},
   inputWrapper: {
     position: "relative",
     marginBottom: 16,
@@ -230,7 +239,7 @@ const styles = StyleSheet.create({
   eyeIcon: {
     position: "absolute",
     right: 12,
-    top: 10,
+    top: 32,
     padding: 4,
   },
   errorText: {
