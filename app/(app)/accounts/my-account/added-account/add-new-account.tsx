@@ -142,7 +142,7 @@ export default function AddAccountScreen() {
             selectedUsers.length > 0 && styles.addButtonTextActive,
           ]}
         >
-          Add {selectedUsers.length} {selectedUsers.length > 1 ? "people" : "person"}
+          Add 
         </Text>
       </TouchableOpacity>
     </View>

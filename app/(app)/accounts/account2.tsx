@@ -95,13 +95,14 @@ const styles = StyleSheet.create({
   },
   avatarWrapper: {
     position: "relative",
-    marginBottom: 12,
+    marginBottom: 24,
   },
   avatar: {
     width: 120,
     height: 120,
     borderRadius: 120,
     backgroundColor: "#FEEDB6",
+    marginTop: 24,
   },
   editCircle: {
     position: "absolute",
@@ -120,12 +121,12 @@ const styles = StyleSheet.create({
   },
   name: {
     color: "#fff",
-    fontSize: 16,
-    fontFamily: "Alice-Regular",
+    fontSize: 18,
+    fontFamily: "SUNROLL",
   },
   username: {
     color: "#ccc",
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: "Alice-Regular",
   },
   optionRow: {
