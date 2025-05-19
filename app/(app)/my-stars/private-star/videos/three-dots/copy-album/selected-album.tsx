@@ -81,8 +81,8 @@ export default function SelectAlbumScreenVideo() {
     try {
       const videoIds: string[] = JSON.parse(selected as string);
       if (!videoIds.length) return;
-
-      await Promise.all(
+  
+      const results = await Promise.all(
         picked.map((dest) =>
           api.post(`/stars/${id}/video-albums/${dest}/videos/copy`, {
             videoIds,
@@ -90,9 +90,21 @@ export default function SelectAlbumScreenVideo() {
           })
         )
       );
-
+  
+      // Toon melding als sommige zijn overgeslagen
+      const totalSkipped = results.reduce((sum, res) => sum + (res.data.skipped || 0), 0);
+      const copied = results.reduce((sum, res) => sum + (res.data.copiedIds?.length || 0), 0);
+  
       setConfirm(false);
       setDone(true);
+  
+      if (totalSkipped > 0) {
+        Alert.alert(
+          "Partial copy",
+          `${copied} copied, ${totalSkipped} already existed and were skipped.`
+        );
+      }
+  
       setTimeout(() => {
         setDone(false);
         router.back();

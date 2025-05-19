@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   emptyText: { marginTop: 16, color: "#fff", fontFamily: "Alice-Regular", textAlign: "center", lineHeight: 20 },
   footer: {
     position: "absolute", bottom: 80, left: 0, right: 0, backgroundColor: "#11152A",
-    padding: 26, flexDirection: "row", justifyContent: "center",
+    padding: 26, zIndex: 99, flexDirection: "row", justifyContent: "center",
   },
   footerText: { color: "#fff", fontFamily: "Alice-Regular", fontSize: 16 },
   plus: { position: "absolute", bottom: 100, width: "100%", alignItems: "center" },
