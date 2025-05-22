@@ -33,6 +33,7 @@ export default function CreatedVideoAlbum() {
   const [selected, setSelected] = useState<string[]>([]);
   const [mode, setMode] = useState<"delete" | "copy" | "move" | null>(null);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [fullscreenVideo, setFullscreenVideo] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -168,10 +169,10 @@ export default function CreatedVideoAlbum() {
               onPress={() => {
                 if (mode) {
                   setSelected((s) =>
-                    s.includes(item._id)
-                      ? s.filter((x) => x !== item._id)
-                      : [...s, item._id]
+                    s.includes(item._id) ? s.filter((x) => x !== item._id) : [...s, item._id]
                   );
+                } else {
+                  setFullscreenVideo(item.url); // Open video in fullscreen
                 }
               }}
             >
@@ -257,6 +258,24 @@ export default function CreatedVideoAlbum() {
           </View>
         </View>
       </Modal>
+      {/* FULLSCREEN VIDEO */}
+      <Modal visible={!!fullscreenVideo} transparent animationType="fade">
+        <View style={styles.fullscreenOverlay}>
+          <TouchableOpacity style={styles.closeButton} onPress={() => setFullscreenVideo(null)}>
+            <Feather name="x" size={28} color="#fff" />
+          </TouchableOpacity>
+          {fullscreenVideo && (
+            <Video
+              source={{ uri: fullscreenVideo }}
+              style={styles.fullscreenVideo}
+              useNativeControls
+              resizeMode="contain"
+              shouldPlay
+            />
+          )}
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -298,4 +317,20 @@ const styles = StyleSheet.create({
   modalRow: { flexDirection: "row", borderTopWidth: 1, borderColor: "#ccc", marginTop: 20 },
   modalBtn: { flex: 1, alignItems: "center", paddingVertical: 12 },
   divider: { width: 1, backgroundColor: "#ccc" },
+  fullscreenOverlay: {
+    flex: 1,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullscreenVideo: {
+    width: "100%",
+    height: "80%",
+  },
+  closeButton: {
+    position: "absolute",
+    top: 60,
+    right: 20,
+    zIndex: 10,
+  },
 });
