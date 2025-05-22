@@ -34,6 +34,7 @@ type AudioItem = {
 export default function AudioScreen() {
   const router = useRouter();
   const { starId, id } = useLocalSearchParams<{ starId?: string; id?: string }>();
+  // soms ontvang je de param als `id` in plaats van `starId`
   const realStarId = starId ?? id;
 
   const [audios, setAudios] = useState<AudioItem[]>([]);
@@ -42,22 +43,19 @@ export default function AudioScreen() {
   const [showModal, setShowModal] = useState(false);
   const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
 
-  // ① Haal lijst op
+  // ① Lijst ophalen
   useEffect(() => {
     if (!realStarId) {
-      console.warn("No starId or id in params!");
+      Alert.alert("Fout", "Geen starId meegegeven");
       setLoading(false);
       return;
     }
-    console.log("Fetching audios for:", realStarId);
     (async () => {
-      setLoading(true);
       try {
         const resp = await api.get<AudioItem[]>(`/stars/${realStarId}/audios`);
-        console.log("API response data:", resp.data);
-        setAudios(Array.isArray(resp.data) ? resp.data : []);
+        setAudios(resp.data);
       } catch (err) {
-        console.error("Error fetching audios:", err);
+        console.error(err);
         Alert.alert("Fout", "Kon audio's niet ophalen.");
       } finally {
         setLoading(false);
@@ -67,123 +65,98 @@ export default function AudioScreen() {
 
   // ② Verwijderen
   const handleDelete = async () => {
-    if (deletingIndex === null) {
-      console.warn("handleDelete called but deletingIndex is null");
-      return;
-    }
+    if (deletingIndex === null) return;
     const audio = audios[deletingIndex];
-    console.log("Deleting audio:", audio._id);
     try {
       await api.delete(`/stars/${realStarId}/audios/detail/${audio._id}`);
-      console.log("Delete successful for:", audio._id);
       setAudios(audios.filter((_, i) => i !== deletingIndex));
       setMenuOpenIndex(null);
       setDeletingIndex(null);
       setShowModal(false);
     } catch (err) {
-      console.error("Error deleting audio:", err);
+      console.error(err);
       Alert.alert("Fout", "Verwijderen is mislukt.");
     }
   };
 
   // ③ Download
   const handleDownload = async (url: string, title: string) => {
-    console.log("Downloading from URL:", url);
     try {
       const filename = `${title || "audio"}.m4a`;
       const path = FileSystem.documentDirectory + filename;
-      console.log(`Saving to local path: ${path}`);
-      const res = await FileSystem.downloadAsync(url, path);
-      console.log("Download finished:", res);
+      await FileSystem.downloadAsync(url, path);
       Alert.alert("Success", "Audio lokaal opgeslagen.");
     } catch (err) {
-      console.error("Error downloading audio:", err);
+      console.error(err);
       Alert.alert("Fout", "Download mislukt.");
     }
   };
 
   // ④ Upload vanuit bestand
   const handleUploadAudio = async () => {
-    console.log("Opening DocumentPicker...");
     const result = await DocumentPicker.getDocumentAsync({ type: "audio/*" });
-    console.log("DocumentPicker result:", result);
-    if (result.type !== "success") {
-      console.log("Picker canceled or failed:", result);
-      return;
-    }
+    if (result.type !== "success") return;
+    const { uri, name } = result.assets[0];
     router.push({
       pathname: "/(app)/my-stars/private-star/audios/upload-edit-audio",
-      params: { uri: result.uri, name: result.name, starId: realStarId },
+      params: { uri, name, starId: realStarId },
     });
   };
 
-  // ⑤ Render item
-  const renderItem = ({ item, index }: { item: AudioItem; index: number }) => {
-    console.log("Rendering item:", index, item);
-    return (
-      <View style={styles.audioCard}>
-        <View style={styles.cardHeader}>
-          <View>
-            <Text style={styles.audioTitle}>{item.title || "My story"}</Text>
-            <Text style={styles.audioDate}>
-              {new Date(item.addedAt).toLocaleDateString("nl-BE", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
-            </Text>
-          </View>
+  // ⑤ Item renderen
+  const renderItem = ({ item, index }: { item: AudioItem; index: number }) => (
+    <View style={styles.audioCard}>
+      <View style={styles.cardHeader}>
+        <View>
+          <Text style={styles.audioTitle}>{item.title || "My story"}</Text>
+          <Text style={styles.audioDate}>
+            {new Date(item.addedAt).toLocaleDateString("nl-BE", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => setMenuOpenIndex(menuOpenIndex === index ? null : index)}
+        >
+          <Entypo name="dots-three-vertical" size={18} color="#fff" />
+        </TouchableOpacity>
+      </View>
+
+      <AudioPlayer uri={item.url} />
+
+      {menuOpenIndex === index && (
+        <View style={styles.menu}>
           <TouchableOpacity
-            onPress={() =>
-              setMenuOpenIndex(menuOpenIndex === index ? null : index)
-            }
+            style={styles.menuItem}
+            onPress={() => {
+              setDeletingIndex(index);
+              setShowModal(true);
+            }}
           >
-            <Entypo name="dots-three-vertical" size={18} color="#fff" />
+            <DeleteIcon width={16} height={16} />
+            <Text style={styles.menuText}>Delete</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => handleDownload(item.url, item.title)}
+          >
+            <DownloadIcon width={16} height={16} />
+            <Text style={styles.menuText}>Download</Text>
           </TouchableOpacity>
         </View>
+      )}
+    </View>
+  );
 
-        <AudioPlayer uri={item.url} />
-
-        {menuOpenIndex === index && (
-          <View style={styles.menu}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setDeletingIndex(index);
-                setShowModal(true);
-              }}
-            >
-              <View style={styles.menuItemRow}>
-                <DeleteIcon width={16} height={16} />
-                <Text style={styles.menuText}>Delete</Text>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => handleDownload(item.url, item.title)}
-            >
-              <View style={styles.menuItemRow}>
-                <DownloadIcon width={16} height={16} />
-                <Text style={styles.menuText}>Download</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-    );
-  };
-
-  // ⑥ Loading / Empty states
   if (loading) {
-    console.log("Still loading...");
     return (
       <View style={styles.centerContent}>
         <ActivityIndicator size="large" color="#FEEDB6" />
       </View>
     );
   }
-
-  console.log("Rendered audios array length:", audios.length);
 
   return (
     <View style={{ flex: 1 }}>
@@ -214,10 +187,7 @@ export default function AudioScreen() {
       ) : (
         <FlatList
           data={audios}
-          keyExtractor={(item) => {
-            console.log("keyExtractor for:", item, "=>", item._id);
-            return item._id;
-          }}
+          keyExtractor={(item) => item._id}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
         />
@@ -244,19 +214,13 @@ export default function AudioScreen() {
             </Text>
             <View style={styles.modalActions}>
               <TouchableOpacity
-                onPress={() => {
-                  console.log("Cancel delete");
-                  setShowModal(false);
-                }}
+                onPress={() => setShowModal(false)}
                 style={styles.modalButton}
               >
                 <Text style={styles.modalButtonText}>No</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => {
-                  console.log("Confirm delete");
-                  handleDelete();
-                }}
+                onPress={handleDelete}
                 style={styles.modalButton}
               >
                 <Text style={styles.modalButtonText}>Yes</Text>
@@ -284,8 +248,6 @@ const styles = StyleSheet.create({
     top: 70,
     right: 16,
     zIndex: 10,
-    borderRadius: 50,
-    padding: 8,
   },
   centerContent: {
     flex: 1,
@@ -346,17 +308,20 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   menuItem: {
-    paddingVertical: 8,
-  },
-  menuItemRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    paddingVertical: 8,
   },
   menuText: {
-    fontSize: 14,
+    marginLeft: 8,
     fontFamily: "Alice-Regular",
+    fontSize: 14,
     color: "#11152A",
+  },
+  listContent: {
+    paddingTop: 30,
+    paddingHorizontal: 16,
+    paddingBottom: 240,
   },
   modalOverlay: {
     flex: 1,
@@ -366,8 +331,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     backgroundColor: "#fff",
-    paddingVertical: 24,
-    paddingHorizontal: 20,
+    padding: 20,
     borderRadius: 12,
     width: 280,
     alignItems: "center",
@@ -375,15 +339,13 @@ const styles = StyleSheet.create({
   modalText: {
     fontFamily: "Alice-Regular",
     fontSize: 16,
-    textAlign: "center",
     marginBottom: 16,
+    textAlign: "center",
   },
   modalActions: {
     flexDirection: "row",
     justifyContent: "space-between",
     width: "100%",
-    borderTopWidth: 1,
-    borderColor: "#E6E6E6",
   },
   modalButton: {
     flex: 1,
