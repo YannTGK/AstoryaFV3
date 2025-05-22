@@ -150,16 +150,16 @@ export default function EditAudioScreen() {
       {/* Dropdown Menu */}
       {showMenu && (
         <View style={styles.menuDropdown}>
-<TouchableOpacity
-  style={styles.menuItem}
-  onPress={() => router.push("/(app)/my-stars/private-star/photos/three-dots/add-people/AddMorePeople")}
->            <UserPlusIcon width={16} height={16} style={{ marginRight: 8 }} />
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push("/(app)/my-stars/private-star/photos/three-dots/add-people/AddMorePeople")}
+          >            <UserPlusIcon width={16} height={16} style={{ marginRight: 8 }} />
             <Text style={styles.menuTextItem}>Add people</Text>
           </TouchableOpacity>
-<TouchableOpacity
-  style={styles.menuItem}
-  onPress={() => router.push("/(app)/my-stars/private-star/photos/three-dots/see-members/SeeMembersPhoto")}
->            <UserIcon width={16} height={16} style={{ marginRight: 8 }} />
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => router.push("/(app)/my-stars/private-star/photos/three-dots/see-members/SeeMembersPhoto")}
+          >            <UserIcon width={16} height={16} style={{ marginRight: 8 }} />
             <Text style={styles.menuTextItem}>See members</Text>
           </TouchableOpacity>
         </View>
