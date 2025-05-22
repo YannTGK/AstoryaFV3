@@ -1,4 +1,4 @@
-// app/(app)/my-stars/private-star/audios/upload-edit-audio/EditAudioScreen.tsx
+// app/(app)/my-stars/private-star/audios/upload-edit-audio/UploadEditAudioScreen.tsx
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -31,26 +31,47 @@ function formatTime(ms: number): string {
 export default function UploadEditAudioScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
-    uri: string;
+    uri?: string;
     name?: string;
     starId?: string;
     id?: string;
   }>();
   const rawUri = params.uri;
-  const name = params.name;
-  const realStarId = params.starId ?? params.id;
-  const uri = typeof rawUri === "string" ? rawUri : "";
+  const filename = params.name;
+  const realStarId = params.starId;
+  const audioId = params.id;           // indien present → edit-mode
+  const isEditMode = Boolean(audioId);
 
+  const [uri, setUri] = useState(rawUri || "");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  // playback state
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(1);
   const [barWidth, setBarWidth] = useState(0);
+  const [showMenu, setShowMenu] = useState(false);
 
+  // ── laad bestaande data in edit-mode
   useEffect(() => {
-    // audio-mode
+    if (isEditMode && realStarId && audioId) {
+      api
+        .get(`/stars/${realStarId}/audios/detail/${audioId}`)
+        .then(({ data }) => {
+          setTitle(data.title);
+          setDescription(data.description);
+          setUri(data.url);
+        })
+        .catch((err) => {
+          console.error(err);
+          Alert.alert("Fout", "Kon audio detail niet ophalen.");
+        });
+    }
+  }, [isEditMode, realStarId, audioId]);
+
+  // ── Audio modus & cleanup
+  useEffect(() => {
     Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
       staysActiveInBackground: false,
@@ -63,6 +84,7 @@ export default function UploadEditAudioScreen() {
     };
   }, [sound]);
 
+  // ── play / pauze
   const loadAndPlay = async () => {
     if (!sound) {
       const { sound: newSound } = await Audio.Sound.createAsync(
@@ -73,9 +95,7 @@ export default function UploadEditAudioScreen() {
           setPosition(status.positionMillis);
           setDuration(status.durationMillis || 1);
           setIsPlaying(status.isPlaying);
-          if (status.didJustFinish) {
-            setIsPlaying(false);
-          }
+          if (status.didJustFinish) setIsPlaying(false);
         }
       );
       setSound(newSound);
@@ -93,21 +113,20 @@ export default function UploadEditAudioScreen() {
     }
   };
 
+  // ── slider PanResponder
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderGrant: (evt) => {
-        if (!sound || !duration || !barWidth) return;
-        const x = evt.nativeEvent.locationX;
-        const ratio = Math.min(Math.max(x / barWidth, 0), 1);
+        if (!sound || !barWidth) return;
+        const ratio = Math.min(Math.max(evt.nativeEvent.locationX / barWidth, 0), 1);
         const newPos = ratio * duration;
         sound.setPositionAsync(newPos);
         setPosition(newPos);
       },
       onPanResponderMove: (evt) => {
-        if (!sound || !duration || !barWidth) return;
-        const x = evt.nativeEvent.locationX;
-        const ratio = Math.min(Math.max(x / barWidth, 0), 1);
+        if (!sound || !barWidth) return;
+        const ratio = Math.min(Math.max(evt.nativeEvent.locationX / barWidth, 0), 1);
         const newPos = ratio * duration;
         sound.setPositionAsync(newPos);
         setPosition(newPos);
@@ -115,35 +134,34 @@ export default function UploadEditAudioScreen() {
     })
   ).current;
 
-  const handleUpload = async () => {
-    if (!realStarId) {
-      Alert.alert("Fout", "Geen starId meegegeven.");
-      return;
-    }
-    if (!title.trim()) {
-      Alert.alert("Vul een titel in");
-      return;
-    }
+  // ── Upload of Update
+  const handleSave = async () => {
+    if (!realStarId) return Alert.alert("Fout", "Geen starId");
+    if (!title.trim()) return Alert.alert("Vul een titel in");
     try {
       const fd = new FormData();
-      fd.append("audio", {
-        uri,
-        name: name || "recording.m4a",
-        type: "audio/m4a",
-      } as any);
+      if (!isEditMode && uri) {
+        fd.append("audio", {
+          uri,
+          name: filename || "recording.m4a",
+          type: "audio/m4a",
+        } as any);
+      }
       fd.append("title", title);
-      fd.append("description", description || "");
-      // canView / canEdit niet nodig nu
-
-      await api.post(`/stars/${realStarId}/audios/upload`, fd);
-      Alert.alert("Succes", "Audio geüpload!");
+      fd.append("description", description);
+      if (isEditMode) {
+        await api.put(`/stars/${realStarId}/audios/detail/${audioId}`, fd);
+      } else {
+        await api.post(`/stars/${realStarId}/audios/upload`, fd);
+      }
+      Alert.alert("Succes", isEditMode ? "Audio bijgewerkt!" : "Audio geüpload!");
       router.replace({
         pathname: "/(app)/my-stars/private-star/audios/audios",
         params: { starId: realStarId },
       });
     } catch (err) {
       console.error(err);
-      Alert.alert("Fout", "Upload mislukt.");
+      Alert.alert("Fout", isEditMode ? "Bijwerken mislukt." : "Upload mislukt.");
     }
   };
 
@@ -155,10 +173,7 @@ export default function UploadEditAudioScreen() {
       />
 
       {/* Back */}
-      <TouchableOpacity
-        style={styles.backBtn}
-        onPress={() => router.back()}
-      >
+      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
           <Path
             d="M15 18l-6-6 6-6"
@@ -170,9 +185,44 @@ export default function UploadEditAudioScreen() {
         </Svg>
       </TouchableOpacity>
 
+      {/* 3-dots menu */}
+      <TouchableOpacity
+        style={styles.menuBtn}
+        onPress={() => setShowMenu(!showMenu)}
+      >
+        <Text style={styles.menuText}>⋮</Text>
+      </TouchableOpacity>
+      {showMenu && (
+        <View style={styles.menuDropdown}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() =>
+              router.push(
+                "/(app)/my-stars/private-star/photos/three-dots/add-people/AddMorePeople"
+              )
+            }
+          >
+            <UserPlusIcon width={16} height={16} style={{ marginRight: 8 }} />
+            <Text style={styles.menuTextItem}>Add people</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() =>
+              router.push(
+                "/(app)/my-stars/private-star/photos/three-dots/see-members/SeeMembersPhoto"
+              )
+            }
+          >
+            <UserIcon width={16} height={16} style={{ marginRight: 8 }} />
+            <Text style={styles.menuTextItem}>See members</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <ScrollView contentContainerStyle={{ paddingBottom: 150 }}>
         <Text style={styles.title}>Audio</Text>
-        { /* form */}
+
+        {/* form */}
         <View style={styles.form}>
           <TextInput
             style={styles.input}
@@ -190,18 +240,12 @@ export default function UploadEditAudioScreen() {
             multiline
             numberOfLines={3}
           />
-          <TextInput
-            style={styles.input}
-            placeholder="To: @username"
-            placeholderTextColor="#999"
-            value={""} // voorlopig leeg, niet gebruikt
-            onChangeText={() => {}}
-          />
         </View>
-        {/* player */}
+
+        {/* speler onder form */}
         <View style={styles.playerBox}>
           <Text style={styles.audioFilename}>
-            {title || name || "audio.mp3"}
+            {title || filename || "audio.mp3"}
           </Text>
           <View
             style={styles.progressBar}
@@ -244,12 +288,11 @@ export default function UploadEditAudioScreen() {
           </View>
         </View>
 
-        
-
+        {/* Upload/Save */}
         <TouchableOpacity
           style={[styles.addBtn, title.trim() && styles.addBtnActive]}
           disabled={!title.trim()}
-          onPress={handleUpload}
+          onPress={handleSave}
         >
           <Text
             style={[
@@ -257,7 +300,7 @@ export default function UploadEditAudioScreen() {
               title.trim() && styles.addTextActive,
             ]}
           >
-            Upload
+            {isEditMode ? "Save" : "Upload"}
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -266,12 +309,27 @@ export default function UploadEditAudioScreen() {
 }
 
 const styles = StyleSheet.create({
-  backBtn: {
+  backBtn: { position: "absolute", top: 80, left: 20, zIndex: 10 },
+  menuBtn: { position: "absolute", top: 80, right: 20, zIndex: 20 },
+  menuText: { color: "#fff", fontSize: 28, fontFamily: "Alice-Regular" },
+  menuDropdown: {
     position: "absolute",
-    top: 50,
-    left: 20,
-    zIndex: 10,
+    top: 80,
+    right: 20,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 25,
   },
+  menuItem: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
+  menuTextItem: { color: "#11152A", fontFamily: "Alice-Regular", fontSize: 14 },
+
   title: {
     textAlign: "center",
     marginTop: 80,
@@ -279,10 +337,18 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontFamily: "Alice-Regular",
   },
-  playerBox: {
-    alignItems: "center",
-    marginTop: 20,
+  form: { marginTop: 30, paddingHorizontal: 20 },
+  input: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    fontSize: 14,
+    fontFamily: "Alice-Regular",
   },
+  descriptionInput: { height: 100, textAlignVertical: "top" },
+
+  playerBox: { alignItems: "center", marginTop: 20 },
   audioFilename: {
     color: "#fff",
     fontSize: 16,
@@ -297,10 +363,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginTop: 8,
   },
-  progressFill: {
-    height: "100%",
-    backgroundColor: "#FEEDB6",
-  },
+  progressFill: { height: "100%", backgroundColor: "#FEEDB6" },
   progressThumb: {
     position: "absolute",
     top: -52,
@@ -327,22 +390,7 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     marginTop: 16,
   },
-  form: {
-    marginTop: 30,
-    paddingHorizontal: 20,
-  },
-  input: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    fontSize: 14,
-    fontFamily: "Alice-Regular",
-  },
-  descriptionInput: {
-    height: 100,
-    textAlignVertical: "top",
-  },
+
   addBtn: {
     position: "absolute",
     bottom: 40,
@@ -353,16 +401,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
   },
-  addBtnActive: {
-    backgroundColor: "#FEEDB6",
-  },
+  addBtnActive: { backgroundColor: "#FEEDB6" },
   addText: {
     fontSize: 18,
     color: "#333",
     fontFamily: "Alice-Regular",
   },
-  addTextActive: {
-    color: "#11152A",
-    fontWeight: "600",
-  },
+  addTextActive: { color: "#11152A", fontWeight: "600" },
 });

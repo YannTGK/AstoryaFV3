@@ -103,7 +103,15 @@ export default function AudioScreen() {
 
   // ── render
   const renderItem = ({ item, index }: { item: AudioItem; index: number }) => (
-    <View style={styles.audioCard}>
+    <TouchableOpacity
+     onPress={() =>
+       router.push({
+         pathname: "/(app)/my-stars/private-star/audios/upload-edit-audio",
+         params: { id: item._id, starId: realStarId },
+       })
+     }
+     style={styles.audioCard}
+    >
       <View style={styles.cardHeader}>
         <View>
           <Text style={styles.audioTitle}>{item.title || "My story"}</Text>
@@ -140,7 +148,7 @@ export default function AudioScreen() {
           </TouchableOpacity>
         </View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 
   if (loading) {
