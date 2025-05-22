@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+// app/(app)/my-stars/private-star/audios/components/AudioPlayer.tsx
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -19,13 +20,11 @@ export default function AudioPlayer({ uri }: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(1);
-  const progress = useRef(new Animated.Value(0)).current;
-  const animationFrame = useRef<number | null>(null);
+  const progress = useState(() => new Animated.Value(0))[0];
 
   useEffect(() => {
     return () => {
-      if (sound) sound.unloadAsync();
-      if (animationFrame.current) cancelAnimationFrame(animationFrame.current);
+      sound?.unloadAsync();
     };
   }, [sound]);
 
@@ -33,74 +32,58 @@ export default function AudioPlayer({ uri }: AudioPlayerProps) {
     const totalSeconds = Math.floor(ms / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
-  };
-
-  const updateProgress = async () => {
-    if (sound) {
-      const status = await sound.getStatusAsync();
-      if (status.isLoaded && status.isPlaying) {
-        const ratio = status.positionMillis / (status.durationMillis || 1);
-        progress.setValue(ratio);
-        setPosition(status.positionMillis);
-        animationFrame.current = requestAnimationFrame(updateProgress);
-      }
-    }
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
   const togglePlayPause = async () => {
     if (!sound) {
-      const { sound: newSound } = await Audio.Sound.createAsync({ uri });
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri },
+        { shouldPlay: false, isLooping: false },
+        onPlaybackStatusUpdate
+      );
       setSound(newSound);
       await newSound.playAsync();
       setIsPlaying(true);
-
-      const status = await newSound.getStatusAsync();
-      if (status.isLoaded) {
-        setDuration(status.durationMillis || 1);
-      }
-
-      newSound.setOnPlaybackStatusUpdate((status) => {
-        if (!status.isLoaded) return;
-        const pos = status.positionMillis;
-        const dur = status.durationMillis || 1;
-        progress.setValue(pos / dur);
-        setPosition(pos);
-        setDuration(dur);
-        setIsPlaying(status.isPlaying);
-
-        if (status.didJustFinish) {
-          setIsPlaying(false);
-          if (animationFrame.current) cancelAnimationFrame(animationFrame.current);
-        }
-      });
-
-      animationFrame.current = requestAnimationFrame(updateProgress);
     } else {
       const status = await sound.getStatusAsync();
-      if (status.isLoaded) {
-        if (status.isPlaying) {
-          await sound.pauseAsync();
-          setIsPlaying(false);
-          if (animationFrame.current) cancelAnimationFrame(animationFrame.current);
-        } else {
-          await sound.playAsync();
-          setIsPlaying(true);
-          animationFrame.current = requestAnimationFrame(updateProgress);
-        }
+      if (!status.isLoaded) return;
+      if (status.isPlaying) {
+        await sound.pauseAsync();
+        setIsPlaying(false);
+      } else {
+        await sound.playAsync();
+        setIsPlaying(true);
       }
     }
   };
 
+  const onPlaybackStatusUpdate = (status: Audio.AVPlaybackStatus) => {
+    if (!status.isLoaded) return;
+    const pos = status.positionMillis;
+    const dur = status.durationMillis || 1;
+    progress.setValue(pos / dur);
+    setPosition(pos);
+    setDuration(dur);
+    setIsPlaying(status.isPlaying);
+
+    if (status.didJustFinish) {
+      setIsPlaying(false);
+      progress.setValue(1);
+    }
+  };
+
+  // timeline is exact 300px breed
   const progressWidth = progress.interpolate({
     inputRange: [0, 1],
     outputRange: ["0%", "100%"],
     extrapolate: "clamp",
   });
 
+  // dot moet van -5 (half dot left) tot 295 (300 - half dot)
   const thumbTranslateX = progress.interpolate({
     inputRange: [0, 1],
-    outputRange: [-5, 205], // breedte van de lijn
+    outputRange: [-5, 295],
     extrapolate: "clamp",
   });
 
@@ -113,7 +96,11 @@ export default function AudioPlayer({ uri }: AudioPlayerProps) {
           style={[styles.movingDot, { transform: [{ translateX: thumbTranslateX }] }]}
         />
         <TouchableOpacity onPress={togglePlayPause} style={styles.playIcon}>
-          {isPlaying ? <PauseIcon width={20} height={20} /> : <PlayIcon width={20} height={20} />}
+          {isPlaying ? (
+            <PauseIcon width={20} height={20} />
+          ) : (
+            <PlayIcon width={20} height={20} />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -150,7 +137,7 @@ const styles = StyleSheet.create({
     top: "50%",
     left: 0,
   },
-    movingDot: {
+  movingDot: {
     position: "absolute",
     top: "50%",
     left: 0,
@@ -159,15 +146,14 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: "#FEEDB6",
     marginTop: -5,
-    zIndex: 2, // ⬅️ Zorg dat de dot bovenop komt
+    zIndex: 2,
   },
-
   playIcon: {
     position: "absolute",
     top: "150%",
     left: "50%",
     transform: [{ translateX: -10 }, { translateY: -10 }],
-    zIndex: 2,
+    zIndex: 3,
   },
   infoRow: {
     flexDirection: "row",

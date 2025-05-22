@@ -43,7 +43,7 @@ export default function FinalMyStarPrivate() {
   const icons = [
     { label: "Photo's",    route: "/(app)/my-stars/private-star/photos/photo-album",              icon: <PhotosIcon    width={60} height={60} /> },
     { label: "Video’s",    route: "/(app)/my-stars/private-star/videos/video-album",  icon: <VideosIcon    width={60} height={60} /> },
-    { label: "Audio’s",    route: "/(app)/my-stars/private-star/audios/no-audios",    icon: <AudiosIcon    width={60} height={60} /> },
+    { label: "Audio’s",    route: "/(app)/my-stars/private-star/audios/audios",    icon: <AudiosIcon    width={60} height={60} /> },
     { label: "Messages",   route: "/(app)/my-stars/private-star/messages/no-messages",icon: <MessagesIcon  width={60} height={60} /> },
     { label: "Documents",  route: "/(app)/my-stars/private-star/documents/no-documents", icon: <DocumentsIcon width={60} height={60} /> },
     { label: "3D VR Space",route: "/(app)/my-stars/private-star/vr-space",            icon: <VRSpaceIcon   width={60} height={60} /> },
