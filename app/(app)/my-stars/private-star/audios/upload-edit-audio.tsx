@@ -1,4 +1,3 @@
-// app/(app)/my-stars/private-star/audios/upload-edit-audio/UploadEditAudioScreen.tsx
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -45,7 +44,6 @@ export default function UploadEditAudioScreen() {
   const [uri, setUri] = useState(rawUri || "");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  // playback state
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [position, setPosition] = useState(0);
@@ -197,9 +195,14 @@ export default function UploadEditAudioScreen() {
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() =>
-              router.push(
-                "/(app)/my-stars/private-star/photos/three-dots/add-people/AddMorePeople"
-              )
+              router.push({
+                pathname:
+                  "/(app)/my-stars/private-star/audios/three-dots/add-people/AddPeoplePage",
+                params: {
+                  starId: realStarId,
+                  id: audioId,
+                },
+              })
             }
           >
             <UserPlusIcon width={16} height={16} style={{ marginRight: 8 }} />
@@ -208,9 +211,14 @@ export default function UploadEditAudioScreen() {
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() =>
-              router.push(
-                "/(app)/my-stars/private-star/photos/three-dots/see-members/SeeMembersPhoto"
-              )
+              router.push({
+                pathname:
+                  "/(app)/my-stars/private-star/audios/three-dots/see-members/SeeMembersAudio",
+                params: {
+                  starId: realStarId,
+                  id: audioId,
+                },
+              })
             }
           >
             <UserIcon width={16} height={16} style={{ marginRight: 8 }} />

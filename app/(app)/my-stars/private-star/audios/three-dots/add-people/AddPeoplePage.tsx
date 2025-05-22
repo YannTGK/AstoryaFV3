@@ -1,4 +1,4 @@
-// app/(app)/my-stars/private-star/photos/three-dots/add-people/AddPeoplePage.tsx
+// app/(app)/my-stars/private-star/audios/three-dots/add-people/AddPeoplePage.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -7,11 +7,9 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  Alert,
 } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Svg, { Path } from "react-native-svg";
@@ -20,18 +18,15 @@ import api from "@/services/api";
 type Contact = { _id: string; username: string };
 
 export default function AddPeoplePage() {
-  /* ── routing & params ──────────────────────────────── */
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { id, albumId, albumName } = useLocalSearchParams<{ id:string; albumId:string; albumName:string }>();
-
-  /* ── state ─────────────────────────────────────────── */
+  const { starId, id: audioId } = useLocalSearchParams<{ starId: string; id: string }>();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [popup,   setPopup]     = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [popup, setPopup] = useState(false);
+  
 
-  /* ── fetch mijn contacten ──────────────────────────── */
   useEffect(() => {
     (async () => {
       try {
@@ -45,56 +40,43 @@ export default function AddPeoplePage() {
     })();
   }, []);
 
-  /* ── toggle selectie ───────────────────────────────── */
-  const toggleSelect = (id: string) => {
-    setSelected(prev => (prev[0] === id ? [] : [id]));
+  const toggleSelect = (uid: string) => {
+    setSelected(prev => (prev[0] === uid ? [] : [uid]));
   };
 
-  /* ── Add ⇒ album.canView patch ─────────────────────── */
   const addMembers = async () => {
+    if (!starId || !audioId) return;
+    console.log("Navigating to AddPeoplePage with:", { starId, audioId });
     try {
-      /* 1️⃣ eerst huidige album ophalen om overlap te vermijden */
-      const detail = await api.get(`/photo-albums/detail/${albumId}`);
+      const detail = await api.get(`/stars/${starId}/audios/detail/${audioId}`);
       const current: string[] = detail.data.canView ?? [];
-
-      /* 2️⃣ array-union */
       const updated = Array.from(new Set([...current, ...selected]));
+      await api.put(`/stars/${starId}/audios/detail/${audioId}`, { canView: updated });
 
-      /* 3️⃣ opslaan */
-      await api.put(`/photo-albums/detail/${albumId}`, { canView: updated });
-
-      /* 4️⃣ feedback + terug */
       setPopup(true);
       setTimeout(() => {
         setPopup(false);
-        router.push({
-           pathname: "/(app)/my-stars/private-star/photos/created-album",
-           params:   { id, albumId, albumName },   // ← alles meegeven
-         });
-      }, 2500);
+        router.back();
+      }, 2000);
     } catch (err) {
-      console.error("add-to-album:", err);
+      console.error("add-to-audio:", err);
+      Alert.alert("Fout", "Kon mensen niet toevoegen.");
     }
   };
 
-  /* ── loader ────────────────────────────────────────── */
   if (loading) {
     return (
-      <SafeAreaView edges={["top", "left", "right"]} style={styles.center}>
+      <SafeAreaView style={styles.center}>
         <ActivityIndicator size="large" color="#FEEDB6" />
       </SafeAreaView>
     );
   }
 
-  /* ── UI ────────────────────────────────────────────── */
   return (
-    <SafeAreaView edges={["top", "left", "right"]} style={{ flex: 1 }}>
-      <LinearGradient
-        colors={["#000", "#273166", "#000"]}
-        style={StyleSheet.absoluteFill}
-      />
+    <SafeAreaView style={{ flex: 1 }}>
+      <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
 
-      {/* ← back */}
+      {/* ← Back */}
       <TouchableOpacity
         style={[styles.backBtn, { top: insets.top + 10 }]}
         onPress={() => router.back()}
@@ -104,32 +86,29 @@ export default function AddPeoplePage() {
         </Svg>
       </TouchableOpacity>
 
-      {/* ＋ plus */}
+      {/* ＋ Nieuwe contact */}
       <TouchableOpacity
-        style={[styles.addNewBtn, { top: insets.top + 0 }]}
+        style={[styles.addNewBtn, { top: insets.top + 10 }]}
         onPress={() =>
           router.push({
-            pathname:
-              "/(app)/my-stars/private-star/photos/three-dots/add-people/AddMorePeople",
-            params: { albumId }, // geef albumId door
+            pathname: "/(app)/my-stars/private-star/audios/three-dots/add-people/AddMorePeople",
+            params: { starId, audioId },
           })
         }
       >
         <Text style={styles.plus}>＋</Text>
       </TouchableOpacity>
 
-      <Text style={[styles.title, { marginTop: insets.top + 0 }]}>
-        Add people to album
+      <Text style={[styles.title, { marginTop: insets.top + 50 }]}>
+        Add people to audio
       </Text>
-
       <Text style={styles.subtitle}>
-        Select contacts to add to the album. Tap the plus icon to add someone
-        new.
+        Select contacts who can view this audio.
       </Text>
 
       <FlatList
         data={contacts}
-        keyExtractor={(item) => item._id}
+        keyExtractor={item => item._id}
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16 }}
         renderItem={({ item }) => {
           const chosen = selected.includes(item._id);
@@ -152,13 +131,13 @@ export default function AddPeoplePage() {
         disabled={selected.length === 0}
         onPress={addMembers}
       >
-        <Text style={styles.submitText}>Add to album</Text>
+        <Text style={styles.submitText}>Add to audio</Text>
       </TouchableOpacity>
 
       {popup && (
         <View style={styles.popup}>
           <Text style={styles.popupText}>
-            New people were added. Open the ⋯ menu to view members.
+            The user has been added to your audio.
           </Text>
         </View>
       )}
@@ -166,9 +145,10 @@ export default function AddPeoplePage() {
   );
 }
 
-/* ── STYLES (onveranderd) ─────────────────────────────── */
 const styles = StyleSheet.create({
   backBtn: { position: "absolute", left: 20, zIndex: 10 },
+  addNewBtn: { position: "absolute", right: 16, zIndex: 10 },
+  plus: { fontSize: 32, color: "#fff" },
   title: {
     fontFamily: "Alice-Regular",
     fontSize: 20,
@@ -178,20 +158,13 @@ const styles = StyleSheet.create({
   subtitle: {
     color: "#fff",
     fontFamily: "Alice-Regular",
-    fontSize: 18,
-    marginTop: 24,
-    textAlign: "left",
+    fontSize: 16,
+    marginTop: 8,
+    textAlign: "center",
     paddingHorizontal: 16,
   },
-  addNewBtn: {
-    position: "absolute",
-    right: 16,
-    zIndex: 10,
-  },
-  plus: { fontSize: 32, color: "#fff" },
-
   userItem: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(255,255,255,0.1)",
     borderRadius: 8,
     paddingVertical: 16,
     paddingHorizontal: 16,
@@ -201,7 +174,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   userItemSelected: {
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "rgba(255,255,255,0.2)",
   },
   userText: {
     color: "#fff",
@@ -228,8 +201,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     marginHorizontal: 16,
     borderRadius: 8,
-    marginBottom: 105,
     marginTop: 16,
+    marginBottom: 40,
   },
   submitText: {
     color: "#11152A",
@@ -239,26 +212,20 @@ const styles = StyleSheet.create({
   },
   popup: {
     position: "absolute",
-    bottom: 410,
+    bottom: 200,
     left: 40,
     right: 40,
     backgroundColor: "#fff",
     borderRadius: 16,
     padding: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 10,
-    elevation: 10,
     alignItems: "center",
     zIndex: 100,
   },
   popupText: {
     color: "#11152A",
     fontFamily: "Alice-Regular",
-    fontSize: 18,
+    fontSize: 16,
     textAlign: "center",
-    lineHeight: 24,
   },
   center: {
     flex: 1,

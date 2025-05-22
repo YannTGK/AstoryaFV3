@@ -102,7 +102,7 @@ export default function AddMorePeople() {
         setConfirm(false);
         router.push({
           pathname:
-            "/(app)/my-stars/private-star/photos/three-dots/add-people/AddPeoplePage",
+            "/(app)/my-stars/private-star/audios/three-dots/add-people/AddPeoplePage",
           params: { albumId },        // ← meegeven
         });
       }, 1600);
@@ -113,7 +113,7 @@ export default function AddMorePeople() {
 
   /* ---------- invite knop ---------- */
   const invite = () =>
-    router.push("/(app)/my-stars/private-star/photos/three-dots/add-people/send-invitation-photos");
+    router.push("/(app)/my-stars/private-star/audios/three-dots/add-people/send-invitation-audio");
 
   /* ==================== UI ==================== */
   return (
