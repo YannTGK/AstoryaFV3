@@ -1,111 +1,48 @@
+// app/(app)/my-stars/private-star/audios/record-audio/RecordAudioScreen.tsx
 import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   Animated,
-  Easing,
+  StyleSheet,
 } from "react-native";
 import { Audio } from "expo-av";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
 import RecordIcon from "@/assets/images/svg-icons/microphone.svg";
-import PauseIcon from "@/assets/images/icons/pause.svg";
 import PlayIcon from "@/assets/images/icons/play.svg";
+import PauseIcon from "@/assets/images/icons/pause.svg";
 import StopIcon from "@/assets/images/icons/stop-circle.svg";
 
 export default function RecordAudioScreen() {
   const router = useRouter();
+  const { starId, id } = useLocalSearchParams<{ starId?: string; id?: string }>();
+  const realStarId = starId ?? id;
+
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const timerRef = useRef<NodeJS.Timer | null>(null);
+
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const startRecording = async () => {
-    try {
-      if (recording && isPaused) {
-        await recording.startAsync();
-        setIsRecording(true);
-        setIsPaused(false);
-        timerRef.current = setInterval(() => {
-          setRecordingDuration((prev) => prev + 1);
-        }, 1000);
-        return;
-      }
-
-      if (recording) {
-        await recording.stopAndUnloadAsync();
-        setRecording(null);
-      }
-
-      await Audio.requestPermissionsAsync();
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      setRecording(newRecording);
-      setIsRecording(true);
-      setIsPaused(false);
-      setRecordingDuration(0);
-
-      timerRef.current = setInterval(() => {
-        setRecordingDuration((prev) => prev + 1);
-      }, 1000);
-    } catch (err) {
-      console.error("Failed to start recording", err);
-    }
-  };
-
-  const pauseRecording = async () => {
-    if (recording) {
-      await recording.pauseAsync();
-      setIsRecording(false);
-      setIsPaused(true);
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
-  };
-
-  const stopRecording = async () => {
-    if (recording) {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      setRecording(null);
-      setIsRecording(false);
-      setIsPaused(false);
-      if (timerRef.current) clearInterval(timerRef.current);
-
-      if (uri) {
-        router.push({
-          pathname: "/(app)/my-stars/private-star/audios/upload-edit-audio",
-          params: { uri },
-        });
-      }
-    }
-  };
-
+  // pulse animatie
   useEffect(() => {
     if (isRecording) {
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
-            toValue: 1.05,
+            toValue: 1.1,
             duration: 700,
             useNativeDriver: true,
-            easing: Easing.inOut(Easing.ease),
           }),
           Animated.timing(pulseAnim, {
             toValue: 1,
             duration: 700,
             useNativeDriver: true,
-            easing: Easing.inOut(Easing.ease),
           }),
         ])
       ).start();
@@ -115,19 +52,75 @@ export default function RecordAudioScreen() {
     }
   }, [isRecording]);
 
-  const formatDuration = (seconds: number) => {
-    const min = Math.floor(seconds / 60);
-    const sec = seconds % 60;
-    return `${min}:${sec < 10 ? "0" : ""}${sec}`;
+  const formatTime = (sec: number) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  const startRecording = async () => {
+    try {
+      if (recording && isPaused) {
+        await recording.startAsync();
+        setIsRecording(true);
+        setIsPaused(false);
+        timerRef.current = setInterval(() => setDuration(d => d + 1), 1000);
+        return;
+      }
+      if (recording) {
+        await recording.stopAndUnloadAsync();
+        setRecording(null);
+      }
+      await Audio.requestPermissionsAsync();
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+      const { recording: newRec } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+      setRecording(newRec);
+      setIsRecording(true);
+      setDuration(0);
+      timerRef.current = setInterval(() => setDuration(d => d + 1), 1000);
+    } catch (e) {
+      console.error("Recording error:", e);
+    }
+  };
+
+  const pauseRecording = async () => {
+    if (!recording) return;
+    await recording.pauseAsync();
+    setIsRecording(false);
+    setIsPaused(true);
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
+
+  const stopRecording = async () => {
+    if (!recording) return;
+    await recording.stopAndUnloadAsync();
+    const uri = recording.getURI();
+    setIsRecording(false);
+    setIsPaused(false);
+    setRecording(null);
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (uri) {
+      router.push({
+        pathname: "/(app)/my-stars/private-star/audios/upload-edit-audio",
+        params: { uri, starId: realStarId },
+      });
+    }
   };
 
   return (
     <View style={{ flex: 1 }}>
+      {/* Achtergrond gradient */}
       <LinearGradient
-        colors={["#000000", "#273166", "#000000"]}
+        colors={["#000", "#273166", "#000"]}
         style={StyleSheet.absoluteFill}
       />
 
+      {/* Back-button */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
           <Path
@@ -140,33 +133,35 @@ export default function RecordAudioScreen() {
         </Svg>
       </TouchableOpacity>
 
+      {/* Titel */}
       <Text style={styles.title}>Audio</Text>
 
-      {isRecording && (
-        <View style={styles.listeningRow}>
-          <Text style={styles.listeningText}>Listening...</Text>
-          <Text style={styles.timerText}>{formatDuration(recordingDuration)}</Text>
+      {/* Timer tijdens opnemen */}
+      { (isRecording || isPaused) && (
+        <View style={styles.timerRow}>
+          <Text style={styles.timerText}>Recording: {formatTime(duration)}</Text>
         </View>
       )}
 
-      <View style={styles.recorderContainer}>
+      {/* Record-cirkel */}
+      <View style={styles.centerContent}>
         <Animated.View
           style={[styles.recordCircle, { transform: [{ scale: pulseAnim }] }]}
         >
-          <RecordIcon width={278} height={278} />
+          <RecordIcon width={200} height={200} />
         </Animated.View>
 
-        <View style={styles.controlsContainer}>
+        {/* Controls */}
+        <View style={styles.controls}>
           <TouchableOpacity onPress={isRecording ? pauseRecording : startRecording}>
             {isRecording ? (
-              <PauseIcon width={24} height={24} />
+              <PauseIcon width={32} height={32} />
             ) : (
-              <PlayIcon width={24} height={24} />
+              <PlayIcon width={32} height={32} />
             )}
           </TouchableOpacity>
-
           <TouchableOpacity onPress={stopRecording} style={{ marginLeft: 30 }}>
-            <StopIcon width={24} height={24} />
+            <StopIcon width={32} height={32} />
           </TouchableOpacity>
         </View>
       </View>
@@ -175,58 +170,44 @@ export default function RecordAudioScreen() {
 }
 
 const styles = StyleSheet.create({
-  backBtn: {
-    position: "absolute",
-    top: 50,
-    left: 20,
-    zIndex: 10,
-  },
+  backBtn: { position: "absolute", top: 75, left: 20, zIndex: 10 },
   title: {
+    textAlign: "center",
+    marginTop: 70,
     fontSize: 20,
     color: "#fff",
-    textAlign: "center",
-    marginTop: 50,
     fontFamily: "Alice-Regular",
   },
-  listeningRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  timerRow: {
     alignItems: "center",
-    paddingHorizontal: 32,
-    marginTop: 32,
-  },
-  listeningText: {
-    color: "#fff",
-    fontSize: 16,
-    fontFamily: "Alice-Regular",
+    marginTop: 20,
   },
   timerText: {
-    color: "#fff",
+    color: "#FEEDB6",
     fontSize: 16,
     fontFamily: "Alice-Regular",
   },
-  recorderContainer: {
+  centerContent: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
   recordCircle: {
-    width: 140,
-    height: 140,
-    borderRadius: 120,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
     borderWidth: 12,
     borderColor: "#A3A7B8",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 120,
+    marginBottom: 40,
   },
-  controlsContainer: {
+  controls: {
     flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: "#FEEDB6",
     paddingVertical: 10,
     paddingHorizontal: 24,
     borderRadius: 40,
+    alignItems: "center",
   },
 });
