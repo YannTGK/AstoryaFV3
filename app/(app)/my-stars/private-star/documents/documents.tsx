@@ -17,8 +17,8 @@ import WordIcon         from "@/assets/images/svg-icons/word-image.svg";
 import MoreIcon         from "@/assets/images/svg-icons/more.svg";
 import AddPeopleIcon    from "@/assets/images/svg-icons/add-people.svg";
 import SeeMembersIcon   from "@/assets/images/svg-icons/see-members.svg";
+import DeleteIcon       from "@/assets/images/svg-icons/delete.svg";
 import PlusIcon         from "@/assets/images/svg-icons/plus.svg";
-import EditIcon         from "@/assets/images/svg-icons/edit2.svg";
 
 import api from "@/services/api";
 
@@ -39,7 +39,7 @@ export default function DocumentsScreen() {
   const [docs,       setDocs]  = useState<Doc[]>([]);
   const [loading,    setLoad ] = useState(true);
   const [uploading,  setUp   ] = useState(false);
-  const [menuOpen,   setMenu ] = useState<number|null>(null);
+  const [menuOpen,   setMenu ] = useState<number|null>(null);   // index van geopende rij
 
   /* ───────── fetch lijst ───────── */
   useFocusEffect(
@@ -58,21 +58,22 @@ export default function DocumentsScreen() {
           if (mounted) setLoad(false);
         }
       })();
-      return () => (mounted = false);
+      return () => { mounted = false; };
     }, [starId])
   );
 
   /* ───────── helpers ───────── */
   const iconFor = (t: string) => {
     const ext = t.toLowerCase();
-    if (ext.includes("pdf")  || ext.endsWith(".pdf"))  return <PdfIcon  width={40} height={40}/>;
-    if (ext.includes("doc")  || ext.endsWith(".doc")  || ext.endsWith(".docx")) return <WordIcon width={40} height={40}/>;
+    if (ext.includes("pdf")  || ext.endsWith(".pdf"))             return <PdfIcon  width={40} height={40}/>;
+    if (ext.includes("doc")  || ext.endsWith(".doc") || ext.endsWith(".docx"))
+                                                                  return <WordIcon width={40} height={40}/>;
     return <PdfIcon width={40} height={40}/>;
   };
 
   const toggleMenu = (idx:number) => setMenu(menuOpen === idx ? null : idx);
 
-  /* ───────── document downloaden / bekijken ───────── */
+  /* ───────── document open ───────── */
   const openDocument = async (doc: Doc) => {
     try {
       const { data } = await api.get<{ url: string }>(
@@ -83,6 +84,29 @@ export default function DocumentsScreen() {
       console.error(err);
       Alert.alert("Error", "Could not open document.");
     }
+  };
+
+  /* ───────── delete ───────── */
+  const handleDelete = (docIdx:number) => {
+    const doc = docs[docIdx];
+    Alert.alert(
+      "Delete document",
+      `Delete "${decodeURIComponent(doc.originalName)}"?`,
+      [
+        { text:"Cancel", style:"cancel" },
+        { text:"Delete", style:"destructive", onPress: async ()=> {
+            try {
+              await api.delete(`/stars/${starId}/documents/${doc._id}`);
+              setDocs(list => list.filter((_,i)=>i!==docIdx));
+              setMenu(null);
+              Alert.alert("Deleted");
+            } catch (err) {
+              console.error(err);
+              Alert.alert("Error", "Delete failed");
+            }
+          } },
+      ]
+    );
   };
 
   /* ───────── upload flow ───────── */
@@ -140,20 +164,23 @@ export default function DocumentsScreen() {
         <Svg width={24} height={24}><Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2}/></Svg>
       </TouchableOpacity>
 
-      {/* (optioneel) edit icon */}
-      <TouchableOpacity style={st.editBtn} disabled>
-        <EditIcon width={30} height={30}/>
-      </TouchableOpacity>
-
       <Text style={st.title}>Documenten</Text>
 
-      {/* lijst / leeg  */}
+      {/* ── overlay om menu te sluiten ── */}
+      {menuOpen !== null && (
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={()=>setMenu(null)}
+        />
+      )}
+
       {docs.length === 0 ? (
         <EmptyState/>
       ) : (
         <ScrollView contentContainerStyle={st.listWrap}>
           {docs.map((d, idx) => (
-            <TouchableOpacity              // ← hele rij aanklikbaar
+            <TouchableOpacity
               key={d._id}
               activeOpacity={0.8}
               onPress={()=>openDocument(d)}
@@ -169,25 +196,53 @@ export default function DocumentsScreen() {
                 </Text>
               </View>
 
-              <TouchableOpacity style={st.moreBtn} onPress={(e)=>{
-                e.stopPropagation();   // tap op menu niet doorgeven aan rij
-                toggleMenu(idx);
-              }}>
+              <TouchableOpacity
+                style={st.moreBtn}
+                onPress={(e)=>{ e.stopPropagation(); toggleMenu(idx); }}
+              >
                 <MoreIcon width={20} height={20}/>
               </TouchableOpacity>
 
+              {/* -------- dropdown menu -------- */}
               {menuOpen === idx && (
-                <View style={st.menu}>
-                  <TouchableOpacity style={st.menuItem}>
-                    <AddPeopleIcon width={16} height={16}/>
-                    <Text style={st.menuTxt}>Add people</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={st.menuItem}>
-                    <SeeMembersIcon width={16} height={16}/>
-                    <Text style={st.menuTxt}>See members</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+              <View style={st.menu}>
+                {/* --- NAVIGATE Add people --- */}
+                <TouchableOpacity
+                  style={st.menuItem}
+                  onPress={() =>
+                    router.push({
+                      pathname:
+                        "/(app)/my-stars/private-star/documents/three-dots/add-people/AddPeopleDocuments",
+                      params: { starId, documentId: d._id },           // ✅ juist
+                    })
+                  }
+                >
+                  <AddPeopleIcon width={16} height={16} />
+                  <Text style={st.menuTxt}>Add people</Text>
+                </TouchableOpacity>
+
+                {/* --- NAVIGATE See members --- */}
+                <TouchableOpacity
+                  style={st.menuItem}
+                  onPress={() =>
+                    router.push({
+                      pathname:
+                        "/(app)/my-stars/private-star/documents/three-dots/see-members/SeeMembersDocuments",
+                      params: { starId, documentId: d._id },            // ✅ juist
+                    })
+                  }
+                >
+                  <SeeMembersIcon width={16} height={16} />
+                  <Text style={st.menuTxt}>See members</Text>
+                </TouchableOpacity>
+
+                {/* delete blijft zoals het was */}
+                <TouchableOpacity style={st.menuItem} onPress={() => handleDelete(idx)}>
+                  <DeleteIcon width={16} height={16} />
+                  <Text style={st.menuTxt}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            )}
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -220,8 +275,7 @@ const EmptyState = () => (
 
 /* ───────── Styles ───────── */
 const st = StyleSheet.create({
-  backBtn:{ position:"absolute", top:50, left:20, zIndex:10 },
-  editBtn:{ position:"absolute", top:50, right:20, zIndex:10 },
+  backBtn:{ position:"absolute", top:50, left:20, zIndex:40 },
   title  :{ fontFamily:"Alice-Regular", fontSize:20, color:"#fff",
             textAlign:"center", marginTop:50 },
 
@@ -234,7 +288,7 @@ const st = StyleSheet.create({
   moreBtn:{ padding:8 },
 
   menu:{ position:"absolute", top:38, right:0, backgroundColor:"#fff",
-         borderRadius:12, width:180, paddingVertical:8, zIndex:20,
+         borderRadius:12, width:180, paddingVertical:8, zIndex:50,
          shadowColor:"#000", shadowOpacity:0.2, shadowRadius:6, elevation:5 },
   menuItem:{ flexDirection:"row", alignItems:"center", gap:8,
              paddingVertical:8, paddingHorizontal:14 },
@@ -243,5 +297,5 @@ const st = StyleSheet.create({
   emptyWrap:{ flex:1, justifyContent:"center", alignItems:"center", marginBottom:80 },
   emptyTxt :{ color:"#fff", fontFamily:"Alice-Regular", fontSize:14, marginTop:8 },
 
-  plusWrap:{ position:"absolute", bottom:100, width:"100%", alignItems:"center", zIndex:10 },
+  plusWrap:{ position:"absolute", bottom:100, width:"100%", alignItems:"center", zIndex:40 },
 });
