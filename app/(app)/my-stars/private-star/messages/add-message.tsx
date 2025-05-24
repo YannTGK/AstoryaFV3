@@ -1,57 +1,65 @@
-import { useEffect, useState } from "react";
+// app/(app)/my-stars/private-star/messages/SeeMessages.tsx
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
+  TouchableOpacity,
   FlatList,
   Dimensions,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 
-import LetterIcon from "@/assets/images/svg-icons/letter.svg";
+import NoMessageIcon from "@/assets/images/svg-icons/no-message.svg";
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
-import EditIcon from "@/assets/images/svg-icons/edit.svg";
-import DeleteIcon from "@/assets/images/svg-icons/delete.svg";
-import DownloadIcon from "@/assets/images/svg-icons/download.svg";
+import LetterIcon from "@/assets/images/svg-icons/letter.svg";
 import MoreIcon from "@/assets/images/svg-icons/more.svg";
 import CloseIcon from "@/assets/images/svg-icons/close-icon.svg";
 import AddPeopleIcon from "@/assets/images/svg-icons/add-people.svg";
 import SeeMembersIcon from "@/assets/images/svg-icons/see-members.svg";
-
-import { useMessageStore } from "@/lib/store/useMessageStore";
+import EditIcon from "@/assets/images/svg-icons/edit.svg";
+import DeleteIcon from "@/assets/images/svg-icons/delete.svg";
+import DownloadIcon from "@/assets/images/svg-icons/download.svg";
+import api from "@/services/api";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width / 2 - 32;
 
-export default function AddMessage() {
+export default function SeeMessages() {
   const router = useRouter();
-  const { to, from, message } = useLocalSearchParams();
-  const { messages, addMessage } = useMessageStore();
+  const { id } = useLocalSearchParams<{ id: string }>(); // ← this is your star ID
 
+  const [messages, setMessages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [popupMenuOpen, setPopupMenuOpen] = useState(false);
   const [activeMessage, setActiveMessage] = useState<any | null>(null);
 
+  // Fetch from backend
   useEffect(() => {
-    if (
-      to &&
-      from &&
-      message &&
-      typeof to === "string" &&
-      typeof from === "string" &&
-      typeof message === "string" &&
-      !messages.some((msg) => msg.to === to && msg.from === from && msg.message === message)
-    ) {
-      addMessage({ id: Date.now(), to, from, message });
-    }
-  }, [to, from, message]);
+    if (!id) return;
+    (async () => {
+      try {
+        const res = await api.get(`/stars/${id}/messages`);
+        setMessages(res.data);
+      } catch (err) {
+        console.error("Failed to fetch messages:", err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id]);
 
+  // Navigate to write screen, pass along the star id:
   const addNewMessage = () => {
-    router.push("/(app)/my-stars/private-star/messages/write-message");
+    router.push({
+      pathname: "/(app)/my-stars/private-star/messages/write-message",
+      params: { id },
+    });
   };
 
   const renderMessageCard = ({ item }: any) => (
@@ -59,11 +67,19 @@ export default function AddMessage() {
       <View style={styles.cardWrapper}>
         <View style={styles.cardContent}>
           <LetterIcon width={CARD_WIDTH} height={120} style={styles.letterSvg} />
-          <Text style={styles.forText}>For: {item.to}</Text>
+          <Text style={styles.forText}>From: {item.sender}</Text>
         </View>
       </View>
     </TouchableOpacity>
   );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FEEDB6" />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>
@@ -74,8 +90,9 @@ export default function AddMessage() {
         end={{ x: 0.5, y: 1 }}
       />
 
+      {/* ← Back */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+        <Svg width={24} height={24} viewBox="0 0 24 24">
           <Path
             d="M15 18l-6-6 6-6"
             stroke="#FEEDB6"
@@ -86,56 +103,62 @@ export default function AddMessage() {
         </Svg>
       </TouchableOpacity>
 
-      <View style={styles.moreWrapper}>
-        <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)}>
-          <MoreIcon width={24} height={24} />
-        </TouchableOpacity>
-
-        {menuOpen && (
-          <View style={styles.menu}>
-            <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => router.push("/(app)/my-stars/private-star/messages/delete-message")}
-              >
-              <DeleteIcon width={16} height={16} />
-              <Text style={styles.menuText}>Delete</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => router.push("/(app)/my-stars/private-star/messages/download-message")}
-            >
-              <DownloadIcon width={16} height={16} />
-              <Text style={styles.menuText}>Download</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-
       <Text style={styles.title}>Messages</Text>
 
-      <FlatList
-        data={messages}
-        numColumns={2}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.list}
-        renderItem={renderMessageCard}
-      />
+      {messages.length === 0 ? (
+        // empty state
+        <View style={styles.centeredContent}>
+          <NoMessageIcon width={140} height={140} />
+          <Text style={styles.emptyText}>No messages found</Text>
+        </View>
+      ) : (
+        <>
+          {/* bulk “more” menu */}
+          <View style={styles.moreWrapper}>
+            <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)}>
+              <MoreIcon width={24} height={24} />
+            </TouchableOpacity>
+            {menuOpen && (
+              <View style={styles.menu}>
+                <TouchableOpacity style={styles.menuItem}>
+                  <DeleteIcon width={16} height={16} />
+                  <Text style={styles.menuText}>Delete all</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.menuItem}>
+                  <DownloadIcon width={16} height={16} />
+                  <Text style={styles.menuText}>Download all</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
 
+          <FlatList
+            data={messages}
+            numColumns={2}
+            keyExtractor={(item) => item._id}
+            contentContainerStyle={styles.list}
+            renderItem={renderMessageCard}
+          />
+        </>
+      )}
+
+      {/* plus */}
       <View style={styles.plusWrapper}>
         <TouchableOpacity onPress={addNewMessage}>
           <PlusIcon width={50} height={50} />
         </TouchableOpacity>
       </View>
 
+      {/* detail modal */}
       <Modal visible={!!activeMessage} transparent animationType="fade">
         <View style={styles.overlay}>
+          {/* per-message more */}
           <TouchableOpacity
             style={styles.modalMoreWrapper}
             onPress={() => setPopupMenuOpen(!popupMenuOpen)}
           >
             <MoreIcon width={24} height={24} />
           </TouchableOpacity>
-
           {popupMenuOpen && (
             <View style={styles.modalMenu}>
               <TouchableOpacity style={styles.menuItem}>
@@ -148,14 +171,19 @@ export default function AddMessage() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.menuItem}
-                onPress={() => router.push("/(app)/my-stars/private-star/messages/edit-message")}
+                onPress={() =>
+                  router.push({
+                    pathname:
+                      "/(app)/my-stars/private-star/messages/edit-message",
+                    params: { id, messageId: activeMessage._id },
+                  })
+                }
               >
                 <EditIcon width={16} height={16} />
                 <Text style={styles.menuText}>Edit</Text>
               </TouchableOpacity>
             </View>
           )}
-
           <View style={styles.letterPopup}>
             <TouchableOpacity
               style={styles.closeBtn}
@@ -175,8 +203,40 @@ export default function AddMessage() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
-  moreWrapper: { position: "absolute", top: 55, right: 20, zIndex: 20, alignItems: "flex-end" },
+  title: {
+    fontSize: 20,
+    fontFamily: "Alice-Regular",
+    color: "#fff",
+    textAlign: "center",
+    marginTop: 50,
+    marginBottom: 20,
+  },
+  centeredContent: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 80,
+  },
+  emptyText: {
+    color: "#fff",
+    fontFamily: "Alice-Regular",
+    fontSize: 14,
+    marginTop: 8,
+  },
+  moreWrapper: {
+    position: "absolute",
+    top: 55,
+    right: 20,
+    zIndex: 20,
+    alignItems: "flex-end",
+  },
   menu: {
     marginTop: 10,
     backgroundColor: "#fff",
@@ -189,30 +249,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     zIndex: 21,
   },
-  modalMenu: {
-    position: "absolute",
-    top: 90,
-    right: 20,
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 10,
-    gap: 8,
-    zIndex: 25,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  modalMoreWrapper: { position: "absolute", top: 55, right: 20, zIndex: 24 },
   menuItem: { flexDirection: "row", alignItems: "center", gap: 6 },
-  menuText: { fontSize: 13, fontFamily: "Alice-Regular", color: "#11152A" },
-  title: {
-    fontSize: 20,
+  menuText: {
+    fontSize: 13,
     fontFamily: "Alice-Regular",
-    color: "#fff",
-    textAlign: "center",
-    marginTop: 50,
-    marginBottom: 20,
+    color: "#11152A",
+    marginLeft: 4,
   },
   list: { paddingHorizontal: 16, paddingBottom: 140 },
   cardWrapper: { width: CARD_WIDTH, margin: 8, alignItems: "center" },
@@ -239,6 +281,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
+  },
+  modalMoreWrapper: { position: "absolute", top: 55, right: 20, zIndex: 24 },
+  modalMenu: {
+    position: "absolute",
+    top: 90,
+    right: 20,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 10,
+    gap: 8,
+    zIndex: 25,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 5,
   },
   letterPopup: {
     backgroundColor: "#FFFDF7",
