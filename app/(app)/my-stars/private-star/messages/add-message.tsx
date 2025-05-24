@@ -1,5 +1,5 @@
 // app/(app)/my-stars/private-star/messages/SeeMessages.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 
@@ -31,30 +32,37 @@ const CARD_WIDTH = width / 2 - 32;
 
 export default function SeeMessages() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>(); // ← this is your star ID
+  const { id } = useLocalSearchParams<{ id: string }>();
 
   const [messages, setMessages] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [popupMenuOpen, setPopupMenuOpen] = useState(false);
-  const [activeMessage, setActiveMessage] = useState<any | null>(null);
+  const [loading, setLoading]     = useState(true);
+  const [menuOpen, setMenuOpen]   = useState(false);
+  const [popupMenuOpen, setPopup] = useState(false);
+  const [activeMessage, setActive] = useState<any | null>(null);
 
-  // Fetch from backend
-  useEffect(() => {
-    if (!id) return;
-    (async () => {
-      try {
-        const res = await api.get(`/stars/${id}/messages`);
-        setMessages(res.data);
-      } catch (err) {
-        console.error("Failed to fetch messages:", err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [id]);
+  // Fetch messages when screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+      const fetchMessages = async () => {
+        if (!id) return;
+        setLoading(true);
+        try {
+          const res = await api.get(`/stars/${id}/messages`);
+          if (isActive) setMessages(res.data);
+        } catch (err) {
+          console.error("Failed to fetch messages:", err);
+        } finally {
+          if (isActive) setLoading(false);
+        }
+      };
+      fetchMessages();
+      return () => {
+        isActive = false;
+      };
+    }, [id])
+  );
 
-  // Navigate to write screen, pass along the star id:
   const addNewMessage = () => {
     router.push({
       pathname: "/(app)/my-stars/private-star/messages/write-message",
@@ -63,11 +71,15 @@ export default function SeeMessages() {
   };
 
   const renderMessageCard = ({ item }: any) => (
-    <TouchableOpacity onPress={() => setActiveMessage(item)}>
+    <TouchableOpacity onPress={() => setActive(item)}>
       <View style={styles.cardWrapper}>
         <View style={styles.cardContent}>
-          <LetterIcon width={CARD_WIDTH} height={120} style={styles.letterSvg} />
-          <Text style={styles.forText}>From: {item.sender}</Text>
+          <LetterIcon
+            width={CARD_WIDTH}
+            height={120}
+            style={styles.letterSvg}
+          />
+          <Text style={styles.forText}>For: {item.sender}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -91,7 +103,10 @@ export default function SeeMessages() {
       />
 
       {/* ← Back */}
-      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+      <TouchableOpacity
+        style={styles.backBtn}
+        onPress={() => router.back()}
+      >
         <Svg width={24} height={24} viewBox="0 0 24 24">
           <Path
             d="M15 18l-6-6 6-6"
@@ -106,14 +121,13 @@ export default function SeeMessages() {
       <Text style={styles.title}>Messages</Text>
 
       {messages.length === 0 ? (
-        // empty state
         <View style={styles.centeredContent}>
           <NoMessageIcon width={140} height={140} />
           <Text style={styles.emptyText}>No messages found</Text>
         </View>
       ) : (
         <>
-          {/* bulk “more” menu */}
+          {/* bulk menu */}
           <View style={styles.moreWrapper}>
             <TouchableOpacity onPress={() => setMenuOpen(!menuOpen)}>
               <MoreIcon width={24} height={24} />
@@ -142,7 +156,7 @@ export default function SeeMessages() {
         </>
       )}
 
-      {/* plus */}
+      {/* + knop */}
       <View style={styles.plusWrapper}>
         <TouchableOpacity onPress={addNewMessage}>
           <PlusIcon width={50} height={50} />
@@ -150,12 +164,16 @@ export default function SeeMessages() {
       </View>
 
       {/* detail modal */}
-      <Modal visible={!!activeMessage} transparent animationType="fade">
+      <Modal
+        visible={!!activeMessage}
+        transparent
+        animationType="fade"
+      >
         <View style={styles.overlay}>
-          {/* per-message more */}
+          {/* per-item menu */}
           <TouchableOpacity
             style={styles.modalMoreWrapper}
-            onPress={() => setPopupMenuOpen(!popupMenuOpen)}
+            onPress={() => setPopup(!popupMenuOpen)}
           >
             <MoreIcon width={24} height={24} />
           </TouchableOpacity>
@@ -188,13 +206,15 @@ export default function SeeMessages() {
             <TouchableOpacity
               style={styles.closeBtn}
               onPress={() => {
-                setActiveMessage(null);
-                setPopupMenuOpen(false);
+                setActive(null);
+                setPopup(false);
               }}
             >
               <CloseIcon width={20} height={20} />
             </TouchableOpacity>
-            <Text style={styles.popupBody}>{activeMessage?.message}</Text>
+            <Text style={styles.popupBody}>
+              {activeMessage?.message}
+            </Text>
           </View>
         </View>
       </Modal>
@@ -235,7 +255,6 @@ const styles = StyleSheet.create({
     top: 55,
     right: 20,
     zIndex: 20,
-    alignItems: "flex-end",
   },
   menu: {
     marginTop: 10,
@@ -258,7 +277,11 @@ const styles = StyleSheet.create({
   },
   list: { paddingHorizontal: 16, paddingBottom: 140 },
   cardWrapper: { width: CARD_WIDTH, margin: 8, alignItems: "center" },
-  cardContent: { position: "relative", alignItems: "center", width: "100%" },
+  cardContent: {
+    position: "relative",
+    alignItems: "center",
+    width: "100%",
+  },
   letterSvg: { zIndex: 1 },
   forText: {
     fontFamily: "Alice-Regular",
@@ -302,7 +325,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 20,
     width: "100%",
-    position: "relative",
   },
   closeBtn: {
     position: "absolute",
@@ -317,4 +339,4 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginTop: 30,
   },
-});
+});  
