@@ -126,10 +126,11 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: "#fff",
+    color: "rgba(60, 60, 67, 0.5)",
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: "Alice-Regular",
   },
   readOnly: {

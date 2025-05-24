@@ -11,6 +11,7 @@ export default function RootLayout() {
 
   const [fontsLoaded] = useFonts({
     "Alice-Regular": require("@/assets/fonts/Alice-Regular.ttf"),
+    "SUNROLL": require("../assets/fonts/SUNROLL.ttf"),
   });
 
   useEffect(() => {
