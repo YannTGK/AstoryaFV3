@@ -1,4 +1,4 @@
-// app/(app)/my-stars/private-star/messages/SeeMessages.tsx
+/* app/(app)/my-stars/private-star/messages/SeeMessages.tsx */
 import React, { useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity,
@@ -9,6 +9,9 @@ import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 
+import * as FileSystem from "expo-file-system";
+import * as Sharing    from "expo-sharing";
+
 import NoMessageIcon from "@/assets/images/svg-icons/no-message.svg";
 import PlusIcon      from "@/assets/images/svg-icons/plus.svg";
 import LetterIcon    from "@/assets/images/svg-icons/letter.svg";
@@ -17,11 +20,13 @@ import MoreIcon      from "@/assets/images/svg-icons/more.svg";
 import CloseIcon     from "@/assets/images/svg-icons/close-icon.svg";
 import EditIcon      from "@/assets/images/svg-icons/edit.svg";
 import DeleteIcon    from "@/assets/images/svg-icons/delete.svg";
+import DownloadIcon  from "@/assets/images/svg-icons/download.svg";
 import api           from "@/services/api";
 
 const { width }  = Dimensions.get("window");
 const CARD_WIDTH = width / 2 - 32;
 
+/* ───────── Types ───────── */
 type Msg = {
   _id: string;
   message: string;
@@ -30,6 +35,7 @@ type Msg = {
   forName?: string;
 };
 
+/* ───────── Component ───────── */
 export default function SeeMessages() {
   const router      = useRouter();
   const { id }      = useLocalSearchParams<{ id: string }>();
@@ -37,14 +43,13 @@ export default function SeeMessages() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [loading,  setLoading]  = useState(true);
 
-  /* view-states */
+  /* view-state */
   const [bulkOpen,  setBulkOpen]  = useState(false);
-  const [mode,      setMode]      = useState<"none"|"delete"|"edit">("none");   // <──
+  const [mode,      setMode]      = useState<"none"|"delete"|"edit">("none");
   const [selected,  setSelected]  = useState<Set<string>>(new Set());
+  const [active,    setActive]    = useState<Msg|null>(null);
 
-  const [active,    setActive]    = useState<Msg|null>(null); // detail-modal
-
-  /* ───────── fetch on focus ───────── */
+  /* ───────── Fetch every focus ───────── */
   useFocusEffect(
     useCallback(() => {
       let mounted = true;
@@ -54,35 +59,41 @@ export default function SeeMessages() {
         try {
           const { data } = await api.get<Msg[]>(`/stars/${id}/messages`);
 
+          // 2️⃣ fetch first viewer username → forName
           const msgs = await Promise.all(
             data.map(async m => {
               let forName = "@unknown";
-              const v = m.canView?.[0];
-              if (v) {
-                try { const u = await api.get(`/users/${v}`); forName = "@"+u.data.username; }
-                catch {}
+              const viewer = m.canView?.[0];
+              if (viewer) {
+                try {
+                  const u = await api.get(`/users/${viewer}`);
+                  forName = "@" + u.data.username;
+                } catch {/* ignore */}
               }
               return { ...m, forName };
             })
           );
           if (mounted) setMessages(msgs);
-        } catch (err) { console.error(err); }
-        finally       { if (mounted) setLoading(false); }
+        } catch (err) {
+          console.error("fetch messages:", err);
+        } finally {
+          if (mounted) setLoading(false);
+        }
       })();
       return () => { mounted = false; };
     }, [id])
   );
 
-  /* ───────── basic nav helpers ───────── */
-  const goWrite = (messageId?: string) => router.push({
-    pathname: "/(app)/my-stars/private-star/messages/write-message",
-    params:   messageId ? { id, messageId } : { id },
-  });
+  /* ───────── Navigation helpers ───────── */
+  const goWrite = (messageId?: string) =>
+    router.push({
+      pathname: "/(app)/my-stars/private-star/messages/write-message",
+      params:   messageId ? { id, messageId } : { id },
+    });
 
-  /* ───────── mode helpers ───────── */
+  /* ───────── Mode helpers ───────── */
   const clearModes = () => { setMode("none"); setSelected(new Set()); };
 
-  /** select / deselect kaart */
   const toggleSelect = (mid: string) => {
     if (mode === "delete") {
       setSelected(prev => {
@@ -91,48 +102,84 @@ export default function SeeMessages() {
         return next;
       });
     } else if (mode === "edit") {
-      setSelected(new Set([mid]));        // exact één
+      setSelected(new Set([mid]));
     }
   };
 
-  /* delete flow */
+  /* ───────── DELETE flow ───────── */
   const confirmDelete = async () => {
     if (selected.size === 0) return;
-    Alert.alert("Delete messages", `Delete ${selected.size} message(s)?`,
-      [
-        { text:"Cancel", style:"cancel" },
-        { text:"Delete", style:"destructive",
-          onPress: async () => {
-            try {
-              await Promise.all(
-                Array.from(selected).map(mid =>
-                  api.delete(`/stars/${id}/messages/${mid}`)
-                )
-              );
-              setMessages(msgs => msgs.filter(m => !selected.has(m._id)));
-              clearModes();
-            } catch { Alert.alert("Error","Delete failed"); }
-          } },
-      ]
-    );
+    Alert.alert("Delete messages?", `Delete ${selected.size} item(s)?`, [
+      { text:"Cancel", style:"cancel" },
+      { text:"Delete", style:"destructive", onPress: async () => {
+          try {
+            await Promise.all(
+              Array.from(selected).map(mid =>
+                api.delete(`/stars/${id}/messages/${mid}`)
+              )
+            );
+            setMessages(m => m.filter(msg => !selected.has(msg._id)));
+            clearModes();
+          } catch { Alert.alert("Error","Delete failed"); }
+        } },
+    ]);
   };
 
-  /* edit flow */
+  /* ───────── EDIT flow ───────── */
   const confirmEdit = () => {
     const mid = Array.from(selected)[0];
-    if (!mid) return;
-    clearModes();
-    goWrite(mid);        // naar write-message in “edit” modus
+    if (mid) {
+      clearModes();
+      goWrite(mid);
+    }
   };
 
-  /* ───────── kaart render ───────── */
+  /* ───────── DOWNLOAD flow ───────── */
+  const downloadMsgs = async () => {
+    try {
+      if (messages.length === 0) {
+        Alert.alert("Empty", "No messages to download."); return;
+      }
+
+      /* 1️⃣ build plain-text */
+      const plain = messages.map(m => [
+        "================================================================",
+        `MESSAGE ID : ${m._id}`,
+        `SENDER     : @${m.sender}`,
+        `FOR        : ${m.forName ?? "@unknown"}`,
+        "----------------------------------------------------------------",
+        m.message,
+        "================================================================",
+        ""
+      ].join("\n")).join("\n");
+
+      /* 2️⃣ write file */
+      const filename = `messages-${Date.now()}.txt`;
+      const uri = FileSystem.documentDirectory + filename;
+      await FileSystem.writeAsStringAsync(uri, plain,
+        { encoding: FileSystem.EncodingType.UTF8 });
+
+      /* 3️⃣ share / notify */
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: "text/plain",
+          dialogTitle: "Share messages",
+        });
+      } else {
+        Alert.alert("Saved", `File saved to:\n${uri}`);
+      }
+    } catch (err) {
+      console.error("download:", err);
+      Alert.alert("Error", "Could not create file");
+    }
+  };
+
+  /* ───────── Card ───────── */
   const renderCard = ({ item }: { item: Msg }) => {
     const sel = selected.has(item._id);
     return (
       <TouchableOpacity
-        onPress={() => mode==="none"
-          ? setActive(item)
-          : toggleSelect(item._id)}
+        onPress={() => mode==="none" ? setActive(item) : toggleSelect(item._id)}
         style={[
           st.cardWrapper,
           mode!=="none" && { borderColor:"#FEEDB6", borderWidth:1.5 },
@@ -146,9 +193,13 @@ export default function SeeMessages() {
     );
   };
 
-  /* ───────── loading ───────── */
+  /* ───────── Loading ───────── */
   if (loading) {
-    return <View style={st.loading}><ActivityIndicator size="large" color="#FEEDB6"/></View>;
+    return (
+      <View style={st.loading}>
+        <ActivityIndicator size="large" color="#FEEDB6"/>
+      </View>
+    );
   }
 
   /* ───────── UI ───────── */
@@ -163,7 +214,7 @@ export default function SeeMessages() {
 
       <Text style={st.title}>Messages</Text>
 
-      {/* ⋮ bulk menu  */}
+      {/* ⋮ bulk menu */}
       {mode==="none" && (
         <>
           <TouchableOpacity style={st.moreBtn} onPress={()=>setBulkOpen(!bulkOpen)}>
@@ -173,23 +224,28 @@ export default function SeeMessages() {
           {bulkOpen && (
             <View style={st.dropdown}>
               <TouchableOpacity style={st.dropItem} onPress={()=>{
-                setBulkOpen(false);
-                setMode("edit");
+                setBulkOpen(false); setMode("edit");
               }}>
                 <EditIcon width={16} height={16}/><Text style={st.dropTxt}>Edit</Text>
               </TouchableOpacity>
+
               <TouchableOpacity style={st.dropItem} onPress={()=>{
-                setBulkOpen(false);
-                setMode("delete");
+                setBulkOpen(false); setMode("delete");
               }}>
                 <DeleteIcon width={16} height={16}/><Text style={st.dropTxt}>Delete</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={st.dropItem} onPress={()=>{
+                setBulkOpen(false); downloadMsgs();
+              }}>
+                <DownloadIcon width={16} height={16}/><Text style={st.dropTxt}>Download</Text>
               </TouchableOpacity>
             </View>
           )}
         </>
       )}
 
-      {/* lijst of leeg */}
+      {/* list OR empty */}
       {messages.length === 0 ? (
         <View style={st.emptyWrap}>
           <NoMessageIcon width={140} height={140}/>
@@ -199,20 +255,22 @@ export default function SeeMessages() {
         <FlatList
           data={messages}
           numColumns={2}
-          keyExtractor={(i)=>i._id}
+          keyExtractor={m=>m._id}
           renderItem={renderCard}
           contentContainerStyle={st.list}
         />
       )}
 
-      {/* plus – alleen in normale modus */}
+      {/* + button */}
       {mode==="none" && (
         <View style={st.plusWrap}>
-          <TouchableOpacity onPress={()=>goWrite()}><PlusIcon width={50} height={50}/></TouchableOpacity>
+          <TouchableOpacity onPress={()=>goWrite()}>
+            <PlusIcon width={50} height={50}/>
+          </TouchableOpacity>
         </View>
       )}
 
-      {/* footer-bars */}
+      {/* footer bar for delete / edit */}
       {mode==="delete" && (
         <View style={st.bar}>
           <TouchableOpacity onPress={clearModes}><Text style={st.cancel}>Cancel</Text></TouchableOpacity>
@@ -230,7 +288,7 @@ export default function SeeMessages() {
         </View>
       )}
 
-      {/* detail modal – alleen in normale modus */}
+      {/* detail modal */}
       {mode==="none" && (
         <Modal visible={!!active} transparent animationType="fade">
           <View style={st.overlay}>
@@ -247,15 +305,16 @@ export default function SeeMessages() {
   );
 }
 
-/* ─── Styles ─── */
+/* ───────── Styles ───────── */
 const st = StyleSheet.create({
   loading:{flex:1,backgroundColor:"#000",justifyContent:"center",alignItems:"center"},
   backBtn:{position:"absolute",top:50,left:20,zIndex:10},
-  title:{fontSize:20,fontFamily:"Alice-Regular",color:"#fff",textAlign:"center",marginTop:50, paddingBottom:20},
+  title:{fontSize:20,fontFamily:"Alice-Regular",color:"#fff",textAlign:"center",marginTop:50,paddingBottom:20},
 
   moreBtn:{position:"absolute",top:55,right:20,zIndex:30,width:24,height:24,justifyContent:"center",alignItems:"center"},
-  dropdown:{position:"absolute",top:83,right:20,backgroundColor:"#fff",borderRadius:8,paddingVertical:4,paddingHorizontal:8,
-            shadowColor:"#000",shadowOpacity:0.2,shadowRadius:4,elevation:6,zIndex:29},
+  dropdown:{position:"absolute",top:83,right:20,backgroundColor:"#fff",borderRadius:8,
+            paddingVertical:4,paddingHorizontal:8,shadowColor:"#000",shadowOpacity:0.2,
+            shadowRadius:4,elevation:6,zIndex:29},
   dropItem:{flexDirection:"row",alignItems:"center",paddingVertical:6},
   dropTxt:{marginLeft:8,fontSize:14,fontFamily:"Alice-Regular",color:"#11152A"},
 
