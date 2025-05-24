@@ -12,12 +12,11 @@ import Svg, { Path } from "react-native-svg";
 import NoMessageIcon from "@/assets/images/svg-icons/no-message.svg";
 import PlusIcon      from "@/assets/images/svg-icons/plus.svg";
 import LetterIcon    from "@/assets/images/svg-icons/letter.svg";
-import CheckIcon     from "@/assets/images/svg-icons/delete.svg"; // klein vink-icoon
+import CheckIcon     from "@/assets/images/svg-icons/check.svg";
 import MoreIcon      from "@/assets/images/svg-icons/more.svg";
 import CloseIcon     from "@/assets/images/svg-icons/close-icon.svg";
 import EditIcon      from "@/assets/images/svg-icons/edit.svg";
 import DeleteIcon    from "@/assets/images/svg-icons/delete.svg";
-import DownloadIcon  from "@/assets/images/svg-icons/download.svg";
 import api           from "@/services/api";
 
 const { width }  = Dimensions.get("window");
@@ -35,29 +34,26 @@ export default function SeeMessages() {
   const router      = useRouter();
   const { id }      = useLocalSearchParams<{ id: string }>();
 
-  const [messages, setMessages]   = useState<Msg[]>([]);
-  const [loading,  setLoading]    = useState(true);
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [loading,  setLoading]  = useState(true);
 
-  /* menu-states */
-  const [bulkOpen,   setBulkOpen]   = useState(false);
-  const [deleteMode, setDeleteMode] = useState(false);
-  const [selected,   setSelected]   = useState<Set<string>>(new Set());
+  /* view-states */
+  const [bulkOpen,  setBulkOpen]  = useState(false);
+  const [mode,      setMode]      = useState<"none"|"delete"|"edit">("none");   // <──
+  const [selected,  setSelected]  = useState<Set<string>>(new Set());
 
-  const [active,     setActive]     = useState<Msg|null>(null); // detail-modal
+  const [active,    setActive]    = useState<Msg|null>(null); // detail-modal
 
-  /* ─── fetch on focus ─── */
+  /* ───────── fetch on focus ───────── */
   useFocusEffect(
     useCallback(() => {
       let mounted = true;
       (async () => {
         if (!id) return;
         setLoading(true);
-
         try {
-          /* 1. alle messages */
           const { data } = await api.get<Msg[]>(`/stars/${id}/messages`);
 
-          /* 2. username ophalen */
           const msgs = await Promise.all(
             data.map(async m => {
               let forName = "@unknown";
@@ -69,43 +65,40 @@ export default function SeeMessages() {
               return { ...m, forName };
             })
           );
-
           if (mounted) setMessages(msgs);
-        } catch (e) { console.error(e); }
-        finally      { if (mounted) setLoading(false); }
+        } catch (err) { console.error(err); }
+        finally       { if (mounted) setLoading(false); }
       })();
       return () => { mounted = false; };
     }, [id])
   );
 
-  /* ─── helper navigaties ─── */
-  const goWrite = () => router.push({
-    pathname:"/(app)/my-stars/private-star/messages/write-message",
-    params:{ id },
+  /* ───────── basic nav helpers ───────── */
+  const goWrite = (messageId?: string) => router.push({
+    pathname: "/(app)/my-stars/private-star/messages/write-message",
+    params:   messageId ? { id, messageId } : { id },
   });
 
-  const goEdit = (msg: Msg|null) => {
-    if (!msg) { Alert.alert("Select a message first"); return; }
-    router.push({
-      pathname:"/(app)/my-stars/private-star/messages/edit-message",
-      params:{ id, messageId: msg._id },
-    });
-    setBulkOpen(false);
-  };
+  /* ───────── mode helpers ───────── */
+  const clearModes = () => { setMode("none"); setSelected(new Set()); };
 
-  /* ─── delete-mode helpers ─── */
+  /** select / deselect kaart */
   const toggleSelect = (mid: string) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      next.has(mid) ? next.delete(mid) : next.add(mid);
-      return next;
-    });
+    if (mode === "delete") {
+      setSelected(prev => {
+        const next = new Set(prev);
+        next.has(mid) ? next.delete(mid) : next.add(mid);
+        return next;
+      });
+    } else if (mode === "edit") {
+      setSelected(new Set([mid]));        // exact één
+    }
   };
 
+  /* delete flow */
   const confirmDelete = async () => {
     if (selected.size === 0) return;
-    Alert.alert(
-      "Delete messages", `Delete ${selected.size} message(s)?`,
+    Alert.alert("Delete messages", `Delete ${selected.size} message(s)?`,
       [
         { text:"Cancel", style:"cancel" },
         { text:"Delete", style:"destructive",
@@ -117,24 +110,32 @@ export default function SeeMessages() {
                 )
               );
               setMessages(msgs => msgs.filter(m => !selected.has(m._id)));
-              setSelected(new Set());
-              setDeleteMode(false);
-            } catch (err) { console.error(err); Alert.alert("Delete failed"); }
-          }
-        },
+              clearModes();
+            } catch { Alert.alert("Error","Delete failed"); }
+          } },
       ]
     );
   };
 
-  /* ─── card ─── */
+  /* edit flow */
+  const confirmEdit = () => {
+    const mid = Array.from(selected)[0];
+    if (!mid) return;
+    clearModes();
+    goWrite(mid);        // naar write-message in “edit” modus
+  };
+
+  /* ───────── kaart render ───────── */
   const renderCard = ({ item }: { item: Msg }) => {
     const sel = selected.has(item._id);
     return (
       <TouchableOpacity
-        onPress={() => deleteMode ? toggleSelect(item._id) : setActive(item)}
+        onPress={() => mode==="none"
+          ? setActive(item)
+          : toggleSelect(item._id)}
         style={[
           st.cardWrapper,
-          deleteMode && { borderColor: "#FEEDB6", borderWidth: 1.5 },
+          mode!=="none" && { borderColor:"#FEEDB6", borderWidth:1.5 },
           sel && { backgroundColor:"rgba(254,237,182,0.25)" },
         ]}
       >
@@ -145,25 +146,25 @@ export default function SeeMessages() {
     );
   };
 
-  /* ─── loading ─── */
+  /* ───────── loading ───────── */
   if (loading) {
     return <View style={st.loading}><ActivityIndicator size="large" color="#FEEDB6"/></View>;
   }
 
-  /* ─── ui ─── */
+  /* ───────── UI ───────── */
   return (
     <View style={{flex:1}}>
       <LinearGradient colors={["#000","#273166","#000"]} style={StyleSheet.absoluteFill}/>
 
-      {/* back */}
+      {/* ← back */}
       <TouchableOpacity style={st.backBtn} onPress={()=>router.back()}>
         <Svg width={24} height={24}><Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2}/></Svg>
       </TouchableOpacity>
 
       <Text style={st.title}>Messages</Text>
 
-      {/* ⋮ bulk menu – niet tonen in delete-mode */}
-      {!deleteMode && (
+      {/* ⋮ bulk menu  */}
+      {mode==="none" && (
         <>
           <TouchableOpacity style={st.moreBtn} onPress={()=>setBulkOpen(!bulkOpen)}>
             <MoreIcon width={24} height={24}/>
@@ -171,12 +172,15 @@ export default function SeeMessages() {
 
           {bulkOpen && (
             <View style={st.dropdown}>
-              <TouchableOpacity style={st.dropItem} onPress={()=>goEdit(active)}>
+              <TouchableOpacity style={st.dropItem} onPress={()=>{
+                setBulkOpen(false);
+                setMode("edit");
+              }}>
                 <EditIcon width={16} height={16}/><Text style={st.dropTxt}>Edit</Text>
               </TouchableOpacity>
               <TouchableOpacity style={st.dropItem} onPress={()=>{
                 setBulkOpen(false);
-                setDeleteMode(true);
+                setMode("delete");
               }}>
                 <DeleteIcon width={16} height={16}/><Text style={st.dropTxt}>Delete</Text>
               </TouchableOpacity>
@@ -201,29 +205,33 @@ export default function SeeMessages() {
         />
       )}
 
-      {/* plus – verborgen in delete-mode */}
-      {!deleteMode && (
+      {/* plus – alleen in normale modus */}
+      {mode==="none" && (
         <View style={st.plusWrap}>
-          <TouchableOpacity onPress={goWrite}><PlusIcon width={50} height={50}/></TouchableOpacity>
+          <TouchableOpacity onPress={()=>goWrite()}><PlusIcon width={50} height={50}/></TouchableOpacity>
         </View>
       )}
 
-      {/* footer-bar in delete-mode */}
-      {deleteMode && (
-        <View style={st.delBar}>
-          <TouchableOpacity onPress={()=>{setDeleteMode(false);setSelected(new Set());}}>
-            <Text style={st.delCancel}>Cancel</Text>
-          </TouchableOpacity>
+      {/* footer-bars */}
+      {mode==="delete" && (
+        <View style={st.bar}>
+          <TouchableOpacity onPress={clearModes}><Text style={st.cancel}>Cancel</Text></TouchableOpacity>
           <TouchableOpacity disabled={selected.size===0} onPress={confirmDelete}>
-            <Text style={[st.delBtn, selected.size===0 && {opacity:0.4}]}>
-              Delete ({selected.size})
-            </Text>
+            <Text style={[st.action, selected.size===0 && {opacity:0.4}]}>Delete ({selected.size})</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      {mode==="edit" && (
+        <View style={st.bar}>
+          <TouchableOpacity onPress={clearModes}><Text style={st.cancel}>Cancel</Text></TouchableOpacity>
+          <TouchableOpacity disabled={selected.size!==1} onPress={confirmEdit}>
+            <Text style={[st.action, selected.size!==1 && {opacity:0.4}]}>Edit ({selected.size})</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* detail modal – NIET in delete-mode */}
-      {!deleteMode && (
+      {/* detail modal – alleen in normale modus */}
+      {mode==="none" && (
         <Modal visible={!!active} transparent animationType="fade">
           <View style={st.overlay}>
             <View style={st.popup}>
@@ -239,11 +247,11 @@ export default function SeeMessages() {
   );
 }
 
-/* ─── styles ─── */
+/* ─── Styles ─── */
 const st = StyleSheet.create({
   loading:{flex:1,backgroundColor:"#000",justifyContent:"center",alignItems:"center"},
   backBtn:{position:"absolute",top:50,left:20,zIndex:10},
-  title:{fontSize:20,fontFamily:"Alice-Regular",color:"#fff",textAlign:"center",marginTop:50},
+  title:{fontSize:20,fontFamily:"Alice-Regular",color:"#fff",textAlign:"center",marginTop:50, paddingBottom:20},
 
   moreBtn:{position:"absolute",top:55,right:20,zIndex:30,width:24,height:24,justifyContent:"center",alignItems:"center"},
   dropdown:{position:"absolute",top:83,right:20,backgroundColor:"#fff",borderRadius:8,paddingVertical:4,paddingHorizontal:8,
@@ -260,10 +268,11 @@ const st = StyleSheet.create({
   check:{position:"absolute",top:6,right:6},
 
   plusWrap:{position:"absolute",bottom:100,width:"100%",alignItems:"center"},
-  delBar:{position:"absolute",bottom:100,left:0,right:0,flexDirection:"row",justifyContent:"space-between",
-          paddingHorizontal:24},
-  delCancel:{fontFamily:"Alice-Regular",fontSize:16,color:"#fff"},
-  delBtn:{fontFamily:"Alice-Regular",fontSize:16,color:"#FEEDB6"},
+
+  bar:{position:"absolute",bottom:100,left:0,right:0,flexDirection:"row",
+       justifyContent:"space-between",paddingHorizontal:24},
+  cancel:{fontFamily:"Alice-Regular",fontSize:16,color:"#fff"},
+  action:{fontFamily:"Alice-Regular",fontSize:16,color:"#FEEDB6"},
 
   overlay:{flex:1,backgroundColor:"rgba(0,0,0,0.8)",justifyContent:"center",alignItems:"center",padding:20},
   popup:{backgroundColor:"#FFFDF7",borderRadius:8,padding:20,width:"100%"},
