@@ -1,4 +1,3 @@
-// app/(app)/explores/public/index.tsx
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { View, StyleSheet, Dimensions, ActivityIndicator, Text } from "react-native";
 import { useRouter } from "expo-router";
@@ -137,7 +136,6 @@ export default function PublicScreen() {
       camRef.current!.lookAt(
         new THREE.Vector3(target.x, target.y, target.z)
       );
-      // clear it so it doesn’t loop
       useFilterStore.getState().setFilters({ selectedStarId: null });
     }
   }, [selectedStarId, stars, scene]);
@@ -147,7 +145,32 @@ export default function PublicScreen() {
     const renderer = new Renderer({ gl, preserveDrawingBuffer: true });
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
 
+    // Scene met écht zwarte achtergrond en fog
     const sc = new THREE.Scene();
+    sc.background = new THREE.Color(0x000000);
+    sc.fog = new THREE.Fog(0x000000, 200, 1200);
+    renderer.setClearColor(sc.background);
+
+    // Point-cloud sterrenveld
+    const starCount = 1000;
+    const positions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+      positions[i * 3]     = (Math.random() - 0.5) * 2000; // x
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 2000; // y
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 1500; // z
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const starMat = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 1.5,
+      sizeAttenuation: true,
+      transparent: true,
+      opacity: 0.8,
+    });
+    const starField = new THREE.Points(starGeo, starMat);
+    sc.add(starField);
+
     setScene(sc);
 
     const cam = new THREE.PerspectiveCamera(
@@ -163,10 +186,7 @@ export default function PublicScreen() {
     composer.addPass(new RenderPass(sc, cam));
     composer.addPass(
       new UnrealBloomPass(
-        new THREE.Vector2(
-          gl.drawingBufferWidth,
-          gl.drawingBufferHeight
-        ),
+        new THREE.Vector2(gl.drawingBufferWidth, gl.drawingBufferHeight),
         3,
         1,
         0
@@ -191,10 +211,7 @@ export default function PublicScreen() {
   const ray = new Raycaster();
   const touch = new Vector2();
   const pan = useRef(
-    setupControls({
-      cameraPosition: camPos,
-      cameraRotation: camRot,
-    })
+    setupControls({ cameraPosition: camPos, cameraRotation: camRot })
   ).current;
 
   const handleTouch = (e: any) => {
@@ -222,27 +239,14 @@ export default function PublicScreen() {
         <Text style={styles.plus}>+</Text>
       </View>
 
-      <JoystickHandler
-        cameraPosition={camPos}
-        cameraRotation={camRot}
-      />
+      <JoystickHandler cameraPosition={camPos} cameraRotation={camRot} />
 
-      {/* only loading the API call now */}
       {loading && (
-        <ActivityIndicator
-          style={styles.spinner}
-          size="large"
-          color="#fff"
-        />
+        <ActivityIndicator style={styles.spinner} size="large" color="#fff" />
       )}
 
-      {/* once scene exists we render your stars */}
       {scene && (
-        <StarsManager
-          scene={scene}
-          stars={stars}
-          highlightIds={highlightIds}
-        />
+        <StarsManager scene={scene} stars={stars} highlightIds={highlightIds} />
       )}
     </View>
   );
@@ -255,10 +259,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: "50%",
     left: "50%",
-    transform: [
-      { translateX: -10 },
-      { translateY: -10 },
-    ],
+    transform: [{ translateX: -10 }, { translateY: -10 }],
     zIndex: 10,
   },
   plus: { fontSize: 24, color: "#fff" },

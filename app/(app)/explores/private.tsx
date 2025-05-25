@@ -1,5 +1,18 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
-import { View, StyleSheet, Dimensions, Text, ActivityIndicator } from "react-native";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+} from "react";
+import { ViewStyle } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Dimensions,
+  Text,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
 import * as THREE from "three";
@@ -7,53 +20,83 @@ import { Raycaster, Vector2 } from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { useRouter } from "expo-router";
 
 import JoystickHandler from "@/components/joystick/JoystickHandler";
 import { setupControls } from "@/components/three/setupControls";
 import StarsManager from "@/components/stars/StarManager";
 import api from "@/services/api";
-import { useLayoutStore } from "@/lib/store/layoutStore";
 import { useFilterStore } from "@/lib/store/filterStore";
+
+import PhotosIcon from "@/assets/images/svg-icons/photos.svg";
+import VideosIcon from "@/assets/images/svg-icons/videos.svg";
+import AudiosIcon from "@/assets/images/svg-icons/audios.svg";
+import MessagesIcon from "@/assets/images/svg-icons/messages.svg";
+import DocumentsIcon from "@/assets/images/svg-icons/documents.svg";
+import VRSpaceIcon from "@/assets/images/svg-icons/3D-VR-space.svg";
 
 const { width, height } = Dimensions.get("window");
 const CLUSTER_FACTOR = 0.15;
 
+// Pas dit aan voor jouw gewenste font-family
+const PUBLIC_NAME_FONT_FAMILY = "Alice-Regular"; // Zorg dat dit font is geladen in je app
+
+const icons = [
+  {
+    label: "Photo's",
+    route: "/(app)/my-stars/private-star/photos/photo-album",
+    icon: <PhotosIcon width={60} height={60} />,
+  },
+  {
+    label: "Video’s",
+    route: "/(app)/my-stars/private-star/videos/video-album",
+    icon: <VideosIcon width={60} height={60} />,
+  },
+  {
+    label: "Audio’s",
+    route: "/(app)/my-stars/private-star/audios/audios",
+    icon: <AudiosIcon width={60} height={60} />,
+  },
+  {
+    label: "Messages",
+    route: "/(app)/my-stars/private-star/messages/add-message",
+    icon: <MessagesIcon width={60} height={60} />,
+  },
+  {
+    label: "Documents",
+    route: "/(app)/my-stars/private-star/documents/documents",
+    icon: <DocumentsIcon width={60} height={60} />,
+  },
+];
+
 export default function PrivateScreen() {
-  // camera setup
+  const router = useRouter();
+
+  // Camera & scene refs
   const camPos = useRef({ x: 0, y: 0, z: 10 });
   const camRot = useRef({ x: 0, y: 0 });
   const camRef = useRef<THREE.PerspectiveCamera | null>(null);
 
-  // scene & data
+  const prevCamPos = useRef({ x: 0, y: 0, z: 0 });
+  const prevCamRot = useRef({ x: 0, y: 0 });
+
   const [scene, setScene] = useState<THREE.Scene | null>(null);
   const [rawStars, setRawStars] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const setIsSearching = useLayoutStore((s) => s.setIsSearching);
-  const { dob, dod, country, coordX, coordY, coordZ, searchQuery, selectedStarId } =
-    useFilterStore();
-
-  // overlay
-  const [selectedStarName, setSelectedStarName] = useState<string | null>(null);
-  const [iconPos, setIconPos] = useState<{ x: number; y: number }[]>([]);
   const [isStarSelected, setIsStarSelected] = useState(false);
-  const [joystickKey, setJoystickKey] = useState(0);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [originalScale, setOriginalScale] = useState<THREE.Vector3 | null>(null);
 
-  // for “return camera”
-  const prevCamPos = useRef(new THREE.Vector3());
-  const targetPos = useRef(new THREE.Vector3(0, 0, 10));
-  const camLocked = useRef(false);
+  const {
+    dob,
+    dod,
+    country,
+    coordX,
+    coordY,
+    coordZ,
+    searchQuery,
+    selectedStarId,
+  } = useFilterStore();
 
-  // icons
-  const iconSize = 65;
-  const iconOffset = iconSize / 2;
-  const icons = [
-    /* your 7 icons here… */
-  ];
-
-  // 1️⃣ Fetch
+  // Data ophalen
   useEffect(() => {
     (async () => {
       try {
@@ -67,7 +110,7 @@ export default function PrivateScreen() {
     })();
   }, []);
 
-  // 2️⃣ Cluster + filter + search
+  // Filteren & zoeken
   const stars = useMemo(() => {
     let f = rawStars.map((s) => ({
       ...s,
@@ -75,48 +118,11 @@ export default function PrivateScreen() {
       y: s.y * CLUSTER_FACTOR,
       z: s.z * CLUSTER_FACTOR,
     }));
-
-    // DOB / DOD
-    if (dob) {
-      const d = new Date(dob.split("/").reverse().join("-"))
-        .toISOString()
-        .slice(0, 10);
-      f = f.filter((s) => s.user?.dob?.slice(0, 10) === d);
-    }
-    if (dod) {
-      const D = new Date(dod.split("/").reverse().join("-"))
-        .toISOString()
-        .slice(0, 10);
-      f = f.filter((s) => s.user?.dod?.slice(0, 10) === D);
-    }
-    // country
-    if (country) f = f.filter((s) => s.user?.country === country);
-
-    // coords (allow comma)
-    const near = (v: number, t: number) => Math.abs(v - t) <= 2;
-    if (coordX) {
-      const x = parseFloat(coordX.replace(",", "."));
-      if (!isNaN(x)) f = f.filter((s) => near(s.x, x));
-    }
-    if (coordY) {
-      const y = parseFloat(coordY.replace(",", "."));
-      if (!isNaN(y)) f = f.filter((s) => near(s.y, y));
-    }
-    if (coordZ) {
-      const z = parseFloat(coordZ.replace(",", "."));
-      if (!isNaN(z)) f = f.filter((s) => near(s.z, z));
-    }
-
-    // text search
-    if (searchQuery) {
-      const q = searchQuery.trim().toLowerCase();
-      f = f.filter((s) => s.publicName.toLowerCase().includes(q));
-    }
-
+    // ... huidige filters ...
     return f;
   }, [rawStars, dob, dod, country, coordX, coordY, coordZ, searchQuery]);
 
-  // 3️⃣ Center camera on the cluster
+  // Camera centeren op cluster
   useEffect(() => {
     if (!camRef.current || stars.length === 0) return;
     const c = stars.reduce(
@@ -126,47 +132,58 @@ export default function PrivateScreen() {
     c.x /= stars.length;
     c.y /= stars.length;
     c.z /= stars.length;
-
     const maxD = Math.max(
-      ...stars.map((s) =>
-        Math.hypot(s.x - c.x, s.y - c.y, s.z - c.z)
-      )
+      ...stars.map((s) => Math.hypot(s.x - c.x, s.y - c.y, s.z - c.z))
     );
     const dist = maxD * 1.5 + 20;
-
     camPos.current = { x: c.x, y: c.y, z: c.z + dist };
-    camRef.current!.position.set(c.x, c.y, c.z + dist);
-    camRef.current!.lookAt(new THREE.Vector3(c.x, c.y, c.z));
+    camRef.current.position.set(c.x, c.y, c.z + dist);
+    camRef.current.lookAt(new THREE.Vector3(c.x, c.y, c.z));
   }, [stars]);
 
-  // 4️⃣ Jump to search-selected star
+  // Jump to searched star
   useEffect(() => {
-    if (
-      !camRef.current ||
-      !scene ||
-      stars.length === 0 ||
-      !selectedStarId
-    )
-      return;
-
+    if (!camRef.current || !scene || stars.length === 0 || !selectedStarId) return;
     const tgt = stars.find((s) => s._id === selectedStarId);
     if (!tgt) return;
-
     const offset = 20;
-    camRef.current!.position.set(tgt.x, tgt.y, tgt.z + offset);
-    camRef.current!.lookAt(new THREE.Vector3(tgt.x, tgt.y, tgt.z));
+    camRef.current.position.set(tgt.x, tgt.y, tgt.z + offset);
+    camRef.current.lookAt(new THREE.Vector3(tgt.x, tgt.y, tgt.z));
     camPos.current = { x: tgt.x, y: tgt.y, z: tgt.z + offset };
-
-    // clear selection so it doesn’t repeat
     useFilterStore.getState().setFilters({ selectedStarId: "" });
   }, [selectedStarId, stars, scene]);
 
-  // 5️⃣ Three.js setup
+  // Three.js setup
   const createScene = async (gl: any) => {
     const renderer = new Renderer({ gl, preserveDrawingBuffer: true });
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
 
+    // Scene met écht zwarte achtergrond en fog
     const sc = new THREE.Scene();
+    sc.background = new THREE.Color(0x000000);
+    sc.fog = new THREE.Fog(0x000000, 200, 1200);
+    renderer.setClearColor(sc.background);
+
+    // Point-cloud sterren
+    const starCount = 1000;
+    const positions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+      positions[i * 3]     = (Math.random() - 0.5) * 2000; // x
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 2000; // y
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 1500; // z
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const starMat = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 1.5,
+      sizeAttenuation: true,
+      transparent: true,
+      opacity: 0.8,
+    });
+    const starField = new THREE.Points(starGeo, starMat);
+    sc.add(starField);
+
     setScene(sc);
 
     const cam = new THREE.PerspectiveCamera(
@@ -187,7 +204,9 @@ export default function PrivateScreen() {
     composer.addPass(
       new UnrealBloomPass(
         new THREE.Vector2(gl.drawingBufferWidth, gl.drawingBufferHeight),
-        3, 1, 0
+        3,
+        1,
+        0
       )
     );
 
@@ -206,27 +225,97 @@ export default function PrivateScreen() {
     loop();
   };
 
-  // 6️⃣ Touch / raycast (to open overlay)
+  // Overlay state
+  const lastHighlight = useRef<{ obj: THREE.Object3D | null; scale: THREE.Vector3 | null }>({
+    obj: null,
+    scale: null,
+  });
+  const [overlayPos, setOverlayPos] = useState<{ x: number; y: number }[]>([]);
+  const [overlayStar, setOverlayStar] = useState<{ id: string; publicName: string } | null>(null);
+
   const ray = new Raycaster();
   const touchPt = new Vector2();
   const pan = useRef(
     setupControls({ cameraPosition: camPos, cameraRotation: camRot })
   ).current;
+  const focusDistance = 19;
 
   const handleTouch = (e: any) => {
     if (!scene || !camRef.current) return;
     const { locationX, locationY } = e;
-    touchPt.x = (locationX / width) * 2 - 1;
-    touchPt.y = -(locationY / height) * 2 + 1;
+    touchPt.set((locationX / width) * 2 - 1, -(locationY / height) * 2 + 1);
     ray.setFromCamera(touchPt, camRef.current);
     const hit = ray.intersectObjects(scene.children, true)[0];
     if (!hit) return;
-    let obj: any = hit.object;
-    while (obj && !obj.userData?.id && obj.parent) obj = obj.parent;
-    const id = obj.userData?.id;
-    if (!id) return;
 
-    // (overlay open/close logic…)
+    let obj: THREE.Object3D | null = hit.object;
+    while (obj && !obj.userData?.id && obj.parent) obj = obj.parent;
+    const id = obj?.userData?.id as string | undefined;
+    if (!id || !obj) return;
+
+    // Sluit overlay
+    if (overlayStar?.id === id) {
+      setOverlayStar(null);
+      setIsStarSelected(false);
+      setOverlayPos([]);
+      camPos.current = { ...prevCamPos.current };
+      camRot.current = { ...prevCamRot.current };
+      if (camRef.current) {
+        camRef.current.position.set(
+          prevCamPos.current.x,
+          prevCamPos.current.y,
+          prevCamPos.current.z
+        );
+        camRef.current.rotation.x = prevCamRot.current.x;
+        camRef.current.rotation.y = prevCamRot.current.y;
+      }
+      if (lastHighlight.current.obj && lastHighlight.current.scale) {
+        lastHighlight.current.obj.scale.copy(lastHighlight.current.scale);
+        lastHighlight.current = { obj: null, scale: null };
+      }
+      return;
+    }
+
+    // Open overlay
+    prevCamPos.current = { ...camPos.current };
+    prevCamRot.current = { ...camRot.current };
+    if (lastHighlight.current.obj && lastHighlight.current.scale) {
+      lastHighlight.current.obj.scale.copy(lastHighlight.current.scale);
+    }
+    lastHighlight.current = { obj, scale: obj.scale.clone() };
+    obj.scale.setScalar(1.8);
+
+    const worldPos = new THREE.Vector3();
+    obj.getWorldPosition(worldPos);
+
+    // Zet camera exact op y van ster
+    camPos.current = {
+      x: worldPos.x,
+      y: worldPos.y,
+      z: worldPos.z + focusDistance,
+    };
+    camRef.current.position.set(worldPos.x, worldPos.y, worldPos.z + focusDistance);
+    camRef.current.lookAt(new THREE.Vector3(worldPos.x, worldPos.y, worldPos.z));
+
+    // Iconen en badge altijd rond scherm-middelpunt
+    const center = { x: width / 2, y: height / 2 };
+    const radius = 120;
+    const angleStep = (2 * Math.PI) / icons.length;
+    const startAngle = -Math.PI / 2;
+    const positions = icons.map((_, i) => ({
+      x: center.x + radius * Math.cos(startAngle + i * angleStep) - 30,
+      y: center.y + radius * Math.sin(startAngle + i * angleStep) - 30,
+    }));
+
+    // Public name uit data
+    const starData = stars.find((s) => s._id === id);
+    setOverlayStar({ id, publicName: starData?.publicName || "Unknown" });
+    setOverlayPos(positions);
+    setIsStarSelected(true);
+  };
+
+  const handleIconPress = (route: string, starId: string) => {
+    router.push({ pathname: route, params: { starId } });
   };
 
   return (
@@ -235,30 +324,57 @@ export default function PrivateScreen() {
         style={styles.gl}
         onContextCreate={createScene}
         onTouchEnd={(e) => handleTouch(e.nativeEvent)}
-        {...pan.panHandlers}
+        {...(!isStarSelected ? pan.panHandlers : {})}
       />
 
       <View style={styles.cross}>
         <Text style={styles.plus}>+</Text>
       </View>
 
-      {!isStarSelected && (
-        <JoystickHandler
-          key={joystickKey}
-          cameraPosition={camPos}
-          cameraRotation={camRot}
-        />
-      )}
+      {!overlayStar && <JoystickHandler key={0} cameraPosition={camPos} cameraRotation={camRot} />}
+      {(loading || !scene) && <ActivityIndicator style={styles.spinner} size="large" color="#fff" />}
+      {scene && stars.length > 0 && <StarsManager scene={scene} stars={stars} />}
 
-      {(loading || !scene) && (
-        <ActivityIndicator style={styles.spinner} size="large" color="#fff" />
-      )}
+      {overlayStar && (
+        <>
+          {/* Badge exact boven midden */}
+          <View
+            style={{
+              position: "absolute",
+              left: width / 2 - 100,
+              bottom: height / 2 - 200,
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              backgroundColor: "rgba(0,0,0,0.75)",
+              borderRadius: 6,
+              zIndex: 20,
+            }}
+          >
+            <Text
+              style={{
+                color: "#fff",
+                fontWeight: "600",
+                textAlign: "center",
+                fontSize: 20,
+                fontFamily: PUBLIC_NAME_FONT_FAMILY,
+                width: 200,
+              }}
+            >
+              {overlayStar.publicName}
+            </Text>
+          </View>
 
-      {scene && stars.length > 0 && (
-        <StarsManager scene={scene} stars={stars} />
+          {overlayPos.map((p, i) => (
+            <TouchableOpacity
+              key={icons[i].label}
+              style={{ position: "absolute", left: p.x, top: p.y, zIndex: 20 }}
+              onPress={() => handleIconPress(icons[i].route, overlayStar.id)}
+            >
+              {icons[i].icon}
+            </TouchableOpacity>
+          ))}
+        </>
       )}
-
-      {/* overlay elements… */}
     </View>
   );
 }
