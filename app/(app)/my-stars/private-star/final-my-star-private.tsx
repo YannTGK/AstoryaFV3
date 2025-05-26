@@ -46,7 +46,6 @@ export default function FinalMyStarPrivate() {
     { label: "Audio’s",    route: "/(app)/my-stars/private-star/audios/audios",    icon: <AudiosIcon    width={60} height={60} /> },
     { label: "Messages",   route: "/(app)/my-stars/private-star/messages/add-message",icon: <MessagesIcon  width={60} height={60} /> },
     { label: "Documents",  route: "/(app)/my-stars/private-star/documents/documents", icon: <DocumentsIcon width={60} height={60} /> },
-    { label: "3D VR Space",route: "/(app)/my-stars/private-star/vr-space",            icon: <VRSpaceIcon   width={60} height={60} /> },
   ];
 
   const handlePress = (route: string) => {

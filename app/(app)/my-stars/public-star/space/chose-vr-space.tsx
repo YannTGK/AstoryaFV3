@@ -1,12 +1,25 @@
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from "react-native";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
+import BasicRoom from "@/assets/images/placeHolders/basicRoom.svg";
 
 const { width } = Dimensions.get("window");
 
 export default function ChoseVRSpace() {
   const router = useRouter();
+  const [selected, setSelected] = useState(false); // ← geselecteerd?
+
+  const handleRoomPress = () => setSelected(true);               // alleen selecteren
+  const handleConfirm   = () =>
+    selected && router.push("/(app)/my-stars/public-star/space/chosen-vr-space");
 
   return (
     <View style={{ flex: 1 }}>
@@ -30,27 +43,39 @@ export default function ChoseVRSpace() {
         </Svg>
       </TouchableOpacity>
 
-      {/* Titel */}
+      {/* Titel & beschrijving */}
       <Text style={styles.title}>3D/VR - space</Text>
-
-      {/* Beschrijving */}
       <Text style={styles.description}>
         Choose a 3D/VR space where you want{"\n"}to preserve your memories.
       </Text>
 
-      {/* Placeholder box */}
-      <View style={styles.box} />
+      {/* Kamer */}
+      <TouchableOpacity
+        style={[
+          styles.roomWrapper,
+          selected && styles.roomWrapperSelected, // oranje rand
+        ]}
+        activeOpacity={0.8}
+        onPress={handleRoomPress}
+      >
+        <BasicRoom
+          width="100%"
+          height="100%"
+          preserveAspectRatio="xMidYMid slice"
+        />
+      </TouchableOpacity>
 
-      {/* Naam links onder de box */}
       <Text style={styles.boxLabel}>My memory bedroom</Text>
 
-      {/* Select knop */}
+      {/* Select-knop */}
       <View style={styles.buttonWrapper}>
         <TouchableOpacity
-          style={styles.button}
-          onPress={() => {
-            router.push("/(app)/my-stars/public-star/space/chosen-vr-space");
-          }}
+          style={[
+            styles.button,
+            !selected && { opacity: 0.5 },
+          ]}
+          disabled={!selected}
+          onPress={handleConfirm}
         >
           <Text style={styles.buttonText}>Select</Text>
         </TouchableOpacity>
@@ -80,20 +105,24 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 32,
   },
-  box: {
+  roomWrapper: {
     height: 180,
     width: width - 40,
     borderWidth: 1,
     borderColor: "#fff",
     borderRadius: 12,
+    overflow: "hidden",
     marginTop: 30,
     alignSelf: "center",
+  },
+  roomWrapperSelected: {
+    borderColor: "#FFA54C",
+    borderWidth: 2,
   },
   boxLabel: {
     fontFamily: "Alice-Regular",
     fontSize: 14,
     color: "#fff",
-    textAlign: "left",
     marginTop: 10,
     marginLeft: 20,
   },
