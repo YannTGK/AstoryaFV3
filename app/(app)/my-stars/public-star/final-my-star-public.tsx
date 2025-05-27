@@ -1,45 +1,148 @@
-import { useState } from "react";
-import { View, Text, TouchableOpacity, Pressable, StyleSheet } from "react-native";
+// screens/final-my-star-public.tsx
+import React, { useState, useCallback } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+} from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
-
 import StarView from "@/components/stars/StarView";
+import api from "@/services/api";
 
-export default function MyStarPublic2() {
+export default function FinalMyStarPublic() {
   const router = useRouter();
-  const { name, emissive } = useLocalSearchParams();
+  const { starId } = useLocalSearchParams<{ starId?: string }>();
+
+  const [star, setStar] = useState<any>(null);
+  const [hasRoom, setHasRoom] = useState<boolean | null>(null);
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isPrivate, setIsPrivate] = useState(false);
 
-  const isValid = typeof name === "string" && typeof emissive === "string";
-  const emissiveNum = isValid ? parseInt(emissive as string, 10) : 0xffffff;
+  useFocusEffect(
+    useCallback(() => {
+      if (!starId) {
+        Alert.alert("Error", "No star ID provided");
+        setLoading(false);
+        return;
+      }
+      let cancelled = false;
+
+      setLoading(true);
+      setHasRoom(null);
+      setRoomId(null);
+
+      // 1) load your star
+      api
+        .get("/stars")
+        .then((res) => {
+          if (cancelled) return;
+          const allStars: any[] = res.data;
+          const found = allStars.find((s) => s._id === starId);
+          if (!found) {
+            Alert.alert("Not found", "Could not find your star");
+            return;
+          }
+          setStar(found);
+        })
+        .catch((err) => {
+          console.error("Failed to load stars:", err);
+          Alert.alert("Error", "Could not load your star");
+        });
+
+      // 2) load 3D rooms and grab first room’s ID
+      api
+        .get(`/stars/${starId}/three-d-rooms`)
+        .then((res) => {
+          if (cancelled) return;
+          const rooms: any[] = res.data;
+          const ok = Array.isArray(rooms) && rooms.length > 0;
+          setHasRoom(ok);
+          if (ok) {
+            setRoomId(rooms[0]._id);
+          }
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          console.warn("Failed to load 3D rooms:", err);
+          setHasRoom(false);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }, [starId])
+  );
 
   const goPrivate = () => {
     setIsPrivate(true);
     router.replace("/(app)/my-stars/start-my-star-private");
   };
 
+  const goAdd3D = () => {
+    if (!starId) {
+      Alert.alert("Error", "No star ID");
+      return;
+    }
+    const route = hasRoom
+      ? "/(app)/my-stars/public-star/space/save-space"
+      : "/(app)/my-stars/public-star/space/no-space";
+
+    router.push({
+      pathname: route,
+      params: { starId, roomId }, // ← pass both
+    });
+  };
+
+  if (loading || hasRoom === null || !star) {
+    return (
+      <View style={styles.fullscreenCenter}>
+        <ActivityIndicator size="large" color="#FEEDB6" />
+      </View>
+    );
+  }
+
+  // derive display props
+  const displayName = star.publicName || star.word || "";
+  const colorHex = star.color?.startsWith("#") ? star.color : "#ffffff";
+  const emissive = parseInt(colorHex.slice(1), 16);
+
   return (
     <View style={styles.root}>
       <LinearGradient
         colors={["#000000", "#273166", "#000000"]}
         style={StyleSheet.absoluteFill}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
       />
 
       {/* Back */}
-      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+      <TouchableOpacity
+        style={styles.backBtn}
+        onPress={() =>
+          router.push({
+            pathname: "/(app)/my-stars/public-star/final-my-star-public",
+            params: { starId },
+          })
+        }
+      >
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
         </Svg>
       </TouchableOpacity>
 
       <Text style={styles.title}>My personal star</Text>
 
-      {/* toggle */}
+      {/* Private/Public toggle */}
       <View style={styles.toggleContainer}>
-        <Pressable
+        <TouchableOpacity
           onPress={goPrivate}
           style={[
             styles.toggleBtn,
@@ -47,9 +150,16 @@ export default function MyStarPublic2() {
             styles.privateRounded,
           ]}
         >
-          <Text style={[styles.toggleTxt, { color: isPrivate ? "#11152A" : "#fff" }]}>Private</Text>
-        </Pressable>
-        <Pressable
+          <Text
+            style={[
+              styles.toggleTxt,
+              { color: isPrivate ? "#11152A" : "#fff" },
+            ]}
+          >
+            Private
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
           onPress={() => setIsPrivate(false)}
           style={[
             styles.toggleBtn,
@@ -57,45 +167,46 @@ export default function MyStarPublic2() {
             styles.publicRounded,
           ]}
         >
-          <Text style={[styles.toggleTxt, { color: !isPrivate ? "#11152A" : "#fff" }]}>Public</Text>
-        </Pressable>
+          <Text
+            style={[
+              styles.toggleTxt,
+              { color: !isPrivate ? "#11152A" : "#fff" },
+            ]}
+          >
+            Public
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {/* geen ster? */}
-      {!isValid && <Text style={styles.empty}>No public star has been created yet.</Text>}
+      {/* Star preview */}
+      <View style={styles.canvasWrapper}>
+        <StarView emissive={emissive} rotate={false} />
+        <View style={styles.nameOverlay}>
+          <Text style={styles.nameText}>{displayName}</Text>
+        </View>
+      </View>
 
-      {/* ster & naam */}
-      {isValid && (
-        <>
-          <View style={styles.canvasWrapper}>
-            <StarView emissive={emissiveNum} rotate={false} />
-            <View style={styles.nameOverlay}>
-              <Text style={styles.nameText}>{name}</Text>
-            </View>
-          </View>
-
-          <View style={styles.ctaWrapper}>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() =>
-                router.push("/(app)/my-stars/public-star/space/no-space")
-              }
-            >
-              <Text style={styles.buttonTxt}>Add 3D/VR</Text>  
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
+      {/* Add/Edit 3D/VR */}
+      <View style={styles.ctaWrapper}>
+        <TouchableOpacity style={styles.button} onPress={goAdd3D}>
+          <Text style={styles.buttonTxt}>
+            {hasRoom ? "Edit 3D/VR space" : "Add 3D/VR space"}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
-/*──────────────────── styles ────────────────────*/
 const styles = StyleSheet.create({
   root: { flex: 1 },
-
+  fullscreenCenter: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#000",
+  },
   backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
-
   title: {
     fontFamily: "Alice-Regular",
     fontSize: 20,
@@ -103,25 +214,23 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 50,
   },
-
-  /* toggle */
-  toggleContainer: { flexDirection: "row", justifyContent: "center", marginTop: 20 },
+  toggleContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 20,
+  },
   toggleBtn: { paddingVertical: 10, paddingHorizontal: 26 },
   toggleOn: { backgroundColor: "#FEEDB6" },
   toggleOff: { backgroundColor: "#11152A" },
   toggleTxt: { fontFamily: "Alice-Regular", fontSize: 16 },
-  privateRounded: { borderTopLeftRadius: 12, borderBottomLeftRadius: 12 },
-  publicRounded: { borderTopRightRadius: 12, borderBottomRightRadius: 12 },
-
-  empty: {
-    color: "#fff",
-    textAlign: "center",
-    marginTop: 100,
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
+  privateRounded: {
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
   },
-
-  /* star wrapper */
+  publicRounded: {
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
+  },
   canvasWrapper: {
     alignSelf: "center",
     marginTop: 30,
@@ -130,7 +239,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: "hidden",
   },
-
   nameOverlay: {
     position: "absolute",
     bottom: "4%",
@@ -144,9 +252,12 @@ const styles = StyleSheet.create({
     color: "#fff",
     textAlign: "center",
   },
-
-  /* CTA */
-  ctaWrapper: { position: "absolute", bottom: 100, left: 20, right: 20 },
+  ctaWrapper: {
+    position: "absolute",
+    bottom: 100,
+    left: 20,
+    right: 20,
+  },
   button: {
     backgroundColor: "#FEEDB6",
     paddingVertical: 14,

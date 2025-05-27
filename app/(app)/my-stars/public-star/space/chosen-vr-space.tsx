@@ -1,3 +1,4 @@
+// screens/ChosenVRSpace.tsx
 import React from "react";
 import {
   View,
@@ -7,45 +8,37 @@ import {
   Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import Svg, { Path } from "react-native-svg";
-import BasicRoomGL from "@/components/rooms/BasicRoomGL";   // ⬅️ net gemaakt
+import { useRouter, useLocalSearchParams } from "expo-router";
+import BasicRoomGL from "@/components/rooms/BasicRoomGL";
 
 const { width, height } = Dimensions.get("window");
 
 export default function ChosenVRSpace() {
   const router = useRouter();
+  const { starId, roomId } = useLocalSearchParams<{ starId?: string; roomId?: string }>();
 
   return (
     <View style={{ flex: 1 }}>
-      {/* Achtergrond gradient */}
       <LinearGradient
         colors={["#000000", "#273166", "#000000"]}
         style={StyleSheet.absoluteFill}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Back-button */}
-      <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
-        </Svg>
-      </TouchableOpacity>
+      <Text style={styles.title}>3D/VR – space</Text>
 
-      <Text style={styles.title}>3D/VR − space</Text>
-
-      {/* Native GL-scene */}
       <View style={styles.sceneWrapper}>
         <BasicRoomGL />
       </View>
 
-      {/* Add-content knop */}
       <View style={styles.buttonWrapper}>
         <TouchableOpacity
           style={styles.button}
           onPress={() =>
-            router.push("/(app)/my-stars/public-star/space/add-content-space")
+            router.push({
+              pathname:
+                "/(app)/my-stars/public-star/space/add-content-space",
+              params: { starId, roomId },
+            })
           }
         >
           <Text style={styles.buttonText}>Add content</Text>
@@ -56,12 +49,6 @@ export default function ChosenVRSpace() {
 }
 
 const styles = StyleSheet.create({
-  backBtn: {
-    position: "absolute",
-    top: 50,
-    left: 20,
-    zIndex: 10,
-  },
   title: {
     fontFamily: "Alice-Regular",
     fontSize: 20,

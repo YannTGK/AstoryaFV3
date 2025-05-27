@@ -1,3 +1,4 @@
+// screens/StartMyStarPublic.tsx
 import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
@@ -18,7 +19,6 @@ export default function StartMyStarPublic() {
   const router = useRouter();
   const { user } = useAuthStore();
 
-
   const goBack = useCallback(() => router.back(), []);
   const goPrivate = useCallback(
     () => router.replace("/(app)/my-stars/start-my-star-private"),
@@ -32,35 +32,43 @@ export default function StartMyStarPublic() {
 
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-  const run = async () => {
-    if (!user) {            // guest? gewoon door
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const { data: stars } = await api.get("/stars");
-      const pub = stars.find((s: any) => !s.isPrivate);
-
-      if (pub) {
-        const hex = pub.color?.startsWith("#") ? pub.color : "#ffffff";
-        const emissive = parseInt(hex.slice(1), 16).toString();
-
-        router.replace({
-          pathname: "/(app)/my-stars/public-star/final-my-star-public",
-          params: { name: pub.publicName || pub.word, emissive },
-        });
-        return;             // stopt hier bij redirect
+  useEffect(() => {
+    const run = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
       }
-    } catch (e) {
-      console.error("public-star fetch error:", e);
-    } finally {
-      setLoading(false);    // laat creatie-UI zien
-    }
-  };
-  run();
-}, [user, router]);
+
+      try {
+        const { data: stars } = await api.get("/stars");
+        // vind de eerste public star
+        const pub = stars.find((s: any) => !s.isPrivate);
+        if (pub) {
+          const hex = pub.color?.startsWith("#")
+            ? pub.color
+            : "#ffffff";
+          const emissive = parseInt(hex.slice(1), 16).toString();
+
+          // 🚀 hier sturen we nu óók de starId mee
+          router.replace({
+            pathname:
+              "/(app)/my-stars/public-star/final-my-star-public",
+            params: {
+              name: pub.publicName || pub.word,
+              emissive,
+              starId: pub._id,         // ← voeg dit toe
+            },
+          });
+          return;
+        }
+      } catch (e) {
+        console.error("public-star fetch error:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    run();
+  }, [user, router]);
 
   return (
     <View style={styles.root}>
@@ -70,9 +78,10 @@ useEffect(() => {
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
       />
+
       {/* Terug-knop */}
       <TouchableOpacity style={styles.backBtn} onPress={goBack}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+        <Svg width={24} height={24} viewBox="0 0 24 24">
           <Path
             d="M15 18l-6-6 6-6"
             stroke="#FEEDB6"
@@ -117,7 +126,6 @@ useEffect(() => {
   );
 }
 
-/* ───────────────── styles ───────────────── */
 const styles = StyleSheet.create({
   root: { flex: 1 },
   backBtn: {

@@ -1,4 +1,5 @@
-import { useState } from "react";
+// screens/NoVRSpace.tsx
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,37 +7,34 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
+  Alert,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
-
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
 
 export default function NoVRSpace() {
   const router = useRouter();
+  const { starId } = useLocalSearchParams<{ starId?: string }>();
   const [showPopup, setShowPopup] = useState(false);
   const [spaceName, setSpaceName] = useState("");
 
-  const handleCreatePress = () => {
-    setShowPopup(true);
-  };
-
   const handleConfirm = () => {
-    if (!spaceName.trim()) return;
+    const trimmed = spaceName.trim();
+    if (!trimmed) return;
+    if (!starId) {
+      Alert.alert("Error", "Geen ster-ID bekend");
+      return;
+    }
     setShowPopup(false);
-
-    const encoded = encodeURIComponent(spaceName.trim());
-
     router.push({
       pathname: "/(app)/my-stars/public-star/space/chose-vr-space",
-      params: { name: encoded },
+      params: {
+        starId,
+        name: encodeURIComponent(trimmed),
+      },
     });
-  };
-
-  const handleCancel = () => {
-    setShowPopup(false);
-    setSpaceName("");
   };
 
   return (
@@ -44,46 +42,30 @@ export default function NoVRSpace() {
       <LinearGradient
         colors={["#000000", "#273166", "#000000"]}
         style={StyleSheet.absoluteFill}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Back-button */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M15 18l-6-6 6-6"
-            stroke="#FEEDB6"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+        <Svg width={24} height={24} viewBox="0 0 24 24">
+          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
         </Svg>
       </TouchableOpacity>
 
-      {/* Titel */}
-      <Text style={styles.title}>3D/VR - space</Text>
-
-      {/* Lege toestand */}
+      <Text style={styles.title}>3D/VR – space</Text>
       <View style={styles.centeredContent}>
         <Text style={styles.messageText}>
           No 3D/VR-space created yet.{"\n"}Create your public VR-space!
         </Text>
       </View>
-
-      {/* Plus-knop */}
       <View style={styles.plusWrapper}>
-        <TouchableOpacity onPress={handleCreatePress}>
+        <TouchableOpacity onPress={() => setShowPopup(true)}>
           <PlusIcon width={50} height={50} />
         </TouchableOpacity>
       </View>
 
-      {/* Popup */}
       <Modal transparent visible={showPopup} animationType="fade">
         <View style={styles.popupOverlay}>
           <View style={styles.popupBox}>
-            <Text style={styles.popupTitle}>Create 3D/VR - space</Text>
-
+            <Text style={styles.popupTitle}>Name your 3D/VR-space</Text>
             <TextInput
               value={spaceName}
               onChangeText={setSpaceName}
@@ -91,11 +73,13 @@ export default function NoVRSpace() {
               placeholderTextColor="#999"
               style={styles.input}
             />
-
             <View style={styles.popupButtons}>
               <TouchableOpacity
                 style={[styles.popupButton, styles.rightBorder]}
-                onPress={handleCancel}
+                onPress={() => {
+                  setShowPopup(false);
+                  setSpaceName("");
+                }}
               >
                 <Text style={styles.popupButtonText}>Cancel</Text>
               </TouchableOpacity>
@@ -103,7 +87,7 @@ export default function NoVRSpace() {
                 style={styles.popupButton}
                 onPress={handleConfirm}
               >
-                <Text style={styles.popupButtonText}>Create</Text>
+                <Text style={styles.popupButtonText}>Next</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -114,12 +98,7 @@ export default function NoVRSpace() {
 }
 
 const styles = StyleSheet.create({
-  backBtn: {
-    position: "absolute",
-    top: 50,
-    left: 20,
-    zIndex: 10,
-  },
+  backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
   title: {
     fontFamily: "Alice-Regular",
     fontSize: 20,
