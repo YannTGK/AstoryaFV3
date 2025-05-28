@@ -142,7 +142,7 @@ export default function AddContentSpace() {
               const setter = { photos:setPhotos, videos:setVideos, audios:setAudios, documents:setDocuments, messages:setMessages }[type] as React.Dispatch<React.SetStateAction<any[]>>;
               setter(prev => prev.filter(item => item._id !== id));
             } catch (e: any) {
-              Alert.alert("Verwijderen mislukt", e.response?.data?.message||e.message);
+              Alert.alert("Delete Failed", e.response?.data?.message||e.message);
             }
         } }
       ]
@@ -216,7 +216,7 @@ export default function AddContentSpace() {
         </View></View>
         {/* DOCUMENTS */}
         <View style={styles.item}><Text style={styles.label}>Documents {documents.length}/3</Text><View style={styles.row}>
-          {documents.map(d=><View key={d._id} style={styles.cardContainer}><TouchableOpacity onPress={()=>openModal(d.url,'document')}><PdfIcon width={60} height={60}/></TouchableOpacity><TouchableOpacity style={styles.deleteBtn} onPress={()=>handleDelete('documents',d.__id)}><Text style={styles.deleteTxt}>×</Text></TouchableOpacity></View>)}
+          {documents.map(d=><View key={d._id} style={styles.cardContainer}><TouchableOpacity onPress={()=>openModal(d.url,'document')}><PdfIcon width={60} height={60}/></TouchableOpacity><TouchableOpacity style={styles.deleteBtn} onPress={()=>handleDelete('documents',d._id)}><Text style={styles.deleteTxt}>×</Text></TouchableOpacity></View>)}
           {documents.length<3&&<TouchableOpacity onPress={pickAndUploadDocuments}><PlusSquare width={60} height={60}/></TouchableOpacity>}
         </View></View>
         {/* MESSAGES */}
