@@ -67,7 +67,7 @@ export default function SaveSpace() {
           style={styles.darkButton}
           onPress={handleBack}
         >
-          <Text style={styles.darkButtonText}>Back</Text>
+          <Text style={styles.darkButtonText}> Edit spaces </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
