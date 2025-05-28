@@ -50,6 +50,7 @@ export default function AddContentSpace() {
   const [documents, setDocuments] = useState<MediaItem[]>([]);
   const [messages, setMessages] = useState<ThreeDRoomMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false); 
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalUri, setModalUri] = useState<string>("");
@@ -62,32 +63,33 @@ export default function AddContentSpace() {
     return null;
   }
 
+  // bovenin je component, vóór useFocusEffect
+  const fetchAll = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const [p, v, a, d, msgs] = await Promise.all([
+        api.get<MediaItem[]>(`/stars/${starId}/three-d-rooms/${roomId}/photos`).then(r => r.data).catch(e => e.response?.status === 404 ? [] : Promise.reject(e)),
+        api.get<MediaItem[]>(`/stars/${starId}/three-d-rooms/${roomId}/videos`).then(r => r.data).catch(e => e.response?.status === 404 ? [] : Promise.reject(e)),
+        api.get<MediaItem[]>(`/stars/${starId}/three-d-rooms/${roomId}/audios`).then(r => r.data).catch(e => e.response?.status === 404 ? [] : Promise.reject(e)),
+        api.get<MediaItem[]>(`/stars/${starId}/three-d-rooms/${roomId}/documents`).then(r => r.data).catch(e => e.response?.status === 404 ? [] : Promise.reject(e)),
+        api.get<ThreeDRoomMessage[]>(`/stars/${starId}/three-d-rooms/${roomId}/messages`).then(r => r.data).catch(e => e.response?.status === 404 ? [] : Promise.reject(e)),
+      ]);
+      setPhotos(p);
+      setVideos(v);
+      setAudios(a);
+      setDocuments(d);
+      setMessages(msgs);
+    } catch (err: any) {
+      console.warn("Fetch failed:", err);
+      Alert.alert("Error", "Kon content niet laden");
+    } finally {
+      setLoading(false);
+    }
+  }, [starId, roomId]);
+
   useFocusEffect(
     React.useCallback(() => {
       let active = true;
-      const fetchAll = async () => {
-        setLoading(true);
-        try {
-          const [p, v, a, d, msgs] = await Promise.all([
-            api.get<MediaItem[]>(`/stars/${starId}/three-d-rooms/${roomId}/photos`).then(r => r.data).catch(e => e.response?.status === 404 ? [] : Promise.reject(e)),
-            api.get<MediaItem[]>(`/stars/${starId}/three-d-rooms/${roomId}/videos`).then(r => r.data).catch(e => e.response?.status === 404 ? [] : Promise.reject(e)),
-            api.get<MediaItem[]>(`/stars/${starId}/three-d-rooms/${roomId}/audios`).then(r => r.data).catch(e => e.response?.status === 404 ? [] : Promise.reject(e)),
-            api.get<MediaItem[]>(`/stars/${starId}/three-d-rooms/${roomId}/documents`).then(r => r.data).catch(e => e.response?.status === 404 ? [] : Promise.reject(e)),
-            api.get<ThreeDRoomMessage[]>(`/stars/${starId}/three-d-rooms/${roomId}/messages`).then(r => r.data).catch(e => e.response?.status === 404 ? [] : Promise.reject(e)),
-          ]);
-          if (!active) return;
-          setPhotos(p);
-          setVideos(v);
-          setAudios(a);
-          setDocuments(d);
-          setMessages(msgs);
-        } catch (err: any) {
-          console.warn("Fetch failed:", err);
-          Alert.alert("Error", "Kon content niet laden");
-        } finally {
-          if (active) setLoading(false);
-        }
-      };
       fetchAll();
       return () => { active = false; };
     }, [starId, roomId])
@@ -152,43 +154,47 @@ export default function AddContentSpace() {
   const pickAndUploadPhotos = async () => {
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes:ImagePicker.MediaTypeOptions.Images, allowsMultipleSelection:true, quality:0.8 });
     if (res.canceled) return;
-    setLoading(true);
+    setUploading(true);
     try { for (let a of res.assets.slice(0,10-photos.length)){
         const { photo } = await uploadFile(a.uri, `/stars/${starId}/three-d-rooms/${roomId}/photos/upload`,'photo');
         setPhotos(prev=>[...prev,photo]);
-    }} catch(e:any){ Alert.alert('Upload failed',e.message);} finally{ setLoading(false); }
+        await fetchAll();
+    }} catch(e:any){ Alert.alert('Upload failed',e.message);} finally{ setUploading(false);; }
   };
 
   const pickAndUploadVideos = async () => {
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes:ImagePicker.MediaTypeOptions.Videos, allowsMultipleSelection:true, quality:0.8 });
     if (res.canceled) return;
-    setLoading(true);
+    setUploading(true);
     try { for (let a of res.assets.slice(0,3-videos.length)){
         const { video } = await uploadFile(a.uri, `/stars/${starId}/three-d-rooms/${roomId}/videos/upload`,'video');
         setVideos(prev=>[...prev,video]);
-    }} catch(e:any){ Alert.alert('Upload failed',e.message);} finally{ setLoading(false); }
+        await fetchAll();
+    }} catch(e:any){ Alert.alert('Upload failed',e.message);} finally{ setUploading(false); }
   };
 
   const pickAndUploadAudios = async () => {
     const res = await DocumentPicker.getDocumentAsync({ type:'audio/*',copyToCacheDirectory:false });
     const asset = Array.isArray((res as any).assets)?(res as any).assets[0]:(res as any);
     if (!asset.uri) return;
-    setLoading(true);
+    setUploading(true);
     try {
       const audio = await uploadFile(asset.uri, `/stars/${starId}/three-d-rooms/${roomId}/audios/upload`,'audio');
       setAudios(prev=>[...prev,audio]);
-    } catch(e:any){Alert.alert('Upload failed',e.message);} finally{setLoading(false);}
+      await fetchAll();
+    } catch(e:any){Alert.alert('Upload failed',e.message);} finally{setUploading(false);}
   };
 
   const pickAndUploadDocuments = async () => {
     const res = await DocumentPicker.getDocumentAsync({type:['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document']});
     const uri = Array.isArray((res as any).assets)&&res.assets.length?res.assets[0].uri:(res as any).uri;
     if (!uri) return;
-    setLoading(true);
+    setUploading(true);
     try{
       const doc = await uploadFile(uri, `/stars/${starId}/three-d-rooms/${roomId}/documents/upload`,'document');
       setDocuments(prev=>[...prev,doc]);
-    } catch(e:any){Alert.alert('Upload failed',e.message);} finally{setLoading(false);}
+      await fetchAll();
+    } catch(e:any){Alert.alert('Upload failed',e.message);} finally{setUploading(false);}
   };
 
   if (loading) return <View style={styles.center}><ActivityIndicator size='large' color='#FEEDB6'/></View>;
@@ -240,6 +246,14 @@ export default function AddContentSpace() {
           }
         </View>
       </Modal>
+      {/* Upload-overlay */}
+      {uploading && (
+        <Modal transparent animationType="none">
+          <View style={styles.uploadOverlay}>
+            <ActivityIndicator size="large" color="#FEEDB6" />
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -267,5 +281,12 @@ const styles = StyleSheet.create({
   closeBtn:{position:"absolute",top:60,right:20,zIndex:10},
   documentWrapper:{width:width-40,height:height-120,backgroundColor:"#fff",borderRadius:8,overflow:"hidden"},
   audioWrapper:{width:width-80,height:120,backgroundColor:"#1a1a1a",justifyContent:"center",alignItems:"center",borderRadius:8},
-  audioText:{color:"#fff"}
+  audioText:{color:"#fff"},
+  uploadOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
 });
