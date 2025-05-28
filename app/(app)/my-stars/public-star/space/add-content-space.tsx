@@ -221,8 +221,8 @@ export default function AddContentSpace() {
         </View></View>
         {/* MESSAGES */}
         <View style={styles.item}><Text style={styles.label}>Messages {messages.length}/5</Text><View style={styles.row}>
-          {messages.map(m=><View key={m._id} style={styles.cardContainer}><TouchableOpacity style={styles.messageCard} onPress={()=>router.push({pathname:'/.../write-message-space',params:{starId,roomId,msgId:m._id}})}><Text style={styles.messageSender} numberOfLines={1}>{m.sender.name}</Text><Text style={styles.messageBody} numberOfLines={4}>{m.message}</Text><Text style={styles.messageDate} numberOfLines={1}>{new Date(m.addedAt).toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'})}</Text></TouchableOpacity><TouchableOpacity style={styles.deleteBtn} onPress={()=>handleDelete('messages',m._id)}><Text style={styles.deleteTxt}>×</Text></TouchableOpacity></View>)}
-          {messages.length<5&&<TouchableOpacity style={styles.addMessageBtn} onPress={()=>router.push({pathname:'/.../write-message-space',params:{starId,roomId}})}><PlusLetter width={60} height={60}/></TouchableOpacity>}
+          {messages.map(m=><View key={m._id} style={styles.cardContainer}><TouchableOpacity style={styles.messageCard} onPress={()=>router.push({pathname:'/(app)/my-stars/public-star/space/add-message/write-message-space',params:{starId,roomId,msgId:m._id}})}><Text style={styles.messageSender} numberOfLines={1}>{m.sender.name}</Text><Text style={styles.messageBody} numberOfLines={4}>{m.message}</Text><Text style={styles.messageDate} numberOfLines={1}>{new Date(m.addedAt).toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'})}</Text></TouchableOpacity><TouchableOpacity style={styles.deleteBtn} onPress={()=>handleDelete('messages',m._id)}><Text style={styles.deleteTxt}>×</Text></TouchableOpacity></View>)}
+          {messages.length<5&&<TouchableOpacity style={styles.addMessageBtn} onPress={()=>router.push({pathname:'/(app)/my-stars/public-star/space/add-message/write-message-space',params:{starId,roomId}})}><PlusLetter width={60} height={60}/></TouchableOpacity>}
         </View></View>
       </ScrollView>
       {/* Overlay Modal */}

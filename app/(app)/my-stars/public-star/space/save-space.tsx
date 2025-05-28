@@ -32,6 +32,14 @@ export default function SaveSpace() {
     });
   };
 
+  const handleSpaces = () => {
+    router.push({
+      pathname: "/(app)/my-stars/public-star/space/created-space",
+      params: { starId },
+    });
+  };
+
+
   const handleBack = () => {
     router.push({
       pathname: "/(app)/my-stars/public-star/final-my-star-public",
@@ -65,7 +73,7 @@ export default function SaveSpace() {
       <View style={styles.buttonWrapper}>
         <TouchableOpacity
           style={styles.darkButton}
-          onPress={handleBack}
+          onPress={handleSpaces}
         >
           <Text style={styles.darkButtonText}> Edit spaces </Text>
         </TouchableOpacity>
