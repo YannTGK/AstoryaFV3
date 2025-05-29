@@ -16,6 +16,7 @@ import PublicBasicRoomGL from "@/components/rooms/PublicBasicRoomGL";
 import api from "@/services/api";
 import ArrowLeft from "@/assets/images/icons/arrowLeft.svg";
 import ArrowRight from "@/assets/images/icons/arrowRight.svg";
+import { Linking } from "react-native";
 
 type ThreeDRoom = { _id: string; roomType: string };
 type Message      = { _id: string; message: string };
@@ -209,22 +210,34 @@ export default function PublicStarRoomPage() {
 
           {/* Documents */}
           {active === "Documenten" && docs && (
-            <SingleViewer
-              uri={docs[docIndex].url}
-              index={docIndex}
-              length={docs.length}
-              onPrev={() => setDocIndex(i => Math.max(i-1,0))}
-              onNext={() => setDocIndex(i => Math.min(i+1,docs.length-1))}
-              Content={({uri}) => (
-                <WebView
-                  source={{uri}}
-                  style={styles.documentWebView}
-                  startInLoadingState
-                />
-              )}
-            />
-          )}
+            <View style={styles.docContainer}>
+              <Text style={styles.docName}>{docs[docIndex].originalName}</Text>
+              <View style={styles.photoNav}>
+                <TouchableOpacity
+                  onPress={() => setDocIndex(i => Math.max(i - 1, 0))}
+                  disabled={docIndex === 0}
+                  style={[styles.navButton, docIndex === 0 && styles.navDisabled]}
+                >
+                  <ArrowLeft width={44} height={44} />
+                </TouchableOpacity>
 
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(docs[docIndex].url)}
+                  style={styles.openButton}
+                >
+                  <Text style={styles.openButtonText}>Open PDF</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => setDocIndex(i => Math.min(i + 1, docs.length - 1))}
+                  disabled={docIndex === docs.length - 1}
+                  style={[styles.navButton2, docIndex === docs.length - 1 && styles.navDisabled]}
+                >
+                  <ArrowRight width={44} height={44} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
           {/* Messages */}
           {active === "Messages" && messages && (
             <SingleViewer
@@ -367,4 +380,28 @@ const styles = StyleSheet.create({
 
   closeIconContainer:{ position:"absolute", top:150,right:20,width:32,height:32,borderRadius:16,backgroundColor:"rgba(255,255,255,0.2)",alignItems:"center",justifyContent:"center" },
   closeIcon:{ color:"#fff", fontSize:24, lineHeight:24, textAlign:"center" },
+  docContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  docName: {
+    color: "#fff",
+    fontSize: 20,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  openButton: {
+    flex: 1,
+    backgroundColor: "#444",
+    paddingVertical: 12,
+    marginHorizontal: 8,
+    borderRadius: 4,
+    alignItems: "center",
+  },
+  openButtonText: {
+    color: "#fff",
+    fontSize: 16,
+  },
 });
