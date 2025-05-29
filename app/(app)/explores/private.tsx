@@ -342,7 +342,7 @@ export default function PrivateScreen() {
             style={{
               position: "absolute",
               left: width / 2 - 100,
-              bottom: height / 2 - 200,
+              bottom: height / 2 - 120,
               paddingHorizontal: 8,
               paddingVertical: 4,
               backgroundColor: "rgba(0,0,0,0.75)",
