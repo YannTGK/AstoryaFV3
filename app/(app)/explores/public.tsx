@@ -283,7 +283,7 @@ export default function PublicScreen() {
     // tweede klik: navigatie
     if (overlayStar.id === id) {
       router.push({
-        pathname: "/public-star/[starId]",
+        pathname: "/(app)/explores/public-spaces/room",
         params: { starId: id },
       });
     }
