@@ -7,6 +7,7 @@ import {
   Text,
   TouchableOpacity,
 } from "react-native";
+import { Animated } from "react-native";
 import { useRouter } from "expo-router";
 import { GLView } from "expo-gl";
 import { Renderer } from "expo-three";
@@ -44,6 +45,10 @@ export default function PublicScreen() {
   const [rawStars, setRawStars] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [scene, setScene] = useState<THREE.Scene | null>(null);
+
+  const [toast, setToast] = useState<string | null>(null);
+  const toastOpacity = useRef(new Animated.Value(0)).current;
+
 
   const [overlayStar, setOverlayStar] = useState<{
     id: string;
@@ -246,7 +251,17 @@ export default function PublicScreen() {
     setupControls({ cameraPosition: camPos, cameraRotation: camRot })
   ).current;
 
-  const handleTouch = (e: any) => {
+  // helper to show-and-fade toast
+  const showToast = (msg: string) => {
+    setToast(msg);
+    Animated.sequence([
+      Animated.timing(toastOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.delay(1800),
+      Animated.timing(toastOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+    ]).start(() => setToast(null));
+  };
+  
+  const handleTouch = async (e: any) => {
     if (!scene || !camRef.current) return;
 
     touch.x = (e.locationX / width) * 2 - 1;
@@ -282,10 +297,19 @@ export default function PublicScreen() {
 
     // tweede klik: navigatie
     if (overlayStar.id === id) {
-      router.push({
-        pathname: "/(app)/explores/public-spaces/room",
-        params: { starId: id },
-      });
+      try {
+        const res = await api.get(`/stars/${id}/three-d-rooms`);
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          router.push({
+            pathname: "/(app)/explores/public-spaces/room",
+            params: { starId: id },
+          });
+        } else {
+          showToast("Star is not public");
+        }
+      } catch {
+        showToast("Could not check rooms");
+      }
     }
   };
 
@@ -351,6 +375,12 @@ export default function PublicScreen() {
           highlightIds={highlightIds}
         />
       )}
+
+      {toast && (
+        <Animated.View style={[styles.toast, { opacity: toastOpacity }]}>
+          <Text style={styles.toastText}>{toast}</Text>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -401,5 +431,22 @@ const styles = StyleSheet.create({
     left: "50%",
     marginLeft: -15,
     marginTop: -15,
+  },
+  toast: {
+    position: "absolute",
+    top: 200,
+    left: "50%",
+    transform: [{ translateX: -100 }],
+    width: 200,
+    padding: 8,
+    backgroundColor: "rgba(0,0,0,0.8)",
+    borderRadius: 4,
+    fontFamily: "Alice-Regular",
+    alignItems: "center",
+    zIndex: 50,
+  },
+  toastText: {
+    color: "#fff",
+    fontSize: 14,
   },
 });
