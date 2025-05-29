@@ -4,7 +4,7 @@ import React, {
   useState,
   useMemo,
 } from "react";
-import { ViewStyle } from "react-native";
+import { ViewStyle, Animated } from "react-native"; // Animated toegevoegd
 import {
   View,
   StyleSheet,
@@ -95,6 +95,16 @@ export default function PrivateScreen() {
     searchQuery,
     selectedStarId,
   } = useFilterStore();
+
+  // Fade animatie
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: isStarSelected ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [isStarSelected]);
 
   // Data ophalen
   useEffect(() => {
@@ -338,7 +348,7 @@ export default function PrivateScreen() {
       {overlayStar && (
         <>
           {/* Badge exact boven midden */}
-          <View
+          <Animated.View
             style={{
               position: "absolute",
               left: width / 2 - 100,
@@ -348,6 +358,15 @@ export default function PrivateScreen() {
               backgroundColor: "rgba(0,0,0,0.75)",
               borderRadius: 6,
               zIndex: 20,
+              opacity: fadeAnim,
+              transform: [
+                {
+                  scale: fadeAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.85, 1],
+                  }),
+                },
+              ],
             }}
           >
             <Text
@@ -362,16 +381,31 @@ export default function PrivateScreen() {
             >
               {overlayStar.publicName}
             </Text>
-          </View>
+          </Animated.View>
 
           {overlayPos.map((p, i) => (
-            <TouchableOpacity
+            <Animated.View
               key={icons[i].label}
-              style={{ position: "absolute", left: p.x, top: p.y, zIndex: 20 }}
-              onPress={() => handleIconPress(icons[i].route, overlayStar.id)}
+              style={{
+                position: "absolute",
+                left: p.x,
+                top: p.y,
+                zIndex: 20,
+                opacity: fadeAnim,
+                transform: [
+                  {
+                    scale: fadeAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.85, 1],
+                    }),
+                  },
+                ],
+              }}
             >
-              {icons[i].icon}
-            </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleIconPress(icons[i].route, overlayStar.id)}>
+                {icons[i].icon}
+              </TouchableOpacity>
+            </Animated.View>
           ))}
         </>
       )}
