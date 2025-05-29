@@ -1,16 +1,24 @@
-// (app)/public-star/public-spaces/room.tsx
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  Modal,
+  FlatList,
+} from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import PublicBasicRoomGL from "@/components/rooms/PublicBasicRoomGL";
 import api from "@/services/api";
+import * as THREE from "three";
 
 type ThreeDRoom = {
   _id: string;
-  name: string;
   roomType: string;
-  description?: string;
 };
+
+type Message = { _id: string; text: string };
+type Document = { _id: string; filename: string };
 
 export default function PublicStarRoomPage() {
   const { starId } = useLocalSearchParams<{ starId: string }>();
@@ -20,82 +28,148 @@ export default function PublicStarRoomPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // trigger camera zooms
+  const [focusReq, setFocusReq] = useState<{
+    meshName: string;
+    worldPos: THREE.Vector3;
+    heightOffset: number;
+  } | null>(null);
+
+  // which mesh has finished zooming
+  const [focusedMesh, setFocusedMesh] = useState<string | null>(null);
+
+  // overlay data
+  const [messages, setMessages] = useState<Message[] | null>(null);
+  const [docs, setDocs] = useState<Document[] | null>(null);
+
+  // load 3D rooms
   useEffect(() => {
     if (!starId) return;
     setLoading(true);
     api
       .get<ThreeDRoom[]>(`/stars/${starId}/three-d-rooms`)
-      .then((res) => {
-        setRooms(res.data);
-        setError(null);
-      })
-      .catch((err) => {
-        console.error("❌ Failed to load 3D rooms:", err);
-        setError("Failed to load 3D rooms.");
-      })
+      .then((res) => setRooms(res.data))
+      .catch(() => setError("Failed to load 3D rooms"))
       .finally(() => setLoading(false));
   }, [starId]);
 
-  // find the first basic room
-  const basicRoom = rooms?.find((r) => r.roomType === "basic") ?? null;
+  // when a mesh zoom finishes, fetch its content
+  useEffect(() => {
+    if (!focusedMesh) return;
+    const roomId = rooms![0]._id;
+    if (focusedMesh.startsWith("cube_11")) {
+      api
+        .get<Document[]>(`/stars/${starId}/three-d-rooms/${roomId}/documents`)
+        .then((r) => setDocs(r.data))
+        .catch(() => setDocs([]));
+    } else {
+      api
+        .get<Message[]>(`/stars/${starId}/three-d-rooms/${roomId}/messages`)
+        .then((r) => setMessages(r.data))
+        .catch(() => setMessages([]));
+    }
+  }, [focusedMesh]);
+
+  const basicRoom = rooms?.find((r) => r.roomType === "basic") || null;
+
+  if (loading)
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.info}>Loading…</Text>
+      </View>
+    );
+  if (error)
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.error}>{error}</Text>
+      </View>
+    );
+  if (!basicRoom)
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.info}>No basic room available.</Text>
+      </View>
+    );
 
   return (
     <View style={styles.container}>
-      {/* Back button */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.back()}
-      >
+      {/* Back */}
+      <TouchableOpacity style={styles.back} onPress={() => router.back()}>
         <Text style={styles.backText}>← Back</Text>
       </TouchableOpacity>
 
-      {loading && (
-        <View style={styles.centered}>
-          <Text style={styles.infoText}>Loading rooms…</Text>
-        </View>
-      )}
+      <PublicBasicRoomGL
+        // show from a 45° angle instead of straight above
+        initialCameraPosition={[0, 16, 20]}
+        initialCameraTarget={[0, 3, 0]}
+        focusRequest={focusReq || undefined}
+        // disable pan when zooming or overlay open
+        panEnabled={!focusedMesh}
+        onMeshClick={(mesh, worldPos) => {
+          setFocusReq({
+            meshName: mesh.name,
+            worldPos,
+            heightOffset: 8,
+          });
+        }}
+        onFocusComplete={(meshName) => {
+          // zoom-out marker should not open overlay
+          if (meshName === "fullroom") {
+            // reset so pan re-enabled
+            setFocusReq(null);
+            return;
+          }
+          setFocusedMesh(meshName);
+        }}
+      />
 
-      {error && (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>{error}</Text>
+      {/* Overlay */}
+      <Modal visible={!!focusedMesh} transparent animationType="fade">
+        <View style={styles.overlay}>
+          <Text style={styles.title}>{focusedMesh}</Text>
+          {focusedMesh?.startsWith("cube_11") ? (
+            <FlatList
+              data={docs}
+              keyExtractor={(i) => i._id}
+              renderItem={({ item }) => (
+                <Text style={styles.item}>{item.filename}</Text>
+              )}
+            />
+          ) : (
+            <FlatList
+              data={messages}
+              keyExtractor={(i) => i._id}
+              renderItem={({ item }) => (
+                <Text style={styles.item}>{item.text}</Text>
+              )}
+            />
+          )}
+          <TouchableOpacity
+            style={styles.close}
+            onPress={() => {
+              // close overlay & clear
+              setFocusedMesh(null);
+              setMessages(null);
+              setDocs(null);
+              // zoom back out
+              setFocusReq({
+                meshName: "fullroom",
+                worldPos: new THREE.Vector3(0, 3, 0),
+                heightOffset: 12,
+              });
+            }}
+          >
+            <Text style={styles.closeText}>Close</Text>
+          </TouchableOpacity>
         </View>
-      )}
-
-      {!loading && rooms && rooms.length === 0 && (
-        <View style={styles.centered}>
-          <Text style={styles.infoText}>
-            No 3D rooms found for this star.
-          </Text>
-        </View>
-      )}
-
-      {!loading && rooms && rooms.length > 0 && !basicRoom && (
-        <View style={styles.centered}>
-          <Text style={styles.infoText}>
-            There is no “basic” room for this star.
-          </Text>
-        </View>
-      )}
-
-      {basicRoom && (
-        <PublicBasicRoomGL
-          initialCameraPosition={[0, 16, 20]}
-          initialCameraTarget={[0, 3, 0]}
-          onMeshClick={(mesh) => {
-            console.log(
-              "Clicked mesh in basic-room:",
-              mesh.name || mesh.id
-            );
-          }}
-        />
-      )}
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
-  backButton: {
+  back: {
     position: "absolute",
     top: 40,
     left: 20,
@@ -105,11 +179,22 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   backText: { color: "#fff", fontSize: 16 },
-  centered: {
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+  info: { color: "#fff", fontSize: 18 },
+  error: { color: "red", fontSize: 18 },
+  overlay: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.8)",
+    padding: 20,
   },
-  infoText: { color: "#fff", fontSize: 18 },
-  errorText: { color: "red", fontSize: 16 },
+  title: { color: "#fff", fontSize: 24, marginBottom: 12 },
+  item: { color: "#fff", fontSize: 18, marginVertical: 6 },
+  close: {
+    marginTop: 20,
+    padding: 12,
+    backgroundColor: "#444",
+    borderRadius: 6,
+    alignSelf: "center",
+  },
+  closeText: { color: "#fff", fontSize: 18 },
 });
