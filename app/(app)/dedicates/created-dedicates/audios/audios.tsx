@@ -1,4 +1,4 @@
-// app/(app)/my-stars/private-star/audios/audios/AudioScreen.tsx
+""// app/(app)/my-stars/private-star/audios/audios/AudioScreen.tsx
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -23,12 +23,15 @@ import HeadphoneIcon from "@/assets/images/icons/no-audio.svg";
 import * as FileSystem from "expo-file-system";
 import * as DocumentPicker from "expo-document-picker";
 import api from "@/services/api";
+import useAuthStore from "@/lib/store/useAuthStore";
 
 type AudioItem = {
   _id: string;
   title: string;
   url: string;
   addedAt: string;
+  canView?: string[];
+  canEdit?: string[];
 };
 
 export default function AudioScreen() {
@@ -40,28 +43,58 @@ export default function AudioScreen() {
   const [menuOpenIndex, setMenuOpenIndex] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
+  const [canEdit, setCanEdit] = useState(false);
 
-  // ── lijst ophalen
   useEffect(() => {
-    if (!realStarId) {
-      Alert.alert("Fout", "Geen starId meegegeven");
-      setLoading(false);
-      return;
-    }
-    (async () => {
+    const fetchData = async () => {
+      if (!realStarId) {
+        Alert.alert("Fout", "Geen starId meegegeven");
+        setLoading(false);
+        return;
+      }
+
       try {
-        const resp = await api.get<AudioItem[]>(`/stars/${realStarId}/audios`);
-        setAudios(resp.data);
+        const { user } = useAuthStore.getState();
+        const userId = user?._id;
+
+        const starRes = await api.get(`/stars/${realStarId}`);
+        const star = starRes.data.star || starRes.data;
+
+        const isStarEditor = star.userId === userId || (star.canEdit || []).includes(userId);
+        const starCanView = (star.canView || []).includes(userId);
+
+        const audioRes = await api.get(`/stars/${realStarId}/audios`);
+        const audios = audioRes.data || [];
+
+        const hasAudioEdit = audios.some(audio => (audio.canEdit || []).includes(userId));
+        const hasAudioView = audios.some(audio => (audio.canView || []).includes(userId));
+
+        const onlyCanView = !isStarEditor && !hasAudioEdit && (starCanView || hasAudioView);
+        const finalCanEdit = (isStarEditor || hasAudioEdit) && !onlyCanView;
+
+        console.log("🔐 Rights", {
+          userId,
+          isStarEditor,
+          starCanView,
+          hasAudioEdit,
+          hasAudioView,
+          onlyCanView,
+          finalCanEdit,
+        });
+
+        setAudios(audios);
+        setCanEdit(finalCanEdit);
       } catch (err) {
         console.error(err);
         Alert.alert("Fout", "Kon audio's niet ophalen.");
       } finally {
         setLoading(false);
       }
-    })();
+    };
+
+    fetchData();
   }, [realStarId]);
 
-  // ── verwijderen
   const handleDelete = async () => {
     if (deletingIndex == null) return;
     const audio = audios[deletingIndex];
@@ -77,7 +110,6 @@ export default function AudioScreen() {
     }
   };
 
-  // ── downloaden
   const handleDownload = async (url: string, title: string) => {
     try {
       const filename = `${title || "audio"}.m4a`;
@@ -90,7 +122,6 @@ export default function AudioScreen() {
     }
   };
 
-  // ── bestand upload
   const handleUploadAudio = async () => {
     const result = await DocumentPicker.getDocumentAsync({ type: "audio/*" });
     if (result.type !== "success") return;
@@ -101,16 +132,15 @@ export default function AudioScreen() {
     });
   };
 
-  // ── render
   const renderItem = ({ item, index }: { item: AudioItem; index: number }) => (
     <TouchableOpacity
-     onPress={() =>
-       router.push({
-         pathname: "/(app)/dedicates/created-dedicates/audios/upload-edit-audio",
-         params: { id: item._id, starId: realStarId },
-       })
-     }
-     style={styles.audioCard}
+      onPress={() =>
+        router.push({
+          pathname: "/(app)/dedicates/created-dedicates/audios/upload-edit-audio",
+          params: { id: item._id, starId: realStarId },
+        })
+      }
+      style={styles.audioCard}
     >
       <View style={styles.cardHeader}>
         <View>
@@ -123,14 +153,16 @@ export default function AudioScreen() {
             })}
           </Text>
         </View>
-        <TouchableOpacity onPress={() => setMenuOpenIndex(menuOpenIndex === index ? null : index)}>
-          <Entypo name="dots-three-vertical" size={18} color="#fff" />
-        </TouchableOpacity>
+        {canEdit && (
+          <TouchableOpacity onPress={() => setMenuOpenIndex(menuOpenIndex === index ? null : index)}>
+            <Entypo name="dots-three-vertical" size={18} color="#fff" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <AudioPlayer uri={item.url} />
 
-      {menuOpenIndex === index && (
+      {canEdit && menuOpenIndex === index && (
         <View style={styles.menu}>
           <TouchableOpacity
             style={styles.menuItem}
@@ -170,9 +202,11 @@ export default function AudioScreen() {
       </TouchableOpacity>
 
       <Text style={styles.title}>Audio</Text>
-      <TouchableOpacity style={styles.uploadBtn} onPress={handleUploadAudio}>
-        <UploadIcon width={34} height={34} />
-      </TouchableOpacity>
+      {canEdit && (
+        <TouchableOpacity style={styles.uploadBtn} onPress={handleUploadAudio}>
+          <UploadIcon width={34} height={34} />
+        </TouchableOpacity>
+      )}
 
       {audios.length === 0 ? (
         <View style={styles.centerContent}>
@@ -188,18 +222,20 @@ export default function AudioScreen() {
         />
       )}
 
-      <View style={styles.plusWrapper}>
-        <TouchableOpacity
-          onPress={() =>
-            router.push({
-              pathname: "/(app)/dedicates/created-dedicates/audios/record-audio",
-              params: { starId: realStarId },
-            })
-          }
-        >
-          <PlusIcon width={50} height={50} />
-        </TouchableOpacity>
-      </View>
+      {canEdit && (
+        <View style={styles.plusWrapper}>
+          <TouchableOpacity
+            onPress={() =>
+              router.push({
+                pathname: "/(app)/dedicates/created-dedicates/audios/record-audio",
+                params: { starId: realStarId },
+              })
+            }
+          >
+            <PlusIcon width={50} height={50} />
+          </TouchableOpacity>
+        </View>
+      )}
 
       <Modal visible={showModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
