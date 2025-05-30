@@ -29,10 +29,10 @@ export default function DedicatedStar() {
   const { user }   = useAuthStore();
   const me         = user?._id;
 
-  const [star, setStar]       = useState<any|null>(null);
-  const [loading, setLoading] = useState(true);
+  const [star, setStar]         = useState<any|null>(null);
+  const [loading, setLoading]   = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [isOwner, setIsOwner] = useState(false);
+  const [isOwner, setIsOwner]   = useState(false);
 
   useEffect(() => {
     if (!starId) return;
@@ -40,7 +40,7 @@ export default function DedicatedStar() {
       try {
         const { star: s, owner } = (await api.get(`/stars/${starId}`)).data;
         setStar(s);
-        setIsOwner(String(owner._id) === s.userId);
+        setIsOwner(String(owner._id) === me);
       } catch (e) {
         console.error(e);
         Alert.alert("Error", "Could not load star");
@@ -48,7 +48,7 @@ export default function DedicatedStar() {
         setLoading(false);
       }
     })();
-  }, [starId]);
+  }, [starId, me]);
 
   if (loading || !star) {
     return (
@@ -58,13 +58,11 @@ export default function DedicatedStar() {
     );
   }
 
-  // rights flags
-  const canView = isOwner
-    || star.canView?.some((id: string) => id === me)
-    || star.canEdit?.some((id: string) => id === me);
+  const inCanView = star.canView?.some((id: string) => String(id) === me);
+  const inCanEdit = star.canEdit?.some((id: string) => String(id) === me);
 
-  const canEdit = isOwner
-    || star.canEdit?.some((id: string) => id === me);
+  const canView = isOwner || inCanView || inCanEdit;
+  const canEdit = isOwner || inCanEdit;
 
   const goBackToList = () =>
     router.replace("/(app)/dedicates/dedicate");
@@ -134,7 +132,12 @@ export default function DedicatedStar() {
     }
     router.push({
       pathname,
-      params: { id: starId, canView: canView.toString(), canEdit: canEdit.toString(), isOwner: isOwner.toString() },
+      params: {
+        id: starId,
+        canView: canView.toString(),
+        canEdit: canEdit.toString(),
+        isOwner: isOwner.toString(),
+      },
     });
   };
 
@@ -151,14 +154,23 @@ export default function DedicatedStar() {
       <LinearGradient colors={["#000","#273166","#000"]} style={StyleSheet.absoluteFill}/>
 
       <TouchableOpacity style={styles.backBtn} onPress={goBackToList}>
-        <Svg width={24} height={24}><Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2}/></Svg>
+        <Svg width={24} height={24}>
+          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2}/>
+        </Svg>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.moreBtn} onPress={() => setMenuOpen(!menuOpen)}>
-        <MoreIcon width={24} height={24}/>
-      </TouchableOpacity>
+      {/* only show the 3-dots button when canEdit */}
+      {canEdit && (
+        <TouchableOpacity
+          style={styles.moreBtn}
+          onPress={() => setMenuOpen(open => !open)}
+        >
+          <MoreIcon width={24} height={24}/>
+        </TouchableOpacity>
+      )}
 
-      {menuOpen && (
+      {/* only show menu when canEdit */}
+      {canEdit && menuOpen && (
         <View style={styles.menu}>
           <TouchableOpacity style={styles.menuItem} onPress={handleAddPeople}>
             <AddPeopleIcon width={16} height={16}/>
@@ -169,10 +181,8 @@ export default function DedicatedStar() {
             <Text style={styles.menuText}>See members</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={handleDelete}>
-            <Ionicons name={isOwner ? "trash-sharp" : "exit-outline"} size={16} color="#B00020" />
-            <Text style={[styles.menuText,{color:"#B00020"}]}>
-              {isOwner ? "Delete star" : "Leave star"}
-            </Text>
+            <Ionicons name="trash-sharp" size={16} color="#B00020" />
+            <Text style={[styles.menuText,{color:"#B00020"}]}>Delete star</Text>
           </TouchableOpacity>
         </View>
       )}

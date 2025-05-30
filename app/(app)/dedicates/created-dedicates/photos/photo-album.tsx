@@ -1,5 +1,4 @@
 // app/(app)/dedicates/created-dedicates/photos/photo-album.tsx
-
 import React, { useState, useCallback } from "react";
 import {
   View,
@@ -32,8 +31,16 @@ type Album = { _id: string; name: string; count: number; cover?: string };
 
 export default function PhotoAlbumsScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, canEdit: canEditParam, isOwner: isOwnerParam } = useLocalSearchParams<{
+    id: string;
+    canEdit: string;
+    isOwner: string;
+  }>();
   const insets = useSafeAreaInsets();
+
+  // interpret params
+  const isOwner = isOwnerParam === "true";
+  const canEdit = isOwner || canEditParam === "true";
 
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +50,6 @@ export default function PhotoAlbumsScreen() {
   const [showNew, setShowNew] = useState(false);
   const [albumName, setAlbumName] = useState("");
   const [creating, setCreating] = useState(false);
-
   const [showDelete, setShowDelete] = useState(false);
 
   const fetchAlbums = async () => {
@@ -51,14 +57,12 @@ export default function PhotoAlbumsScreen() {
     setLoading(true);
     try {
       const base = (await api.get(`/stars/${id}/photo-albums`)).data as any[];
-
       const full = await Promise.all(
         base.map(async (a) => {
           try {
             const photos = (await api.get(
               `/stars/${id}/photo-albums/${a._id}/photos`
             )).data as { _id: string; url: string }[];
-
             return {
               _id: a._id,
               name: a.name,
@@ -70,7 +74,6 @@ export default function PhotoAlbumsScreen() {
           }
         })
       );
-
       setAlbums(full);
     } catch (e) {
       console.error("Album fetch error:", e);
@@ -102,15 +105,11 @@ export default function PhotoAlbumsScreen() {
       setAlbumName("");
       fetchAlbums();
       router.push({
-        pathname:
-          "/(app)/dedicates/created-dedicates/photos/created-album",
+        pathname: "/(app)/dedicates/created-dedicates/photos/created-album",
         params: { id, albumId: res.data._id, albumName: res.data.name },
       });
     } catch (err: any) {
-      Alert.alert(
-        "Error",
-        err.response?.data?.message ?? "Could not create album."
-      );
+      Alert.alert("Error", err.response?.data?.message ?? "Could not create album.");
     } finally {
       setCreating(false);
     }
@@ -138,10 +137,7 @@ export default function PhotoAlbumsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top", "bottom"]}>
-      <LinearGradient
-        colors={["#000", "#273166", "#000"]}
-        style={StyleSheet.absoluteFill}
-      />
+      <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
 
       <TouchableOpacity
         style={[styles.backBtn, { top: insets.top + 10 }]}
@@ -152,11 +148,10 @@ export default function PhotoAlbumsScreen() {
         </Svg>
       </TouchableOpacity>
 
-      <Text style={[styles.title, { marginTop: insets.top + 10 }]}>
-        Photo albums
-      </Text>
+      <Text style={[styles.title, { marginTop: insets.top + 10 }]}>Photo albums</Text>
 
-      {!editMode && albums.length > 0 && (
+      {/* only show Edit button if canEdit */}
+      {!editMode && albums.length > 0 && canEdit && (
         <TouchableOpacity
           style={[styles.editIcon, { top: insets.top + 60 }]}
           onPress={() => setEditMode(true)}
@@ -166,9 +161,7 @@ export default function PhotoAlbumsScreen() {
       )}
 
       {editMode && albums.length > 0 && (
-        <View
-          style={[styles.allSelectWrapper, { marginTop: insets.top + 38 }]}
-        >
+        <View style={[styles.allSelectWrapper, { marginTop: insets.top + 38 }]}>
           <TouchableOpacity
             style={styles.selectAllBtn}
             onPress={() => {
@@ -177,10 +170,7 @@ export default function PhotoAlbumsScreen() {
             }}
           >
             <View
-              style={[
-                styles.selectCircle,
-                allSelected && styles.selectCircleActive,
-              ]}
+              style={[styles.selectCircle, allSelected && styles.selectCircleActive]}
             />
             <Text style={styles.selectText}>All</Text>
           </TouchableOpacity>
@@ -207,34 +197,17 @@ export default function PhotoAlbumsScreen() {
                   if (editMode) toggleAlbum(item._id);
                   else
                     router.push({
-                      pathname:
-                        "/(app)/dedicates/created-dedicates/photos/created-album",
-                      params: {
-                        id,
-                        albumId: item._id,
-                        albumName: item.name,
-                      },
+                      pathname: "/(app)/dedicates/created-dedicates/photos/created-album",
+                      params: { id, albumId: item._id, albumName: item.name },
                     });
                 }}
               >
                 {item.cover ? (
-                  <Image
-                    source={{ uri: item.cover }}
-                    style={styles.albumImg}
-                  />
+                  <Image source={{ uri: item.cover }} style={styles.albumImg} />
                 ) : (
-                  <View
-                    style={[
-                      styles.albumImg,
-                      { backgroundColor: "#999", opacity: 0.2 },
-                    ]}
-                  />
+                  <View style={[styles.albumImg, { backgroundColor: "#999", opacity: 0.2 }]} />
                 )}
-                {editMode && (
-                  <View
-                    style={[styles.radio, sel && styles.radioActive]}
-                  />
-                )}
+                {editMode && <View style={[styles.radio, sel && styles.radioActive]} />}
                 <Text style={styles.albumTitle}>{item.name}</Text>
                 <Text style={styles.albumCount}>{item.count}</Text>
               </TouchableOpacity>
@@ -248,26 +221,20 @@ export default function PhotoAlbumsScreen() {
           style={[styles.footerBar, { bottom: insets.bottom + 20 }]}
           onPress={() => setShowDelete(true)}
         >
-          <Feather
-            name="trash-2"
-            size={20}
-            color="#fff"
-            style={{ marginRight: 10 }}
-          />
+          <Feather name="trash-2" size={20} color="#fff" style={{ marginRight: 10 }} />
           <Text style={styles.footerText}>
-            {selected.length} album
-            {selected.length !== 1 ? "s" : ""} selected
+            {selected.length} album{selected.length !== 1 ? "s" : ""} selected
           </Text>
         </TouchableOpacity>
       )}
 
-      <View
-        style={[styles.plusWrapper, { bottom: insets.bottom + 80 }]}
-      >
-        <TouchableOpacity onPress={() => setShowNew(true)}>
-          <PlusIcon width={50} height={50} />
-        </TouchableOpacity>
-      </View>
+      {canEdit && (
+        <View style={[styles.plusWrapper, { bottom: insets.bottom + 80 }]}>
+          <TouchableOpacity onPress={() => setShowNew(true)}>
+            <PlusIcon width={50} height={50} />
+          </TouchableOpacity>
+        </View>
+      )}
 
       <Modal visible={showNew} transparent animationType="fade">
         <View style={styles.modalOverlay}>
@@ -282,24 +249,12 @@ export default function PhotoAlbumsScreen() {
               editable={!creating}
             />
             <View style={styles.row}>
-              <TouchableOpacity
-                style={styles.halfBtn}
-                disabled={creating}
-                onPress={() => setShowNew(false)}
-              >
+              <TouchableOpacity style={styles.halfBtn} disabled={creating} onPress={() => setShowNew(false)}>
                 <Text style={styles.cancelTxt}>Cancel</Text>
               </TouchableOpacity>
               <View style={styles.divider} />
-              <TouchableOpacity
-                style={styles.halfBtn}
-                disabled={creating}
-                onPress={createAlbum}
-              >
-                {creating ? (
-                  <ActivityIndicator color="#007AFF" />
-                ) : (
-                  <Text style={styles.createTxt}>Create</Text>
-                )}
+              <TouchableOpacity style={styles.halfBtn} disabled={creating} onPress={createAlbum}>
+                {creating ? <ActivityIndicator color="#007AFF" /> : <Text style={styles.createTxt}>Create</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -309,21 +264,13 @@ export default function PhotoAlbumsScreen() {
       <Modal visible={showDelete} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.confirmTxt}>
-              Delete selected album(s)?
-            </Text>
+            <Text style={styles.confirmTxt}>Delete selected album(s)?</Text>
             <View style={styles.row}>
-              <TouchableOpacity
-                style={styles.halfBtn}
-                onPress={() => setShowDelete(false)}
-              >
+              <TouchableOpacity style={styles.halfBtn} onPress={() => setShowDelete(false)}>
                 <Text style={styles.cancelTxt}>No</Text>
               </TouchableOpacity>
               <View style={styles.divider} />
-              <TouchableOpacity
-                style={styles.halfBtn}
-                onPress={deleteAlbums}
-              >
+              <TouchableOpacity style={styles.halfBtn} onPress={deleteAlbums}>
                 <Text style={styles.deleteTxt}>Yes</Text>
               </TouchableOpacity>
             </View>
@@ -335,155 +282,36 @@ export default function PhotoAlbumsScreen() {
 }
 
 const styles = StyleSheet.create({
-  loaderContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#000",
-  },
+  loaderContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#000" },
   backBtn: { position: "absolute", left: 20, zIndex: 10 },
-  title: {
-    position: "absolute",
-    alignSelf: "center",
-    fontSize: 20,
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-  },
+  title: { position: "absolute", alignSelf: "center", fontSize: 20, color: "#fff", fontFamily: "Alice-Regular" },
   editIcon: { position: "absolute", right: 20, zIndex: 10 },
   allSelectWrapper: { position: "absolute", right: 16 },
   selectAllBtn: { flexDirection: "row", alignItems: "center" },
-  selectCircle: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: "#fff",
-  },
+  selectCircle: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: "#fff" },
   selectCircleActive: { backgroundColor: "#FEEDB6" },
-  selectText: {
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-    marginLeft: 10,
-  },
+  selectText: { color: "#fff", fontFamily: "Alice-Regular", marginLeft: 10 },
   emptyWrapper: { flex: 1, justifyContent: "center", alignItems: "center" },
-  emptyText: {
-    marginTop: 16,
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-  },
+  emptyText: { marginTop: 16, color: "#fff", fontFamily: "Alice-Regular" },
   grid: { paddingTop: 90, paddingHorizontal: 16, paddingBottom: 160 },
-  albumCard: {
-    width: CARD_SIZE,
-    marginBottom: 20,
-    marginHorizontal: 6,
-    alignItems: "center",
-    position: "relative",
-  },
-  albumImg: {
-    width: CARD_SIZE,
-    height: CARD_SIZE,
-    borderRadius: 8,
-    marginBottom: 6,
-  },
-  albumTitle: {
-    fontSize: 14,
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-  },
-  albumCount: {
-    fontSize: 12,
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-    opacity: 0.7,
-  },
-  radio: {
-    position: "absolute",
-    top: 6,
-    left: 6,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: "#fff",
-  },
+  albumCard: { width: CARD_SIZE, marginBottom: 20, marginHorizontal: 6, alignItems: "center", position: "relative" },
+  albumImg: { width: CARD_SIZE, height: CARD_SIZE, borderRadius: 8, marginBottom: 6 },
+  albumTitle: { fontSize: 14, color: "#fff", fontFamily: "Alice-Regular" },
+  albumCount: { fontSize: 12, color: "#fff", fontFamily: "Alice-Regular", opacity: 0.7 },
+  radio: { position: "absolute", top: 6, left: 6, width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: "#fff" },
   radioActive: { backgroundColor: "#FEEDB6" },
-  footerBar: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-    backgroundColor: "#11152A",
-  },
-  footerText: {
-    color: "#fff",
-    fontFamily: "Alice-Regular",
-    fontSize: 16,
-  },
-  plusWrapper: {
-    position: "absolute",
-    width: "100%",
-    alignItems: "center",
-    zIndex: 10,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalBox: {
-    width: 300,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    alignItems: "center",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontFamily: "Alice-Regular",
-    color: "#11152A",
-    marginBottom: 20,
-  },
-  input: {
-    width: "100%",
-    borderBottomWidth: 1,
-    borderBottomColor: "#11152A",
-    fontSize: 16,
-    textAlign: "center",
-    paddingBottom: 8,
-    marginBottom: 24,
-  },
-  row: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    borderColor: "#ccc",
-    width: "100%",
-  },
+  footerBar: { position: "absolute", left: 0, right: 0, flexDirection: "row", justifyContent: "center", alignItems: "center", padding: 20, backgroundColor: "#11152A" },
+  footerText: { color: "#fff", fontFamily: "Alice-Regular", fontSize: 16 },
+  plusWrapper: { position: "absolute", width: "100%", alignItems: "center", zIndex: 10 },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", alignItems: "center" },
+  modalBox: { width: 300, backgroundColor: "#fff", borderRadius: 16, padding: 20, alignItems: "center" },
+  modalTitle: { fontSize: 20, fontFamily: "Alice-Regular", color: "#11152A", marginBottom: 20 },
+  input: { width: "100%", borderBottomWidth: 1, borderBottomColor: "#11152A", fontSize: 16, textAlign: "center", paddingBottom: 8, marginBottom: 24 },
+  row: { flexDirection: "row", borderTopWidth: 1, borderColor: "#ccc", width: "100%" },
   halfBtn: { flex: 1, alignItems: "center", paddingVertical: 14 },
   divider: { width: 1, backgroundColor: "#ccc" },
-  cancelTxt: {
-    fontSize: 16,
-    color: "#007AFF",
-    fontFamily: "Alice-Regular",
-  },
-  createTxt: {
-    fontSize: 16,
-    color: "#007AFF",
-    fontFamily: "Alice-Regular",
-  },
-  confirmTxt: {
-    fontSize: 16,
-    fontFamily: "Alice-Regular",
-    color: "#11152A",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  deleteTxt: {
-    fontSize: 16,
-    color: "#FF3B30",
-    fontFamily: "Alice-Regular",
-  },
+  cancelTxt: { fontSize: 16, color: "#007AFF", fontFamily: "Alice-Regular" },
+  createTxt: { fontSize: 16, color: "#007AFF", fontFamily: "Alice-Regular" },
+  confirmTxt: { fontSize: 16, fontFamily: "Alice-Regular", color: "#11152A", marginBottom: 20, textAlign: "center" },
+  deleteTxt: { fontSize: 16, color: "#FF3B30", fontFamily: "Alice-Regular" },
 });

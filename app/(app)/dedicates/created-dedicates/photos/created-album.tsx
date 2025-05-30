@@ -1,4 +1,4 @@
-// /(app)/dedicates/created-dedicates/photos/created-album
+// /(app)/dedicates/created-dedicates/photos/created-album xxx aaa
 import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
@@ -18,6 +18,7 @@ import * as ImagePicker from "expo-image-picker";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { Feather } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
+import useAuthStore from "@/lib/store/useAuthStore";
 
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
 import NoPictureIcon from "@/assets/images/svg-icons/no-picture.svg";
@@ -27,6 +28,7 @@ type Photo = { _id: string; url: string };
 
 export default function AlbumPage() {
   const router = useRouter();
+  
   const { id, albumId, albumName } =
     useLocalSearchParams<{
       id: string;
@@ -46,6 +48,7 @@ export default function AlbumPage() {
   const [showCopy, setShowCopy] = useState(false);
   const [showMove, setShowMove] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
 
   const viewerData = images.map((p) => ({ url: p.url }));
   const isSel = (pid: string) => selected.includes(pid);
@@ -78,6 +81,51 @@ export default function AlbumPage() {
   };
   useEffect(() => {
     fetchPhotos();
+  }, [id, albumId]);
+
+  useEffect(() => {
+    const checkRights = async () => {
+      try {
+        const { user } = useAuthStore.getState();
+        const userId = user?._id;
+  
+        if (!userId) {
+          console.log("🔐 Geen user gevonden in auth store");
+          setCanEdit(false);
+          return;
+        }
+  
+        const [starRes, albumRes] = await Promise.all([
+          api.get(`/stars/${id}`),
+          api.get(`/stars/${id}/photo-albums/detail/${albumId}`),
+        ]);
+  
+        const star = starRes.data.star;
+        const album = albumRes.data;
+  
+        const starCanEdit = star.canEdit || [];
+        const starCanView = star.canView || [];
+        const albumCanEdit = album.canEdit || [];
+        const albumCanView = album.canView || [];
+  
+        const isStarEditor  = star.userId  === userId || starCanEdit.includes(userId);
+        const isAlbumEditor = album.ownerId === userId || albumCanEdit.includes(userId);
+  
+        const onlyCanView =
+          (!isStarEditor && starCanView.includes(userId)) ||
+          (!isAlbumEditor && albumCanView.includes(userId));
+  
+        const finalCanEdit = isStarEditor || isAlbumEditor;
+  
+        // Enkel bewerken als gebruiker niet enkel 'canView' heeft
+        setCanEdit(finalCanEdit && !onlyCanView);
+      } catch (e) {
+        console.error("❌ Rights check failed", e);
+        setCanEdit(false);
+      }
+    };
+  
+    checkRights();
   }, [id, albumId]);
 
   /* upload */
@@ -207,7 +255,7 @@ export default function AlbumPage() {
           )}
         </View>
 
-        {!deleteMode && (
+        {canEdit && !deleteMode && (
           <TouchableOpacity style={styles.menuDots} onPress={() => setMenuOpen(!menuOpen)}>
             <Text style={styles.menuDotsText}>⋮</Text>
           </TouchableOpacity>
@@ -372,11 +420,13 @@ export default function AlbumPage() {
       </Modal>
 
       {/* PLUS */}
-      <View style={styles.plusWrapper}>
-        <TouchableOpacity onPress={uploadPhoto}>
-          <PlusIcon width={50} height={50} />
-        </TouchableOpacity>
-      </View>
+      {canEdit && (
+        <View style={styles.plusWrapper}>
+          <TouchableOpacity onPress={uploadPhoto}>
+            <PlusIcon width={50} height={50} />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* CONFIRM DELETE */}
       <Modal visible={confirmDel} transparent animationType="fade">
