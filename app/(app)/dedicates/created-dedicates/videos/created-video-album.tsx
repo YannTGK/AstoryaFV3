@@ -1,6 +1,6 @@
 // app/(app)/my-stars/private-star/videos/three-dots/created-video-album/CreatedVideoAlbum.tsx
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, FlatList,
   Modal, ActivityIndicator, Alert,
@@ -16,6 +16,7 @@ import api from "@/services/api";
 import { useFocusEffect } from "@react-navigation/native";
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
 import NoVideoIcon from "@/assets/images/svg-icons/no-video.svg";
+import useAuthStore from "@/lib/store/useAuthStore";
 
 type VideoItem = { _id: string; url: string };
 
@@ -34,6 +35,7 @@ export default function CreatedVideoAlbum() {
   const [mode, setMode] = useState<"delete" | "copy" | "move" | null>(null);
   const [confirmDel, setConfirmDel] = useState(false);
   const [fullscreenVideo, setFullscreenVideo] = useState<string | null>(null);
+  const [canEdit, setCanEdit] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -41,6 +43,39 @@ export default function CreatedVideoAlbum() {
       fetchVideos();
     }, [starId, albumId])
   );
+
+  useEffect(() => {
+    const checkRights = async () => {
+      try {
+        const { user } = useAuthStore.getState();
+        const userId = user?._id;
+        if (!userId || !starId || !albumId) return;
+
+        const starRes = await api.get(`/stars/${starId}`);
+        const albumRes = await api.get(`/stars/${starId}/video-albums/detail/${albumId}`);
+        const star = starRes.data.star;
+
+        const starCanEdit = star.canEdit || [];
+        const starCanView = star.canView || [];
+        const isStarEditor = star.userId === userId || starCanEdit.includes(userId);
+
+        const albumCanEdit = albumRes.data.canEdit || [];
+        const albumCanView = albumRes.data.canView || [];
+        const isAlbumEditor = albumRes.data.ownerId === userId || albumCanEdit.includes(userId);
+
+        const onlyCanView = albumCanView.includes(userId) && !isAlbumEditor && !isStarEditor;
+
+        const finalCanEdit = (isStarEditor || isAlbumEditor) && !onlyCanView;
+
+        setCanEdit(finalCanEdit);
+      } catch (e) {
+        console.error("❌ Rights check failed", e);
+        setCanEdit(false);
+      }
+    };
+
+    checkRights();
+  }, [starId, albumId]);
 
   const resetState = () => {
     setMenuOpen(false);
@@ -133,9 +168,15 @@ export default function CreatedVideoAlbum() {
           <Svg width={24} height={24}><Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} /></Svg>
         </TouchableOpacity>
         <Text style={styles.title}>{decodeURIComponent(albumName)}</Text>
+        
+        { canEdit && (
         <TouchableOpacity onPress={() => setMenuOpen((o) => !o)}>
           <Text style={styles.menuDots}>⋮</Text>
         </TouchableOpacity>
+        )}
+        { !canEdit && (
+          <Text style={styles.menuDots}></Text>
+        )}
       </View>
 
       {/* MENU */}
@@ -235,12 +276,13 @@ export default function CreatedVideoAlbum() {
       )}
 
       {/* UPLOAD BUTTON */}
+      {canEdit && (
       <View style={styles.plus}>
         <TouchableOpacity onPress={uploadVideo}>
           <PlusIcon width={50} height={50} />
         </TouchableOpacity>
       </View>
-
+      )}
       {/* DELETE CONFIRM */}
       <Modal visible={confirmDel} transparent animationType="fade">
         <View style={styles.modalOverlay}>

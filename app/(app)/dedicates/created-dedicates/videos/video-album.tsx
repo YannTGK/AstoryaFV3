@@ -14,6 +14,7 @@ import { Video } from "expo-av";
 import api from "@/services/api";
 import NoVideoIcon from "@/assets/images/svg-icons/no-album.svg";
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
+import useAuthStore from "@/lib/store/useAuthStore";
 
 const { width } = Dimensions.get("window");
 const CARD_SIZE = (width - 64) / 3;
@@ -39,6 +40,7 @@ export default function VideoAlbumsList() {
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
 
   const fetchAlbums = async () => {
     if (!starId) return;
@@ -48,7 +50,7 @@ export default function VideoAlbumsList() {
       const full = await Promise.all(
         base.map(async (alb: any) => {
           try {
-            const vids = (await api.get(`/stars/${starId}/video-albums/${alb._id}/videos`)).data;
+            const vids = (await api.get(`/stars/${starId}/video-albums/detail/${alb._id}`)).data;
             return {
               _id: alb._id,
               name: alb.name,
@@ -73,7 +75,46 @@ export default function VideoAlbumsList() {
       setLoading(false);
     }
   };
-
+  useEffect(() => {
+    const checkRights = async () => {
+      try {
+        const { user } = useAuthStore.getState();
+        const userId = user?._id;
+        if (!userId || !starId) return;
+  
+        const starRes = await api.get(`/stars/${starId}`);
+        const albumsRes = await api.get(`/stars/${starId}/video-albums`);
+        const star = starRes.data.star;
+  
+        const starCanEdit = star.canEdit || [];
+        const starCanView = star.canView || [];
+        const isStarEditor = star.userId === userId || starCanEdit.includes(userId);
+  
+        let isAlbumEditor = false;
+        let onlyCanView = false;
+  
+        for (const album of albumsRes.data) {
+          const albumDetail = await api.get(`/stars/${starId}/video-albums/detail/${album._id}`);
+          const albumCanEdit = albumDetail.data.canEdit || [];
+          const albumCanView = albumDetail.data.canView || [];
+          const isEditor = albumDetail.data.ownerId === userId || albumCanEdit.includes(userId);
+          const isViewerOnly = albumCanView.includes(userId) && !isEditor;
+  
+          if (isEditor) isAlbumEditor = true;
+          if (isViewerOnly) onlyCanView = true;
+        }
+  
+        const finalCanEdit = (isAlbumEditor || isStarEditor) && !onlyCanView;
+        setCanEdit(finalCanEdit);
+      } catch (err) {
+        console.error("❌ Rights check failed", err);
+        setCanEdit(false);
+      }
+    };
+  
+    checkRights();
+  }, [starId]);
+  
   useEffect(() => { fetchAlbums(); }, [starId]);
 
   const createAlbum = async () => {
@@ -137,7 +178,7 @@ export default function VideoAlbumsList() {
       <Text style={[styles.title, { marginTop: insets.top + 10 }]}>Video albums</Text>
 
       {/* edit-icon */}
-      {!editMode && albums.length > 0 && (
+      {canEdit && !editMode && albums.length > 0 && (
         <TouchableOpacity
           style={[styles.editIcon, { top: insets.top + 60 }]}
           onPress={() => setEditMode(true)}
@@ -208,11 +249,13 @@ export default function VideoAlbumsList() {
       )}
 
       {/* plus-knop */}
-      <View style={[styles.plusWrap, { bottom: insets.bottom + 70 }]}>
-        <TouchableOpacity onPress={() => setShowNew(true)}>
-          <PlusIcon width={50} height={50} />
-        </TouchableOpacity>
-      </View>
+      {canEdit && (
+        <View style={[styles.plusWrap, { bottom: insets.bottom + 70 }]}>
+          <TouchableOpacity onPress={() => setShowNew(true)}>
+            <PlusIcon width={50} height={50} />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* modals */}
       <Modal visible={showNew} transparent animationType="fade">
