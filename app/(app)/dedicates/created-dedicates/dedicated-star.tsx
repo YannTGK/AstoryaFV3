@@ -129,8 +129,6 @@ export default function DedicatedStar() {
         pathname = "/dedicates/created-dedicates/messages/add-message"; break;
       case "Documents":
         pathname = "/dedicates/created-dedicates/documents/documents"; break;
-      case "Book of Life":
-        pathname = "/dedicates/created-dedicates/book-of-life/book-of-life"; break;
       default:
         return;
     }
@@ -146,7 +144,6 @@ export default function DedicatedStar() {
     { label: "Audio’s",     icon: <AudiosIcon     width={60} height={60}/> },
     { label: "Messages",    icon: <MessagesIcon   width={60} height={60}/> },
     { label: "Documents",   icon: <DocumentsIcon  width={60} height={60}/> },
-    { label: "Book of Life",icon: <BookOfLifeIcon width={60} height={60}/> },
   ];
 
   return (
