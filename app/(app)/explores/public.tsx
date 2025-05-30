@@ -305,10 +305,20 @@ export default function PublicScreen() {
             params: { starId: id },
           });
         } else {
+          // public star, but no rooms
           showToast("Star is not public");
         }
-      } catch {
-        showToast("Could not check rooms");
+      } catch (err: any) {
+        const status = err.response?.status;
+        console.log("→ three-d-rooms error:", status, err.response?.data);
+        if (status === 404) {
+          // no public rooms endpoint or not public at all
+          showToast("Star is not public");
+        } else if (status === 403) {
+          showToast("Star is not for you");
+        } else {
+          showToast(`Error ${status ?? ""}: ${err.message}`);
+        }
       }
     }
   };
