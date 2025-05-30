@@ -5,20 +5,21 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  Alert,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 
-import StarView   from "@/components/stars/StarView";
+import StarView from "@/components/stars/StarView";
 import { createStar } from "@/services/stars";
-import useAuthStore   from "@/lib/store/useAuthStore";
+import useAuthStore from "@/lib/store/useAuthStore";
 
 const { width } = Dimensions.get("window");
 
 export default function ChosenPrivateStar() {
   const router = useRouter();
-  const { user } = useAuthStore();                // ← nieuw
+  const { user } = useAuthStore();
   const { name, emissive } = useLocalSearchParams<{
     name: string;
     emissive: string;
@@ -26,28 +27,43 @@ export default function ChosenPrivateStar() {
 
   const [saving, setSaving] = useState(false);
 
-  /* hex-kleur uit emissive-decimaal */
-  const colorHex = "#" + parseInt(emissive).toString(16).padStart(6, "0");
+  // Convert decimal emissive to hex color
+  const colorHex =
+    "#" + parseInt(emissive as string, 10).toString(16).padStart(6, "0");
 
   const handleSaveAndContinue = async () => {
     if (saving) return;
     setSaving(true);
 
     try {
-      await createStar({
-        word:       name.toUpperCase(),
-        color:      colorHex,
-        isPrivate:  true,
-        publicName: `${user?.firstName ?? ""} ${user?.lastName ?? ""}`, // ← nieuw
+      // createStar returns AxiosResponse<{ _id: string; ... }>
+      const res = await createStar({
+        word: name.toUpperCase(),
+        color: colorHex,
+        isPrivate: true,
+        publicName: `${user?.firstName ?? ""} ${user?.lastName ?? ""}`,
       });
 
+      const newStarId = res.data._id;
+      if (!newStarId) {
+        throw new Error("No ID returned from createStar");
+      }
+
+      // Replace, sending along the new star's id
       router.replace({
         pathname: "/(app)/my-stars/private-star/final-my-star-private",
-        params:   { name, emissive },
+        params: {
+          name,
+          emissive,
+          id: newStarId,
+        },
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error("Private star aanmaken mislukt:", err);
-      // eventueel Alert.alert("Oops", "Kon ster niet opslaan");
+      Alert.alert(
+        "Opslaan mislukt",
+        err.message || "Er ging iets mis bij het opslaan. Probeer het later opnieuw."
+      );
     } finally {
       setSaving(false);
     }
@@ -62,7 +78,7 @@ export default function ChosenPrivateStar() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* ← Terug */}
+      {/* ← Back */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
           <Path
@@ -78,16 +94,20 @@ export default function ChosenPrivateStar() {
       <Text style={styles.title}>My personal star</Text>
       <Text style={styles.subtitle}>Chosen star</Text>
 
-      {/* 3D-ster */}
+      {/* 3D preview */}
       <View style={styles.canvasWrapper}>
-      <StarView emissive={parseInt(emissive as string)} rotate={false} />
+        <StarView emissive={parseInt(emissive as string, 10)} rotate={false} />
       </View>
 
       <Text style={styles.starName}>{name}</Text>
 
       {/* CTA */}
       <View style={styles.ctaWrapper}>
-        <TouchableOpacity style={styles.button} onPress={handleSaveAndContinue}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleSaveAndContinue}
+          disabled={saving}
+        >
           <Text style={styles.buttonText}>
             {saving ? "Saving…" : "Add content"}
           </Text>
@@ -97,12 +117,9 @@ export default function ChosenPrivateStar() {
   );
 }
 
-/* ───────── styles ───────── */
 const styles = StyleSheet.create({
   root: { flex: 1 },
-
   backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
-
   title: {
     fontFamily: "Alice-Regular",
     fontSize: 20,
@@ -117,14 +134,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 20,
   },
-
   canvasWrapper: {
     alignSelf: "center",
     marginTop: 40,
     borderRadius: 20,
     overflow: "hidden",
   },
-
   starName: {
     textAlign: "center",
     color: "#fff",
@@ -132,7 +147,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     marginTop: 20,
   },
-
   ctaWrapper: {
     position: "absolute",
     bottom: 100,

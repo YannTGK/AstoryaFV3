@@ -123,21 +123,6 @@ export default function FinalMyStarPublic() {
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Back */}
-      <TouchableOpacity
-        style={styles.backBtn}
-        onPress={() =>
-          router.push({
-            pathname: "/(app)/my-stars/public-star/final-my-star-public",
-            params: { starId },
-          })
-        }
-      >
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} />
-        </Svg>
-      </TouchableOpacity>
-
       <Text style={styles.title}>My personal star</Text>
 
       {/* Private/Public toggle */}

@@ -1,5 +1,12 @@
-import { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
+// ChoseNameOption.tsx
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -10,7 +17,7 @@ import { createStar } from "@/services/stars";
 export default function ChoseNameOption() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const { emissive, name: colorName } = useLocalSearchParams();   // ← kleur-label (‘HOPE’)
+  const { emissive, name: colorName } = useLocalSearchParams(); // kleur-label (‘HOPE’)
 
   const [selection, setSelection] = useState<"full" | "initials" | null>(null);
   const [loading, setLoading] = useState(false);
@@ -20,29 +27,38 @@ export default function ChoseNameOption() {
 
   const handleNext = async () => {
     if (!selection || loading) return;
-    const selectedName = selection === "full" ? fullName : initials;
 
-    /* decimaal emissive → #rrggbb */
+    const selectedName = selection === "full" ? fullName : initials;
+    // decimaal emissive → #rrggbb
     const colorHex = `#${Number(emissive).toString(16).padStart(6, "0")}`;
 
     try {
       setLoading(true);
 
-      await createStar({
-        word: (colorName as string).toUpperCase(),   // ✔︎ kleur-naam als ‘word’
+      // 1) create the star, and extract the returned star object
+      const response = await createStar({
+        word: (colorName as string).toUpperCase(),   // kleur-naam als ‘word’
         color: colorHex,
         isPrivate: false,
         publicName: selectedName,
       });
 
+      const newStar = response.data;    // your backend must return the created star
+      const newStarId = newStar._id;    // grab its _id
+
+      // 2) navigate to the final screen, passing the real starId
       router.replace({
         pathname: "/(app)/my-stars/public-star/final-my-star-public",
-        params: { name: selectedName, emissive: emissive as string },
+        params: {
+          starId: newStarId,
+          name: selectedName,
+          emissive: emissive as string,
+        },
       });
     } catch (err) {
-      console.error("Public star aanmaken mislukt:", err);
+      console.error("Public star creation failed:", err);
       Alert.alert(
-        "Opslaan mislukte",
+        "Opslaan mislukt",
         "Er ging iets mis bij het opslaan. Probeer het later opnieuw."
       );
     } finally {
@@ -50,7 +66,6 @@ export default function ChoseNameOption() {
     }
   };
 
-  /* ------------------------------- UI ------------------------------ */
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
@@ -60,7 +75,7 @@ export default function ChoseNameOption() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* back */}
+      {/* Back */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
           <Path
@@ -78,7 +93,7 @@ export default function ChoseNameOption() {
         Select what others will see on your public star:
       </Text>
 
-      {/* volledige naam */}
+      {/* Full name */}
       <TouchableOpacity
         style={[styles.option, selection === "full" && styles.selectedOption]}
         onPress={() => setSelection("full")}
@@ -91,7 +106,7 @@ export default function ChoseNameOption() {
         />
       </TouchableOpacity>
 
-      {/* initialen */}
+      {/* Initials */}
       <TouchableOpacity
         style={[
           styles.option,
@@ -109,7 +124,7 @@ export default function ChoseNameOption() {
         />
       </TouchableOpacity>
 
-      {/* CTA */}
+      {/* Next button */}
       <TouchableOpacity
         style={[styles.nextButton, (!selection || loading) && { opacity: 0.6 }]}
         onPress={handleNext}
@@ -121,10 +136,13 @@ export default function ChoseNameOption() {
   );
 }
 
-/* ---------------------------- styles ---------------------------- */
 const styles = StyleSheet.create({
-  backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
-
+  backBtn: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    zIndex: 10,
+  },
   title: {
     fontFamily: "Alice-Regular",
     fontSize: 20,
@@ -140,7 +158,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginHorizontal: 40,
   },
-
   option: {
     marginTop: 20,
     backgroundColor: "#ffffff22",
@@ -152,10 +169,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  selectedOption: { borderColor: "#FEEDB6", borderWidth: 1.5 },
-
-  optionText: { fontSize: 16, fontFamily: "Alice-Regular", color: "#fff" },
-
+  selectedOption: {
+    borderColor: "#FEEDB6",
+    borderWidth: 1.5,
+  },
+  optionText: {
+    fontSize: 16,
+    fontFamily: "Alice-Regular",
+    color: "#fff",
+  },
   radioUnselected: {
     width: 18,
     height: 18,
@@ -171,7 +193,6 @@ const styles = StyleSheet.create({
     borderColor: "#FEEDB6",
     borderWidth: 2,
   },
-
   nextButton: {
     backgroundColor: "#FEEDB6",
     paddingVertical: 14,
