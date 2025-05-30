@@ -1,5 +1,4 @@
-/* app/(app)/my-stars/private-star/messages/SeeMessages.tsx */
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity,
   FlatList, Dimensions, Modal, ActivityIndicator, Alert,
@@ -22,11 +21,11 @@ import EditIcon      from "@/assets/images/svg-icons/edit.svg";
 import DeleteIcon    from "@/assets/images/svg-icons/delete.svg";
 import DownloadIcon  from "@/assets/images/svg-icons/download.svg";
 import api           from "@/services/api";
+import useAuthStore from "@/lib/store/useAuthStore";
 
 const { width }  = Dimensions.get("window");
 const CARD_WIDTH = width / 2 - 32;
 
-/* ───────── Types ───────── */
 type Msg = {
   _id: string;
   message: string;
@@ -35,65 +34,65 @@ type Msg = {
   forName?: string;
 };
 
-/* ───────── Component ───────── */
 export default function SeeMessages() {
   const router      = useRouter();
   const { id }      = useLocalSearchParams<{ id: string }>();
 
   const [messages, setMessages] = useState<Msg[]>([]);
   const [loading,  setLoading]  = useState(true);
+  const [canEdit, setCanEdit] = useState(false);
 
-  /* view-state */
   const [bulkOpen,  setBulkOpen]  = useState(false);
   const [mode,      setMode]      = useState<"none"|"delete"|"edit">("none");
   const [selected,  setSelected]  = useState<Set<string>>(new Set());
   const [active,    setActive]    = useState<Msg|null>(null);
 
-  /* ───────── Fetch every focus ───────── */
-  useFocusEffect(
-    useCallback(() => {
-      let mounted = true;
-      (async () => {
-        if (!id) return;
-        setLoading(true);
-        try {
-          const { data } = await api.get<Msg[]>(`/stars/${id}/messages`);
+  useEffect(() => {
+    const checkRights = async () => {
+      try {
+        const { user } = useAuthStore.getState();
+        const userId = user?._id;
+        if (!userId || !id) return;
 
-          // 2️⃣ fetch first viewer username → forName
-          const msgs = await Promise.all(
-            data.map(async m => {
-              let forName = "@unknown";
-              const viewer = m.canView?.[0];
-              if (viewer) {
-                try {
-                  const u = await api.get(`/users/${viewer}`);
-                  forName = "@" + u.data.username;
-                } catch {/* ignore */}
-              }
-              return { ...m, forName };
-            })
-          );
-          if (mounted) setMessages(msgs);
-        } catch (err) {
-          console.error("fetch messages:", err);
-        } finally {
-          if (mounted) setLoading(false);
-        }
-      })();
-      return () => { mounted = false; };
-    }, [id])
-  );
+        const starRes = await api.get(`/stars/${id}`);
+        const star = starRes.data.star || starRes.data;
 
-  /* ───────── Navigation helpers ───────── */
+        const isStarEditor = star.userId === userId || (star.canEdit || []).includes(userId);
+        const starCanView = (star.canView || []).includes(userId);
+
+        const msgRes = await api.get(`/stars/${id}/messages`);
+        const messages = msgRes.data || [];
+
+        const hasMsgEdit = messages.some(msg => (msg.canEdit || []).includes(userId));
+        const hasMsgView = messages.some(msg => (msg.canView || []).includes(userId));
+
+        const onlyCanView = !isStarEditor && !hasMsgEdit && (starCanView || hasMsgView);
+        const finalCanEdit = (isStarEditor || hasMsgEdit) && !onlyCanView;
+
+        console.log("🔐 Rights:", {
+          userId,
+          isStarEditor,
+          hasMsgEdit,
+          hasMsgView,
+          onlyCanView,
+          finalCanEdit,
+        });
+
+        setMessages(messages);
+        setCanEdit(finalCanEdit);
+      } catch (err) {
+        console.error("fetch messages:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkRights();
+  }, [id]);
+
   const goWrite = (messageId?: string) =>
-    router.push({
-      pathname: "/(app)/dedicates/created-dedicates/messages/write-message",
-      params:   messageId ? { id, messageId } : { id },
-    });
+    router.push({ pathname: "/(app)/dedicates/created-dedicates/messages/write-message", params: messageId ? { id, messageId } : { id } });
 
-  /* ───────── Mode helpers ───────── */
   const clearModes = () => { setMode("none"); setSelected(new Set()); };
-
   const toggleSelect = (mid: string) => {
     if (mode === "delete") {
       setSelected(prev => {
@@ -106,7 +105,6 @@ export default function SeeMessages() {
     }
   };
 
-  /* ───────── DELETE flow ───────── */
   const confirmDelete = async () => {
     if (selected.size === 0) return;
     Alert.alert("Delete messages?", `Delete ${selected.size} item(s)?`, [
@@ -114,9 +112,7 @@ export default function SeeMessages() {
       { text:"Delete", style:"destructive", onPress: async () => {
           try {
             await Promise.all(
-              Array.from(selected).map(mid =>
-                api.delete(`/stars/${id}/messages/${mid}`)
-              )
+              Array.from(selected).map(mid => api.delete(`/stars/${id}/messages/${mid}`))
             );
             setMessages(m => m.filter(msg => !selected.has(msg._id)));
             clearModes();
@@ -125,7 +121,6 @@ export default function SeeMessages() {
     ]);
   };
 
-  /* ───────── EDIT flow ───────── */
   const confirmEdit = () => {
     const mid = Array.from(selected)[0];
     if (mid) {
@@ -134,14 +129,12 @@ export default function SeeMessages() {
     }
   };
 
-  /* ───────── DOWNLOAD flow ───────── */
   const downloadMsgs = async () => {
     try {
       if (messages.length === 0) {
         Alert.alert("Empty", "No messages to download."); return;
       }
 
-      /* 1️⃣ build plain-text */
       const plain = messages.map(m => [
         "================================================================",
         `MESSAGE ID : ${m._id}`,
@@ -153,18 +146,12 @@ export default function SeeMessages() {
         ""
       ].join("\n")).join("\n");
 
-      /* 2️⃣ write file */
       const filename = `messages-${Date.now()}.txt`;
       const uri = FileSystem.documentDirectory + filename;
-      await FileSystem.writeAsStringAsync(uri, plain,
-        { encoding: FileSystem.EncodingType.UTF8 });
+      await FileSystem.writeAsStringAsync(uri, plain, { encoding: FileSystem.EncodingType.UTF8 });
 
-      /* 3️⃣ share / notify */
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, {
-          mimeType: "text/plain",
-          dialogTitle: "Share messages",
-        });
+        await Sharing.shareAsync(uri, { mimeType: "text/plain", dialogTitle: "Share messages" });
       } else {
         Alert.alert("Saved", `File saved to:\n${uri}`);
       }
@@ -174,17 +161,12 @@ export default function SeeMessages() {
     }
   };
 
-  /* ───────── Card ───────── */
   const renderCard = ({ item }: { item: Msg }) => {
     const sel = selected.has(item._id);
     return (
       <TouchableOpacity
         onPress={() => mode==="none" ? setActive(item) : toggleSelect(item._id)}
-        style={[
-          st.cardWrapper,
-          mode!=="none" && { borderColor:"#FEEDB6", borderWidth:1.5 },
-          sel && { backgroundColor:"rgba(254,237,182,0.25)" },
-        ]}
+        style={[st.cardWrapper, mode!=="none" && { borderColor:"#FEEDB6", borderWidth:1.5 }, sel && { backgroundColor:"rgba(254,237,182,0.25)" }]}
       >
         <LetterIcon width={CARD_WIDTH} height={120}/>
         <Text style={st.forTxt}>For: {item.forName}</Text>
@@ -193,7 +175,6 @@ export default function SeeMessages() {
     );
   };
 
-  /* ───────── Loading ───────── */
   if (loading) {
     return (
       <View style={st.loading}>
@@ -202,42 +183,28 @@ export default function SeeMessages() {
     );
   }
 
-  /* ───────── UI ───────── */
   return (
     <View style={{flex:1}}>
       <LinearGradient colors={["#000","#273166","#000"]} style={StyleSheet.absoluteFill}/>
-
-      {/* ← back */}
       <TouchableOpacity style={st.backBtn} onPress={()=>router.back()}>
         <Svg width={24} height={24}><Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2}/></Svg>
       </TouchableOpacity>
-
       <Text style={st.title}>Messages</Text>
 
-      {/* ⋮ bulk menu */}
-      {mode==="none" && (
+      {canEdit && mode==="none" && (
         <>
           <TouchableOpacity style={st.moreBtn} onPress={()=>setBulkOpen(!bulkOpen)}>
             <MoreIcon width={24} height={24}/>
           </TouchableOpacity>
-
           {bulkOpen && (
             <View style={st.dropdown}>
-              <TouchableOpacity style={st.dropItem} onPress={()=>{
-                setBulkOpen(false); setMode("edit");
-              }}>
+              <TouchableOpacity style={st.dropItem} onPress={()=>{ setBulkOpen(false); setMode("edit"); }}>
                 <EditIcon width={16} height={16}/><Text style={st.dropTxt}>Edit</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity style={st.dropItem} onPress={()=>{
-                setBulkOpen(false); setMode("delete");
-              }}>
+              <TouchableOpacity style={st.dropItem} onPress={()=>{ setBulkOpen(false); setMode("delete"); }}>
                 <DeleteIcon width={16} height={16}/><Text style={st.dropTxt}>Delete</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity style={st.dropItem} onPress={()=>{
-                setBulkOpen(false); downloadMsgs();
-              }}>
+              <TouchableOpacity style={st.dropItem} onPress={()=>{ setBulkOpen(false); downloadMsgs(); }}>
                 <DownloadIcon width={16} height={16}/><Text style={st.dropTxt}>Download</Text>
               </TouchableOpacity>
             </View>
@@ -245,7 +212,6 @@ export default function SeeMessages() {
         </>
       )}
 
-      {/* list OR empty */}
       {messages.length === 0 ? (
         <View style={st.emptyWrap}>
           <NoMessageIcon width={140} height={140}/>
@@ -261,16 +227,12 @@ export default function SeeMessages() {
         />
       )}
 
-      {/* + button */}
       {mode==="none" && (
         <View style={st.plusWrap}>
-          <TouchableOpacity onPress={()=>goWrite()}>
-            <PlusIcon width={50} height={50}/>
-          </TouchableOpacity>
+          {canEdit && <TouchableOpacity onPress={()=>goWrite()}><PlusIcon width={50} height={50}/></TouchableOpacity>}
         </View>
       )}
 
-      {/* footer bar for delete / edit */}
       {mode==="delete" && (
         <View style={st.bar}>
           <TouchableOpacity onPress={clearModes}><Text style={st.cancel}>Cancel</Text></TouchableOpacity>
@@ -288,14 +250,12 @@ export default function SeeMessages() {
         </View>
       )}
 
-      {/* detail modal */}
       {mode==="none" && (
         <Modal visible={!!active} transparent animationType="fade">
           <View style={st.overlay}>
             <View style={st.popup}>
               <TouchableOpacity style={st.close} onPress={()=>setActive(null)}>
-                <CloseIcon width={20} height={20}/>
-              </TouchableOpacity>
+                <CloseIcon width={20} height={20}/></TouchableOpacity>
               <Text style={st.body}>{active?.message}</Text>
             </View>
           </View>
