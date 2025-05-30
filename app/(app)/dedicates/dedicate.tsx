@@ -70,7 +70,7 @@ export default function DedicateScreen() {
       {loading ? (
         <ActivityIndicator size="large" color="#fff" style={{ marginTop: 60 }} />
       ) : dedicatedStars.length === 0 ? (
-        /*  ⬇︎ oude lege‑staat ⬇︎  */
+        /*  ⬇︎ oude lege‑staat Moet aangepast worden ⬇︎  */
         <View style={styles.oldEmptyWrapper}>
           <StarIcon width={160} height={160} />
           <Text style={styles.oldEmptyText}>No dedicated stars yet</Text>
