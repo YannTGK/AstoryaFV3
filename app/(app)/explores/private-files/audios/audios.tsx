@@ -52,38 +52,18 @@ export default function AudioScreen() {
         setLoading(false);
         return;
       }
-
+  
       try {
         const { user } = useAuthStore.getState();
         const userId = user?._id;
-
-        const starRes = await api.get(`/stars/${realStarId}`);
-        const star = starRes.data.star || starRes.data;
-
-        const isStarEditor = star.userId === userId || (star.canEdit || []).includes(userId);
-        const starCanView = (star.canView || []).includes(userId);
-
+  
         const audioRes = await api.get(`/stars/${realStarId}/audios`);
         const audios = audioRes.data || [];
-
-        const hasAudioEdit = audios.some(audio => (audio.canEdit || []).includes(userId));
-        const hasAudioView = audios.some(audio => (audio.canView || []).includes(userId));
-
-        const onlyCanView = !isStarEditor && !hasAudioEdit && (starCanView || hasAudioView);
-        const finalCanEdit = (isStarEditor || hasAudioEdit) && !onlyCanView;
-
-        console.log("🔐 Rights", {
-          userId,
-          isStarEditor,
-          starCanView,
-          hasAudioEdit,
-          hasAudioView,
-          onlyCanView,
-          finalCanEdit,
-        });
-
+  
+        // Check of gebruiker mag bewerken (edit op star of audio)
+        const canEdit = audios.some(audio => (audio.canEdit || []).includes(userId));
+        setCanEdit(canEdit);
         setAudios(audios);
-        setCanEdit(finalCanEdit);
       } catch (err) {
         console.error(err);
         Alert.alert("Fout", "Kon audio's niet ophalen.");
@@ -91,7 +71,7 @@ export default function AudioScreen() {
         setLoading(false);
       }
     };
-
+  
     fetchData();
   }, [realStarId]);
 
@@ -134,12 +114,6 @@ export default function AudioScreen() {
 
   const renderItem = ({ item, index }: { item: AudioItem; index: number }) => (
     <TouchableOpacity
-      onPress={() =>
-        router.push({
-          pathname: "/(app)/explores/private-files/audios/upload-edit-audio",
-          params: { id: item._id, starId: realStarId },
-        })
-      }
       style={styles.audioCard}
     >
       <View style={styles.cardHeader}>
@@ -153,27 +127,15 @@ export default function AudioScreen() {
             })}
           </Text>
         </View>
-        {canEdit && (
           <TouchableOpacity onPress={() => setMenuOpenIndex(menuOpenIndex === index ? null : index)}>
             <Entypo name="dots-three-vertical" size={18} color="#fff" />
           </TouchableOpacity>
-        )}
       </View>
 
       <AudioPlayer uri={item.url} />
 
-      {canEdit && menuOpenIndex === index && (
+      { menuOpenIndex === index && (
         <View style={styles.menu}>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => {
-              setDeletingIndex(index);
-              setShowModal(true);
-            }}
-          >
-            <DeleteIcon width={16} height={16} />
-            <Text style={styles.menuText}>Delete</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={() => handleDownload(item.url, item.title)}>
             <DownloadIcon width={16} height={16} />
             <Text style={styles.menuText}>Download</Text>
@@ -202,11 +164,6 @@ export default function AudioScreen() {
       </TouchableOpacity>
 
       <Text style={styles.title}>Audio</Text>
-      {canEdit && (
-        <TouchableOpacity style={styles.uploadBtn} onPress={handleUploadAudio}>
-          <UploadIcon width={34} height={34} />
-        </TouchableOpacity>
-      )}
 
       {audios.length === 0 ? (
         <View style={styles.centerContent}>
@@ -220,21 +177,6 @@ export default function AudioScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
         />
-      )}
-
-      {canEdit && (
-        <View style={styles.plusWrapper}>
-          <TouchableOpacity
-            onPress={() =>
-              router.push({
-                pathname: "/(app)/explores/private-files/audios/record-audio",
-                params: { starId: realStarId },
-              })
-            }
-          >
-            <PlusIcon width={50} height={50} />
-          </TouchableOpacity>
-        </View>
       )}
 
       <Modal visible={showModal} transparent animationType="fade">

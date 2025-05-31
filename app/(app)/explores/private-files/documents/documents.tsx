@@ -46,37 +46,6 @@ export default function DocumentsScreen() {
   const { user } = useAuthStore.getState();
   const userId = user?._id;
 
-  useEffect(() => {
-    const checkDocumentRights = async () => {
-      if (!starId || !userId) return;
-
-      try {
-        const starRes = await api.get(`/stars/${starId}`);
-        const star = starRes.data.star || starRes.data;
-
-        const isStarEditor =
-          star.userId === userId || (star.canEdit || []).includes(userId);
-        const starCanView = (star.canView || []).includes(userId);
-
-        const docsRes = await api.get(`/stars/${starId}/documents`);
-        const docs = docsRes.data || [];
-
-        const hasDocEdit = docs.some(doc => (doc.canEdit || []).includes(userId));
-        const hasDocView = docs.some(doc => (doc.canView || []).includes(userId));
-
-        const onlyCanView = !isStarEditor && !hasDocEdit && (starCanView || hasDocView);
-        const finalCanEdit = (isStarEditor || hasDocEdit) && !onlyCanView;
-
-        setCanEdit(finalCanEdit);
-      } catch (err) {
-        console.error("❌ Rechtencontrole mislukt", err);
-        setCanEdit(false);
-      }
-    };
-
-    checkDocumentRights();
-  }, [starId, userId]);
-
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -145,45 +114,8 @@ export default function DocumentsScreen() {
     );
   };
 
-  const upload = async () => {
-    if (!starId) return;
-    const res = await DocumentPicker.getDocumentAsync({
-      type: [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      ],
-      copyToCacheDirectory: false,
-    });
-    if (res.canceled) return;
-    const file = res.assets[0];
-    setUp(true);
-
-    try {
-      const form = new FormData();
-      form.append("document", {
-        uri: file.uri,
-        name: file.name,
-        type: file.mimeType ?? "application/octet-stream",
-      } as any);
-      form.append("docType", file.name?.split(".").pop()?.toLowerCase() ?? "pdf");
-
-      const { data: newDoc } = await api.post<Doc>(
-        `/stars/${starId}/documents/upload`,
-        form,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-      setDocs(p => [newDoc, ...p]);
-    } catch (e) {
-      console.error(e);
-      Alert.alert("Upload failed");
-    } finally {
-      setUp(false);
-    }
-  };
 
   if (loading) return <Loader label="Loading documents…" />;
-  if (uploading) return <Loader label="Uploading…" />;
 
   return (
     <View style={{ flex: 1 }}>
@@ -210,7 +142,7 @@ export default function DocumentsScreen() {
         <EmptyState />
       ) : (
         <ScrollView contentContainerStyle={st.listWrap}>
-          {docs.map((d, i) => (
+          {docs.map((d) => (
             <TouchableOpacity
               key={d._id}
               style={st.row}
@@ -226,69 +158,9 @@ export default function DocumentsScreen() {
                   {new Date(d.addedAt).toLocaleDateString()}
                 </Text>
               </View>
-
-              {canEdit && (
-                <TouchableOpacity
-                  style={st.moreBtn}
-                  onPress={e => {
-                    e.stopPropagation();
-                    toggleMenu(i);
-                  }}
-                >
-                  <MoreIcon width={20} height={20} />
-                </TouchableOpacity>
-              )}
-
-              {menuOpen === i && (
-                <View style={st.menu}>
-                  <TouchableOpacity
-                    style={st.menuItem}
-                    onPress={() =>
-                      router.push({
-                        pathname:
-                          "/(app)/explores/private-files/documents/three-dots/add-people/AddPeoplePage",
-                        params: { starId, documentId: d._id },
-                      })
-                    }
-                  >
-                    <AddPeopleIcon width={16} height={16} />
-                    <Text style={st.menuTxt}>Add people</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={st.menuItem}
-                    onPress={() =>
-                      router.push({
-                        pathname:
-                          "/(app)/explores/private-files/documents/three-dots/see-members/SeeMembersDocuments",
-                        params: { starId, documentId: d._id },
-                      })
-                    }
-                  >
-                    <SeeMembersIcon width={16} height={16} />
-                    <Text style={st.menuTxt}>See members</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={st.menuItem}
-                    onPress={() => delDoc(i)}
-                  >
-                    <DeleteIcon width={16} height={16} />
-                    <Text style={st.menuTxt}>Delete</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
             </TouchableOpacity>
           ))}
         </ScrollView>
-      )}
-
-      {canEdit && (
-        <View style={st.plusWrap}>
-          <TouchableOpacity onPress={upload}>
-            <PlusIcon width={50} height={50} />
-          </TouchableOpacity>
-        </View>
       )}
     </View>
   );

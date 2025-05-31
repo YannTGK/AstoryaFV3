@@ -40,7 +40,6 @@ export default function VideoAlbumsList() {
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
-  const [canEdit, setCanEdit] = useState(false);
 
   const fetchAlbums = async () => {
     if (!starId) return;
@@ -75,45 +74,6 @@ export default function VideoAlbumsList() {
       setLoading(false);
     }
   };
-  useEffect(() => {
-    const checkRights = async () => {
-      try {
-        const { user } = useAuthStore.getState();
-        const userId = user?._id;
-        if (!userId || !starId) return;
-  
-        const starRes = await api.get(`/stars/${starId}`);
-        const albumsRes = await api.get(`/stars/${starId}/video-albums`);
-        const star = starRes.data.star;
-  
-        const starCanEdit = star.canEdit || [];
-        const starCanView = star.canView || [];
-        const isStarEditor = star.userId === userId || starCanEdit.includes(userId);
-  
-        let isAlbumEditor = false;
-        let onlyCanView = false;
-  
-        for (const album of albumsRes.data) {
-          const albumDetail = await api.get(`/stars/${starId}/video-albums/detail/${album._id}`);
-          const albumCanEdit = albumDetail.data.canEdit || [];
-          const albumCanView = albumDetail.data.canView || [];
-          const isEditor = albumDetail.data.ownerId === userId || albumCanEdit.includes(userId);
-          const isViewerOnly = albumCanView.includes(userId) && !isEditor;
-  
-          if (isEditor) isAlbumEditor = true;
-          if (isViewerOnly) onlyCanView = true;
-        }
-  
-        const finalCanEdit = (isAlbumEditor || isStarEditor) && !onlyCanView;
-        setCanEdit(finalCanEdit);
-      } catch (err) {
-        console.error("❌ Rights check failed", err);
-        setCanEdit(false);
-      }
-    };
-  
-    checkRights();
-  }, [starId]);
   
   useEffect(() => { fetchAlbums(); }, [starId]);
 
@@ -177,15 +137,7 @@ export default function VideoAlbumsList() {
 
       <Text style={[styles.title, { marginTop: insets.top + 10 }]}>Video albums</Text>
 
-      {/* edit-icon */}
-      {canEdit && !editMode && albums.length > 0 && (
-        <TouchableOpacity
-          style={[styles.editIcon, { top: insets.top + 60 }]}
-          onPress={() => setEditMode(true)}
-        >
-          <Feather name="edit" size={24} color="#fff" />
-        </TouchableOpacity>
-      )}
+      
 
       {/* lijst of leeg */}
       {albums.length === 0 ? (
@@ -246,15 +198,6 @@ export default function VideoAlbumsList() {
           <Feather name="trash-2" size={20} color="#fff" style={{ marginRight: 10 }} />
           <Text style={styles.footerText}>1 album selected</Text>
         </TouchableOpacity>
-      )}
-
-      {/* plus-knop */}
-      {canEdit && (
-        <View style={[styles.plusWrap, { bottom: insets.bottom + 70 }]}>
-          <TouchableOpacity onPress={() => setShowNew(true)}>
-            <PlusIcon width={50} height={50} />
-          </TouchableOpacity>
-        </View>
       )}
 
       {/* modals */}

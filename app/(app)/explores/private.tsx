@@ -41,12 +41,13 @@ const CLUSTER_FACTOR = 0.15;
 // Pas dit aan voor jouw gewenste font-family
 const PUBLIC_NAME_FONT_FAMILY = "Alice-Regular"; // Zorg dat dit font is geladen in je app
 
+
 const getAvailableIcons = (rights: any) => {
   const allIcons = [
     {
       key: "canViewPhotos",
       label: "Photo's",
-      route: "/(app)/explores/private-files/photos",
+      route: "/(app)/explores/private-files/photos/photo-album",
       icon: <PhotosIcon width={60} height={60} />,
     },
     {
@@ -344,8 +345,8 @@ for (let i = 0; i < starCount; i++) {
     setIsStarSelected(true);
   };
 
-  const handleIconPress = (route: string, starId: string) => {
-    router.push({ pathname: route, params: { starId } });
+  const handleIconPress = (route: string, id: string) => {
+    router.push({ pathname: route, params: { id } });
   };
 
   return (

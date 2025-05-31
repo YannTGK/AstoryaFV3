@@ -35,7 +35,6 @@ export default function CreatedVideoAlbum() {
   const [mode, setMode] = useState<"delete" | "copy" | "move" | null>(null);
   const [confirmDel, setConfirmDel] = useState(false);
   const [fullscreenVideo, setFullscreenVideo] = useState<string | null>(null);
-  const [canEdit, setCanEdit] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -43,39 +42,6 @@ export default function CreatedVideoAlbum() {
       fetchVideos();
     }, [starId, albumId])
   );
-
-  useEffect(() => {
-    const checkRights = async () => {
-      try {
-        const { user } = useAuthStore.getState();
-        const userId = user?._id;
-        if (!userId || !starId || !albumId) return;
-
-        const starRes = await api.get(`/stars/${starId}`);
-        const albumRes = await api.get(`/stars/${starId}/video-albums/detail/${albumId}`);
-        const star = starRes.data.star;
-
-        const starCanEdit = star.canEdit || [];
-        const starCanView = star.canView || [];
-        const isStarEditor = star.userId === userId || starCanEdit.includes(userId);
-
-        const albumCanEdit = albumRes.data.canEdit || [];
-        const albumCanView = albumRes.data.canView || [];
-        const isAlbumEditor = albumRes.data.ownerId === userId || albumCanEdit.includes(userId);
-
-        const onlyCanView = albumCanView.includes(userId) && !isAlbumEditor && !isStarEditor;
-
-        const finalCanEdit = (isStarEditor || isAlbumEditor) && !onlyCanView;
-
-        setCanEdit(finalCanEdit);
-      } catch (e) {
-        console.error("❌ Rights check failed", e);
-        setCanEdit(false);
-      }
-    };
-
-    checkRights();
-  }, [starId, albumId]);
 
   const resetState = () => {
     setMenuOpen(false);
@@ -169,14 +135,9 @@ export default function CreatedVideoAlbum() {
         </TouchableOpacity>
         <Text style={styles.title}>{decodeURIComponent(albumName)}</Text>
         
-        { canEdit && (
-        <TouchableOpacity onPress={() => setMenuOpen((o) => !o)}>
-          <Text style={styles.menuDots}>⋮</Text>
-        </TouchableOpacity>
-        )}
-        { !canEdit && (
+        
           <Text style={styles.menuDots}></Text>
-        )}
+      
       </View>
 
       {/* MENU */}
@@ -273,15 +234,6 @@ export default function CreatedVideoAlbum() {
             {selected.length} video{selected.length !== 1 ? "s" : ""} selected
           </Text>
         </TouchableOpacity>
-      )}
-
-      {/* UPLOAD BUTTON */}
-      {canEdit && (
-      <View style={styles.plus}>
-        <TouchableOpacity onPress={uploadVideo}>
-          <PlusIcon width={50} height={50} />
-        </TouchableOpacity>
-      </View>
       )}
       {/* DELETE CONFIRM */}
       <Modal visible={confirmDel} transparent animationType="fade">

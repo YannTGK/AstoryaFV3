@@ -48,45 +48,20 @@ export default function SeeMessages() {
   const [active,    setActive]    = useState<Msg|null>(null);
 
   useEffect(() => {
-    const checkRights = async () => {
+    const fetchMessages = async () => {
       try {
-        const { user } = useAuthStore.getState();
-        const userId = user?._id;
-        if (!userId || !id) return;
-
-        const starRes = await api.get(`/stars/${id}`);
-        const star = starRes.data.star || starRes.data;
-
-        const isStarEditor = star.userId === userId || (star.canEdit || []).includes(userId);
-        const starCanView = (star.canView || []).includes(userId);
-
+        if (!id) return;
         const msgRes = await api.get(`/stars/${id}/messages`);
         const messages = msgRes.data || [];
-
-        const hasMsgEdit = messages.some(msg => (msg.canEdit || []).includes(userId));
-        const hasMsgView = messages.some(msg => (msg.canView || []).includes(userId));
-
-        const onlyCanView = !isStarEditor && !hasMsgEdit && (starCanView || hasMsgView);
-        const finalCanEdit = (isStarEditor || hasMsgEdit) && !onlyCanView;
-
-        console.log("🔐 Rights:", {
-          userId,
-          isStarEditor,
-          hasMsgEdit,
-          hasMsgView,
-          onlyCanView,
-          finalCanEdit,
-        });
-
         setMessages(messages);
-        setCanEdit(finalCanEdit);
       } catch (err) {
         console.error("fetch messages:", err);
+        Alert.alert("Fout", "Berichten ophalen is mislukt.");
       } finally {
         setLoading(false);
       }
     };
-    checkRights();
+    fetchMessages();
   }, [id]);
 
   const goWrite = (messageId?: string) =>
@@ -191,19 +166,13 @@ export default function SeeMessages() {
       </TouchableOpacity>
       <Text style={st.title}>Messages</Text>
 
-      {canEdit && mode==="none" && (
+      {mode==="none" && (
         <>
           <TouchableOpacity style={st.moreBtn} onPress={()=>setBulkOpen(!bulkOpen)}>
             <MoreIcon width={24} height={24}/>
           </TouchableOpacity>
           {bulkOpen && (
             <View style={st.dropdown}>
-              <TouchableOpacity style={st.dropItem} onPress={()=>{ setBulkOpen(false); setMode("edit"); }}>
-                <EditIcon width={16} height={16}/><Text style={st.dropTxt}>Edit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={st.dropItem} onPress={()=>{ setBulkOpen(false); setMode("delete"); }}>
-                <DeleteIcon width={16} height={16}/><Text style={st.dropTxt}>Delete</Text>
-              </TouchableOpacity>
               <TouchableOpacity style={st.dropItem} onPress={()=>{ setBulkOpen(false); downloadMsgs(); }}>
                 <DownloadIcon width={16} height={16}/><Text style={st.dropTxt}>Download</Text>
               </TouchableOpacity>
@@ -227,11 +196,6 @@ export default function SeeMessages() {
         />
       )}
 
-      {mode==="none" && (
-        <View style={st.plusWrap}>
-          {canEdit && <TouchableOpacity onPress={()=>goWrite()}><PlusIcon width={50} height={50}/></TouchableOpacity>}
-        </View>
-      )}
 
       {mode==="delete" && (
         <View style={st.bar}>

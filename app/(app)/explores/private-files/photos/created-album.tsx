@@ -1,4 +1,4 @@
-// /(app)/explores/private-files/photos/created-album xxx aaa
+// /(app)/dedicates/created-dedicates/photos/created-album xxx aaa
 import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
@@ -48,7 +48,6 @@ export default function AlbumPage() {
   const [showCopy, setShowCopy] = useState(false);
   const [showMove, setShowMove] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
-  const [canEdit, setCanEdit] = useState(false);
 
   const viewerData = images.map((p) => ({ url: p.url }));
   const isSel = (pid: string) => selected.includes(pid);
@@ -83,50 +82,6 @@ export default function AlbumPage() {
     fetchPhotos();
   }, [id, albumId]);
 
-  useEffect(() => {
-    const checkRights = async () => {
-      try {
-        const { user } = useAuthStore.getState();
-        const userId = user?._id;
-  
-        if (!userId) {
-          console.log("🔐 Geen user gevonden in auth store");
-          setCanEdit(false);
-          return;
-        }
-  
-        const [starRes, albumRes] = await Promise.all([
-          api.get(`/stars/${id}`),
-          api.get(`/stars/${id}/photo-albums/detail/${albumId}`),
-        ]);
-  
-        const star = starRes.data.star;
-        const album = albumRes.data;
-  
-        const starCanEdit = star.canEdit || [];
-        const starCanView = star.canView || [];
-        const albumCanEdit = album.canEdit || [];
-        const albumCanView = album.canView || [];
-  
-        const isStarEditor  = star.userId  === userId || starCanEdit.includes(userId);
-        const isAlbumEditor = album.ownerId === userId || albumCanEdit.includes(userId);
-  
-        const onlyCanView =
-          (!isStarEditor && starCanView.includes(userId)) ||
-          (!isAlbumEditor && albumCanView.includes(userId));
-  
-        const finalCanEdit = isStarEditor || isAlbumEditor;
-  
-        // Enkel bewerken als gebruiker niet enkel 'canView' heeft
-        setCanEdit(finalCanEdit && !onlyCanView);
-      } catch (e) {
-        console.error("❌ Rights check failed", e);
-        setCanEdit(false);
-      }
-    };
-  
-    checkRights();
-  }, [id, albumId]);
 
   /* upload */
   const uploadPhoto = async () => {
@@ -178,8 +133,8 @@ export default function AlbumPage() {
     router.push({
       pathname:
         type === "copy"
-          ? "/(app)/explores/private-files/photos/three-dots/copy-album/selected-album"
-          : "/(app)/explores/private-files/photos/three-dots/move-album/move-album",
+          ? "/(app)/dedicates/created-dedicates/photos/three-dots/copy-album/selected-album"
+          : "/(app)/dedicates/created-dedicates/photos/three-dots/move-album/move-album",
       params: {
         id,
         albumId,
@@ -255,12 +210,7 @@ export default function AlbumPage() {
           )}
         </View>
 
-        {canEdit && !deleteMode && (
-          <TouchableOpacity style={styles.menuDots} onPress={() => setMenuOpen(!menuOpen)}>
-            <Text style={styles.menuDotsText}>⋮</Text>
-          </TouchableOpacity>
-        )}
-
+  
         {menuOpen && (
           <View style={styles.menuBox}>
             <TouchableOpacity
@@ -268,7 +218,7 @@ export default function AlbumPage() {
               onPress={() =>
                 router.push({
                   pathname:
-                    "/(app)/explores/private-files/photos/three-dots/add-people/AddPeoplePage",
+                    "/(app)/dedicates/created-dedicates/photos/three-dots/add-people/AddPeoplePage",
                   params: { id, albumId },
                 })
               }
@@ -418,15 +368,6 @@ export default function AlbumPage() {
           <Text style={styles.closeText}>×</Text>
         </TouchableOpacity>
       </Modal>
-
-      {/* PLUS */}
-      {canEdit && (
-        <View style={styles.plusWrapper}>
-          <TouchableOpacity onPress={uploadPhoto}>
-            <PlusIcon width={50} height={50} />
-          </TouchableOpacity>
-        </View>
-      )}
 
       {/* CONFIRM DELETE */}
       <Modal visible={confirmDel} transparent animationType="fade">

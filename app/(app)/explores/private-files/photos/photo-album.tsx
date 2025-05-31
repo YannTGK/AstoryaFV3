@@ -31,16 +31,14 @@ type Album = { _id: string; name: string; count: number; cover?: string };
 
 export default function PhotoAlbumsScreen() {
   const router = useRouter();
-  const { id, canEdit: canEditParam, isOwner: isOwnerParam } = useLocalSearchParams<{
+  const { id, isOwner: isOwnerParam } = useLocalSearchParams<{
     id: string;
-    canEdit: string;
     isOwner: string;
   }>();
   const insets = useSafeAreaInsets();
 
   // interpret params
   const isOwner = isOwnerParam === "true";
-  const canEdit = isOwner || canEditParam === "true";
 
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
@@ -150,16 +148,6 @@ export default function PhotoAlbumsScreen() {
 
       <Text style={[styles.title, { marginTop: insets.top + 10 }]}>Photo albums</Text>
 
-      {/* only show Edit button if canEdit */}
-      {!editMode && albums.length > 0 && canEdit && (
-        <TouchableOpacity
-          style={[styles.editIcon, { top: insets.top + 60 }]}
-          onPress={() => setEditMode(true)}
-        >
-          <Feather name="edit" size={24} color="#fff" />
-        </TouchableOpacity>
-      )}
-
       {editMode && albums.length > 0 && (
         <View style={[styles.allSelectWrapper, { marginTop: insets.top + 38 }]}>
           <TouchableOpacity
@@ -228,13 +216,7 @@ export default function PhotoAlbumsScreen() {
         </TouchableOpacity>
       )}
 
-      {canEdit && (
-        <View style={[styles.plusWrapper, { bottom: insets.bottom + 80 }]}>
-          <TouchableOpacity onPress={() => setShowNew(true)}>
-            <PlusIcon width={50} height={50} />
-          </TouchableOpacity>
-        </View>
-      )}
+  
 
       <Modal visible={showNew} transparent animationType="fade">
         <View style={styles.modalOverlay}>
