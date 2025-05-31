@@ -4,7 +4,7 @@ import React, {
   useState,
   useMemo,
 } from "react";
-import { ViewStyle } from "react-native";
+import { ViewStyle, Animated } from "react-native"; // Animated toegevoegd
 import {
   View,
   StyleSheet,
@@ -106,6 +106,16 @@ export default function PrivateScreen() {
     selectedStarId,
   } = useFilterStore();
 
+  // Fade animatie
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: isStarSelected ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [isStarSelected]);
+
   // Data ophalen
   useEffect(() => {
     (async () => {
@@ -177,22 +187,26 @@ export default function PrivateScreen() {
     // Point-cloud sterren
     const starCount = 1000;
     const positions = new Float32Array(starCount * 3);
-    for (let i = 0; i < starCount; i++) {
-      positions[i * 3]     = (Math.random() - 0.5) * 2000; // x
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 2000; // y
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 1500; // z
-    }
-    const starGeo = new THREE.BufferGeometry();
-    starGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    const starMat = new THREE.PointsMaterial({
-      color: 0xffffff,
-      size: 1.5,
-      sizeAttenuation: true,
-      transparent: true,
-      opacity: 0.8,
-    });
-    const starField = new THREE.Points(starGeo, starMat);
-    sc.add(starField);
+ // NIEUW (losse bollen met random grootte)
+for (let i = 0; i < starCount; i++) {
+  const x = (Math.random() - 0.5) * 2000;
+  const y = (Math.random() - 0.5) * 2000;
+  const z = (Math.random() - 0.5) * 1500;
+  const radius = 0.2 + Math.random() * 0.7; // willekeurige grootte tussen 1.2 en 4.2
+
+  const geometry = new THREE.SphereGeometry(radius, 20, 20);
+  const material = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    emissive: 0xffffff, // zachte glow
+    emissiveIntensity: 0.7,
+    transparent: true,
+    opacity: 0.92,
+  });
+
+  const star = new THREE.Mesh(geometry, material);
+  star.position.set(x, y, z);
+  sc.add(star);
+}
 
     setScene(sc);
 
@@ -354,16 +368,25 @@ export default function PrivateScreen() {
       {overlayStar && (
         <>
           {/* Badge exact boven midden */}
-          <View
+          <Animated.View
             style={{
               position: "absolute",
               left: width / 2 - 100,
-              bottom: height / 2 - 200,
+              bottom: height / 2 - 120,
               paddingHorizontal: 8,
               paddingVertical: 4,
               backgroundColor: "rgba(0,0,0,0.75)",
               borderRadius: 6,
               zIndex: 20,
+              opacity: fadeAnim,
+              transform: [
+                {
+                  scale: fadeAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.85, 1],
+                  }),
+                },
+              ],
             }}
           >
             <Text
@@ -378,7 +401,7 @@ export default function PrivateScreen() {
             >
               {overlayStar.publicName}
             </Text>
-          </View>
+          </Animated.View>
 
           {overlayPos.map((p, i) => (
             <TouchableOpacity
