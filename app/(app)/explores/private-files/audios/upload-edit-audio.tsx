@@ -183,71 +183,29 @@ export default function UploadEditAudioScreen() {
         </Svg>
       </TouchableOpacity>
 
-      {/* 3-dots menu */}
-      <TouchableOpacity
-        style={styles.menuBtn}
-        onPress={() => setShowMenu(!showMenu)}
-      >
-        <Text style={styles.menuText}>⋮</Text>
-      </TouchableOpacity>
-      {showMenu && (
-        <View style={styles.menuDropdown}>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() =>
-              router.push({
-                pathname:
-                  "/(app)/explores/private-files/audios/three-dots/add-people/AddPeoplePage",
-                params: {
-                  starId: realStarId,
-                  id: audioId,
-                },
-              })
-            }
-          >
-            <UserPlusIcon width={16} height={16} style={{ marginRight: 8 }} />
-            <Text style={styles.menuTextItem}>Add people</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() =>
-              router.push({
-                pathname:
-                  "/(app)/explores/private-files/audios/three-dots/see-members/SeeMembersAudio",
-                params: {
-                  starId: realStarId,
-                  id: audioId,
-                },
-              })
-            }
-          >
-            <UserIcon width={16} height={16} style={{ marginRight: 8 }} />
-            <Text style={styles.menuTextItem}>See members</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
       <ScrollView contentContainerStyle={{ paddingBottom: 150 }}>
         <Text style={styles.title}>Audio</Text>
 
         {/* form */}
         <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Title"
-            placeholderTextColor="#999"
-            value={title}
-            onChangeText={setTitle}
-          />
-          <TextInput
-            style={[styles.input, styles.descriptionInput]}
-            placeholder="Description"
-            placeholderTextColor="#999"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={3}
-          />
+        <TextInput
+          style={styles.input}
+          placeholder="Title"
+          placeholderTextColor="#999"
+          value={title}
+          editable={!isEditMode}
+          selectTextOnFocus={!isEditMode}
+        />
+        <TextInput
+          style={[styles.input, styles.descriptionInput]}
+          placeholder="Description"
+          placeholderTextColor="#999"
+          value={description}
+          editable={!isEditMode}
+          selectTextOnFocus={!isEditMode}
+          multiline
+          numberOfLines={3}
+        />
         </View>
 
         {/* speler onder form */}

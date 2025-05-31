@@ -58,18 +58,25 @@ export default function AudioPlayer({ uri }: AudioPlayerProps) {
     }
   };
 
-  const onPlaybackStatusUpdate = (status: Audio.AVPlaybackStatus) => {
+  const onPlaybackStatusUpdate = async (status: Audio.AVPlaybackStatus) => {
     if (!status.isLoaded) return;
+  
     const pos = status.positionMillis;
     const dur = status.durationMillis || 1;
     progress.setValue(pos / dur);
     setPosition(pos);
     setDuration(dur);
     setIsPlaying(status.isPlaying);
-
+  
     if (status.didJustFinish) {
-      setIsPlaying(false);
-      progress.setValue(1);
+      if (sound) {
+        try {
+          await sound.setPositionAsync(0);
+          await sound.playAsync();
+        } catch (e) {
+          console.error("Auto-restart failed:", e);
+        }
+      }
     }
   };
 

@@ -114,6 +114,12 @@ export default function AudioScreen() {
 
   const renderItem = ({ item, index }: { item: AudioItem; index: number }) => (
     <TouchableOpacity
+      onPress={() =>
+        router.push({
+          pathname: "/(app)/explores/private-files/audios/upload-edit-audio",
+          params: { id: item._id, starId: realStarId },
+        })
+      }
       style={styles.audioCard}
     >
       <View style={styles.cardHeader}>
@@ -134,7 +140,7 @@ export default function AudioScreen() {
 
       <AudioPlayer uri={item.url} />
 
-      { menuOpenIndex === index && (
+      {menuOpenIndex === index && (
         <View style={styles.menu}>
           <TouchableOpacity style={styles.menuItem} onPress={() => handleDownload(item.url, item.title)}>
             <DownloadIcon width={16} height={16} />
@@ -164,6 +170,11 @@ export default function AudioScreen() {
       </TouchableOpacity>
 
       <Text style={styles.title}>Audio</Text>
+      {canEdit && (
+        <TouchableOpacity style={styles.uploadBtn} onPress={handleUploadAudio}>
+          <UploadIcon width={34} height={34} />
+        </TouchableOpacity>
+      )}
 
       {audios.length === 0 ? (
         <View style={styles.centerContent}>
@@ -177,6 +188,21 @@ export default function AudioScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
         />
+      )}
+
+      {canEdit && (
+        <View style={styles.plusWrapper}>
+          <TouchableOpacity
+            onPress={() =>
+              router.push({
+                pathname: "/(app)/explores/private-files/audios/record-audio",
+                params: { starId: realStarId },
+              })
+            }
+          >
+            <PlusIcon width={50} height={50} />
+          </TouchableOpacity>
+        </View>
       )}
 
       <Modal visible={showModal} transparent animationType="fade">
