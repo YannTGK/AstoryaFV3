@@ -363,8 +363,13 @@ for (let i = 0; i < starCount; i++) {
       </View>
 
       {!overlayStar && <JoystickHandler key={0} cameraPosition={camPos} cameraRotation={camRot} />}
-      {(loading || !scene) && <ActivityIndicator style={styles.spinner} size="large" color="#fff" />}
-      {scene && stars.length > 0 && <StarsManager scene={scene} stars={stars} />}
+
+
+      {/* Lader alleen zolang data wordt opgehaald */}
+{loading && <ActivityIndicator style={styles.spinner} size="large" color="#fff" />}
+
+{/* Alleen tonen als de scene klaar is */}
+{scene && stars.length > 0 && <StarsManager scene={scene} stars={stars} />}
 
       {overlayStar && (
         <>
