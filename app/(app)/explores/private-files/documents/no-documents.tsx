@@ -16,7 +16,7 @@ export default function NoDocuments() {
 
   const handleConfirm = () => {
     setShowPopup(false);
-    router.push("/(app)/dedicates/created-dedicates/documents/documents");
+    router.push("/(app)/explores/private-files/documents/documents");
   };
 
   const handleCancel = () => {

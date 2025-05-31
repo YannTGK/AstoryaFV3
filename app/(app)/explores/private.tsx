@@ -41,33 +41,42 @@ const CLUSTER_FACTOR = 0.15;
 // Pas dit aan voor jouw gewenste font-family
 const PUBLIC_NAME_FONT_FAMILY = "Alice-Regular"; // Zorg dat dit font is geladen in je app
 
-const icons = [
-  {
-    label: "Photo's",
-    route: "/(app)/my-stars/private-star/photos/photo-album",
-    icon: <PhotosIcon width={60} height={60} />,
-  },
-  {
-    label: "Video’s",
-    route: "/(app)/my-stars/private-star/videos/video-album",
-    icon: <VideosIcon width={60} height={60} />,
-  },
-  {
-    label: "Audio’s",
-    route: "/(app)/my-stars/private-star/audios/audios",
-    icon: <AudiosIcon width={60} height={60} />,
-  },
-  {
-    label: "Messages",
-    route: "/(app)/my-stars/private-star/messages/add-message",
-    icon: <MessagesIcon width={60} height={60} />,
-  },
-  {
-    label: "Documents",
-    route: "/(app)/my-stars/private-star/documents/documents",
-    icon: <DocumentsIcon width={60} height={60} />,
-  },
-];
+const getAvailableIcons = (rights: any) => {
+  const allIcons = [
+    {
+      key: "canViewPhotos",
+      label: "Photo's",
+      route: "/(app)/explores/private-files/photos",
+      icon: <PhotosIcon width={60} height={60} />,
+    },
+    {
+      key: "canViewVideos",
+      label: "Video’s",
+      route: "/(app)/explores/private-files/videos/video-album",
+      icon: <VideosIcon width={60} height={60} />,
+    },
+    {
+      key: "canViewAudios",
+      label: "Audio’s",
+      route: "/(app)/explores/private-files/audios/audios",
+      icon: <AudiosIcon width={60} height={60} />,
+    },
+    {
+      key: "canViewMessages",
+      label: "Messages",
+      route: "/(app)/explores/private-files/messages/add-message",
+      icon: <MessagesIcon width={60} height={60} />,
+    },
+    {
+      key: "canViewDocuments",
+      label: "Documents",
+      route: "/(app)/explores/private-files/documents/documents",
+      icon: <DocumentsIcon width={60} height={60} />,
+    },
+  ];
+
+  return allIcons.filter(icon => rights?.[icon.key]);
+};
 
 export default function PrivateScreen() {
   const router = useRouter();
@@ -84,6 +93,7 @@ export default function PrivateScreen() {
   const [rawStars, setRawStars] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isStarSelected, setIsStarSelected] = useState(false);
+  const [overlayIcons, setOverlayIcons] = useState<typeof icons>([]);
 
   const {
     dob,
@@ -100,7 +110,7 @@ export default function PrivateScreen() {
   useEffect(() => {
     (async () => {
       try {
-        const { stars } = (await api.get("/stars/private")).data;
+        const { stars } = (await api.get("/stars/private-access")).data;
         setRawStars(stars);
       } catch (e) {
         console.error("★ private fetch error:", e);
@@ -255,6 +265,7 @@ export default function PrivateScreen() {
 
     // Sluit overlay
     if (overlayStar?.id === id) {
+      setOverlayIcons([]);
       setOverlayStar(null);
       setIsStarSelected(false);
       setOverlayPos([]);
@@ -296,20 +307,25 @@ export default function PrivateScreen() {
     };
     camRef.current.position.set(worldPos.x, worldPos.y, worldPos.z + focusDistance);
     camRef.current.lookAt(new THREE.Vector3(worldPos.x, worldPos.y, worldPos.z));
+    // Public name uit data
+    const starData = stars.find((s) => s._id === id);
 
     // Iconen en badge altijd rond scherm-middelpunt
     const center = { x: width / 2, y: height / 2 };
     const radius = 120;
-    const angleStep = (2 * Math.PI) / icons.length;
+    const availableIcons = getAvailableIcons(starData?.rights);
+    setOverlayIcons(availableIcons);
+
+    const angleStep = (2 * Math.PI) / availableIcons.length;
     const startAngle = -Math.PI / 2;
-    const positions = icons.map((_, i) => ({
+    const positions = availableIcons.map((_, i) => ({
       x: center.x + radius * Math.cos(startAngle + i * angleStep) - 30,
       y: center.y + radius * Math.sin(startAngle + i * angleStep) - 30,
     }));
 
-    // Public name uit data
-    const starData = stars.find((s) => s._id === id);
+    
     setOverlayStar({ id, publicName: starData?.publicName || "Unknown" });
+    setOverlayIcons(getAvailableIcons(starData?.rights));
     setOverlayPos(positions);
     setIsStarSelected(true);
   };
@@ -366,11 +382,11 @@ export default function PrivateScreen() {
 
           {overlayPos.map((p, i) => (
             <TouchableOpacity
-              key={icons[i].label}
+              key={overlayIcons[i].label}
               style={{ position: "absolute", left: p.x, top: p.y, zIndex: 20 }}
-              onPress={() => handleIconPress(icons[i].route, overlayStar.id)}
+              onPress={() => handleIconPress(overlayIcons[i].route, overlayStar.id)}
             >
-              {icons[i].icon}
+              {overlayIcons[i].icon}
             </TouchableOpacity>
           ))}
         </>
