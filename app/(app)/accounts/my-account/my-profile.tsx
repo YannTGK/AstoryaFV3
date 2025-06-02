@@ -1,14 +1,14 @@
-// mijn profiel
 import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 import useAuthStore from "@/lib/store/useAuthStore";
+import api from "@/services/api";
 
 export default function MyProfileScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
 
   const formatDate = (isoDate: string) => {
     if (!isoDate) return "";
@@ -19,12 +19,44 @@ export default function MyProfileScreen() {
     return `${day}/${month}/${year}`;
   };
 
+  const parseDate = (input: string) => {
+    const parts = input.split("/");
+    if (parts.length !== 3) return null;
+    const [day, month, year] = parts;
+    return new Date(`${year}-${month}-${day}`);
+  };
+
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
   const [email, setEmail] = useState(user?.email || "");
   const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || "");
   const [dob, setDob] = useState(formatDate(user?.dob ?? ""));
   const language = "English";
+
+  const handleSave = async () => {
+    if (!user?._id) return;
+
+    const parsedDob = parseDate(dob);
+    if (dob && isNaN(parsedDob as any)) {
+      return Alert.alert("Invalid Date", "Please use format DD/MM/YYYY");
+    }
+
+    try {
+      const res = await api.put(`/users/${user._id}`, {
+        firstName,
+        lastName,
+        email,
+        phoneNumber,
+        dob: parsedDob || null,
+      });
+
+      setUser(res.data); // Update global auth state
+      Alert.alert("Success", "Profile updated");
+    } catch (err: any) {
+      console.log("❌ Profile update error:", err?.response?.data || err.message);
+      Alert.alert("Error", err?.response?.data?.message || "Something went wrong");
+    }
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -58,7 +90,7 @@ export default function MyProfileScreen() {
         <Input label="Language:" value={language} editable={false} />
       </View>
 
-      <TouchableOpacity style={styles.saveBtn}>
+      <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
         <Text style={styles.saveText}>Save</Text>
       </TouchableOpacity>
     </View>

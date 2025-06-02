@@ -6,12 +6,14 @@ type User = {
   _id: string;
   firstName: string;
   lastName: string;
-  username: string;  // <-- Toegevoegd
+  username: string;
   email: string;
   phoneNumber: string;
   dob: string;
+  dod?: string | null;
+  country: string;
   plan: "EXPLORER" | "PREMIUM" | "LEGACY";
-  activationCode?: string; // ✅ voeg deze regel toe
+  activationCode?: string; // ✅ deze lijn is belangrijk
 };
 
 type AuthState = {
