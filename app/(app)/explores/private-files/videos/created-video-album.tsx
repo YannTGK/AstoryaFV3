@@ -1,54 +1,42 @@
-// app/(app)/my-stars/private-star/videos/three-dots/created-video-album/CreatedVideoAlbum.tsx
-
+/* CreatedVideoAlbum.tsx */
 import React, { useState, useCallback, useEffect } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, FlatList,
   Modal, ActivityIndicator, Alert,
 } from "react-native";
+import { Video } from "expo-av";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Svg, { Path } from "react-native-svg";
-import { Feather } from "@expo/vector-icons";
-import * as VideoPicker from "expo-image-picker";
-import { Video } from "expo-av";
-import api from "@/services/api";
+import * as FileSystem     from "expo-file-system";
+import * as MediaLibrary   from "expo-media-library";
+
+import DownloadIcon from "@/assets/images/svg-icons/download-white.svg";
+import NoVideoIcon  from "@/assets/images/svg-icons/no-video.svg";
+import api          from "@/services/api";
 import { useFocusEffect } from "@react-navigation/native";
-import PlusIcon from "@/assets/images/svg-icons/plus.svg";
-import NoVideoIcon from "@/assets/images/svg-icons/no-video.svg";
-import useAuthStore from "@/lib/store/useAuthStore";
 
 type VideoItem = { _id: string; url: string };
 
 export default function CreatedVideoAlbum() {
+  /* ─── params & state ─────────────────────────────────────── */
   const router = useRouter();
   const { id: starId, albumId, albumName } = useLocalSearchParams<{
-    id: string;
-    albumId: string;
-    albumName: string;
+    id: string; albumId: string; albumName: string;
   }>();
 
-  const [videos, setVideos] = useState<VideoItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [selected, setSelected] = useState<string[]>([]);
-  const [mode, setMode] = useState<"delete" | "copy" | "move" | null>(null);
-  const [confirmDel, setConfirmDel] = useState(false);
-  const [fullscreenVideo, setFullscreenVideo] = useState<string | null>(null);
+  const [videos, setVideos]           = useState<VideoItem[]>([]);
+  const [loading, setLoading]         = useState(true);
 
-  useFocusEffect(
-    useCallback(() => {
-      resetState();
-      fetchVideos();
-    }, [starId, albumId])
-  );
+  const [selectMode, setSelectMode]   = useState(false);
+  const [selected, setSelected]       = useState<string[]>([]);
 
-  const resetState = () => {
-    setMenuOpen(false);
-    setSelected([]);
-    setMode(null);
-  };
+  const [fullscreen, setFullscreen]   = useState<string | null>(null);
 
+  const isSel = (vid: string) => selected.includes(vid);
+
+  /* ─── fetch videos ───────────────────────────────────────── */
   const fetchVideos = async () => {
     setLoading(true);
     try {
@@ -61,103 +49,69 @@ export default function CreatedVideoAlbum() {
     }
   };
 
-  const uploadVideo = async () => {
-    try {
-      const perm = await VideoPicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert("Permission required", "Enable media access.");
-        return;
-      }
+  useEffect(() => { fetchVideos(); }, [starId, albumId]);
 
-      const res = await VideoPicker.launchImageLibraryAsync({
-        mediaTypes: VideoPicker.MediaTypeOptions.Videos,
-      });
+  useFocusEffect(useCallback(() => {
+    setSelectMode(false); setSelected([]); fetchVideos();
+  }, [starId, albumId]));
 
-      if (res.canceled || !res.assets?.[0]) return;
-      const asset = res.assets[0];
-
-      const fd = new FormData();
-      fd.append("video", {
-        uri: asset.uri,
-        name: asset.fileName ?? "video.mp4",
-        type: asset.mimeType ?? "video/mp4",
-      } as any);
-
-      await api.post(`/stars/${starId}/video-albums/${albumId}/videos/upload`, fd);
-      fetchVideos();
-    } catch (err: any) {
-      Alert.alert("Upload failed", err?.response?.data?.message || err.message);
+  /* ─── download flow ──────────────────────────────────────── */
+  const onDownloadPress = () => {
+    if (!selectMode) {             // 1ste tap => select mode
+      setSelectMode(true); return;
     }
+    if (selected.length === 0) {
+      Alert.alert("Select videos first"); return;
+    }
+    Alert.alert(
+      "Download videos",
+      `Download ${selected.length} file${selected.length !== 1 ? "s" : ""} to your device?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Download", onPress: downloadSelected },
+      ]
+    );
   };
 
-  const deleteSelected = async () => {
-    setConfirmDel(false);
-    try {
-      for (const vid of selected) {
-        await api.delete(`/stars/${starId}/video-albums/${albumId}/videos/detail/${vid}`);
-      }
-      Alert.alert("Success", "Selected videos deleted.");
-    } catch {
-      Alert.alert("Error", "Failed to delete videos.");
-    } finally {
-      resetState();
-      fetchVideos();
+  const downloadSelected = async () => {
+    const { status } = await MediaLibrary.requestPermissionsAsync();
+    if (status !== "granted") { Alert.alert("Permission denied"); return; }
+
+    for (const id of selected) {
+      const vid = videos.find(v => v._id === id); if (!vid) continue;
+      const uri = FileSystem.documentDirectory + id + ".mp4";
+      try {
+        const { uri: saved } = await FileSystem.downloadAsync(vid.url, uri);
+        await MediaLibrary.saveToLibraryAsync(saved);
+      } catch (e) { console.warn("DL error", e); }
     }
+    Alert.alert("Done", `${selected.length} video(s) saved.`);
+    setSelectMode(false); setSelected([]);
   };
 
-  const openActionScreen = (type: "copy" | "move") => {
-    if (!selected.length) {
-      Alert.alert("Select videos first");
-      return;
-    }
-
-    router.push({
-      pathname:
-        type === "copy"
-          ? "/(app)/explores/private-files/videos/three-dots/copy-album/selected-album"
-          : "/(app)/explores/private-files/videos/three-dots/move-album/move-album",
-      params: {
-        id: starId,
-        albumId,
-        selected: JSON.stringify(selected),
-      },
-    });
-  };
+  /* ─── UI ─────────────────────────────────────────────────── */
+  if (loading) {
+    return <View style={styles.center}><ActivityIndicator size="large" color="#FEEDB6" /></View>;
+  }
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <LinearGradient colors={["#000", "#273166", "#000"]} style={StyleSheet.absoluteFill} />
 
-      {/* HEADER */}
+      {/* header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Svg width={24} height={24}><Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} /></Svg>
         </TouchableOpacity>
+
         <Text style={styles.title}>{decodeURIComponent(albumName)}</Text>
-        
-        
-          <Text style={styles.menuDots}></Text>
-      
+
+        <TouchableOpacity onPress={onDownloadPress} style={{ padding: 8 }}>
+          <DownloadIcon width={22} height={22} />
+        </TouchableOpacity>
       </View>
 
-      {/* MENU */}
-      {menuOpen && (
-        <View style={styles.menuBox}>
-          <MenuItem label="Add people" icon="user-plus" onPress={() => router.push({
-            pathname: "/(app)/explores/private-files/videos/three-dots/add-people/VideoAddPeoplePage",
-            params: { id: starId, albumId, albumName },
-          })} />
-          <MenuItem label="See members" icon="users" onPress={() => router.push({
-            pathname: "/(app)/explores/private-files/videos/three-dots/see-members/SeeMembersVideo",
-            params: { id: starId, albumId, albumName },
-          })} />
-          <MenuItem label="Delete" icon="trash-2" onPress={() => { setMode("delete"); setSelected([]); setMenuOpen(false); }} />
-          <MenuItem label="Copy to album" icon="copy" onPress={() => { setMode("copy"); setSelected([]); setMenuOpen(false); }} />
-          <MenuItem label="Move to album" icon="folder-minus" onPress={() => { setMode("move"); setSelected([]); setMenuOpen(false); }} />
-        </View>
-      )}
-
-      {/* GRID */}
+      {/* grid */}
       <FlatList
         data={videos}
         keyExtractor={(i) => i._id}
@@ -165,17 +119,12 @@ export default function CreatedVideoAlbum() {
         contentContainerStyle={styles.grid}
         renderItem={({ item, index }) => {
           const first = index % 3 === 0;
-          const isSel = selected.includes(item._id);
           return (
             <TouchableOpacity
               onPress={() => {
-                if (mode) {
-                  setSelected((s) =>
-                    s.includes(item._id) ? s.filter((x) => x !== item._id) : [...s, item._id]
-                  );
-                } else {
-                  setFullscreenVideo(item.url); // Open video in fullscreen
-                }
+                if (selectMode) {
+                  setSelected(s => isSel(item._id) ? s.filter(x => x !== item._id) : [...s, item._id]);
+                } else { setFullscreen(item.url); }
               }}
             >
               <View style={{ position: "relative" }}>
@@ -183,148 +132,86 @@ export default function CreatedVideoAlbum() {
                   source={{ uri: item.url }}
                   style={[
                     styles.thumb,
-                    { marginLeft: first ? 16 : 8, marginRight: 8, opacity: mode && !isSel ? 0.6 : 1 },
+                    { marginLeft: first ? 16 : 8, marginRight: 8, opacity: selectMode && !isSel(item._id) ? 0.6 : 1 },
                   ]}
                   shouldPlay={false}
                   isMuted
                   resizeMode="cover"
                 />
-                {mode && (
-                  <View style={{
-                    position: "absolute",
-                    top: 6,
-                    right: 12,
-                    width: 18,
-                    height: 18,
-                    borderRadius: 9,
-                    borderWidth: 2,
-                    borderColor: "#fff",
-                    backgroundColor: isSel ? "#FEEDB6" : "transparent",
-                  }} />
+                {selectMode && (
+                  <View style={[
+                    styles.check,
+                    isSel(item._id) && styles.checkActive,
+                  ]}/>
                 )}
               </View>
             </TouchableOpacity>
           );
         }}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <NoVideoIcon width={130} height={130} />
-            <Text style={styles.emptyText}>No videos yet.{"\n"}Upload your first video now.</Text>
+          <View style={styles.empty}><NoVideoIcon width={130} height={130} />
+            <Text style={styles.emptyText}>No videos yet.</Text>
           </View>
         }
       />
 
-      {/* FOOTER */}
-      {mode && selected.length > 0 && (
-        <TouchableOpacity
-          style={styles.footer}
-          onPress={() => {
-            if (mode === "delete") return setConfirmDel(true);
-            if (mode === "copy") return openActionScreen("copy");
-            if (mode === "move") return openActionScreen("move");
-          }}
-        >
-          <Feather
-            name={mode === "delete" ? "trash-2" : mode === "copy" ? "copy" : "folder-minus"}
-            size={20}
-            color="#fff"
-            style={{ marginRight: 10 }}
-          />
-          <Text style={styles.footerText}>
-            {selected.length} video{selected.length !== 1 ? "s" : ""} selected
+      {/* download bar */}
+      {selectMode && selected.length > 0 && (
+        <TouchableOpacity style={styles.bar} onPress={onDownloadPress}>
+          <Text style={styles.barText}>
+            Download {selected.length} video{selected.length !== 1 ? "s" : ""}
           </Text>
         </TouchableOpacity>
       )}
-      {/* DELETE CONFIRM */}
-      <Modal visible={confirmDel} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <Text>Delete selected video{selected.length !== 1 ? "s" : ""}?</Text>
-            <View style={styles.modalRow}>
-              <TouchableOpacity onPress={() => setConfirmDel(false)} style={styles.modalBtn}>
-                <Text style={{ color: "#007AFF" }}>No</Text>
-              </TouchableOpacity>
-              <View style={styles.divider} />
-              <TouchableOpacity onPress={deleteSelected} style={styles.modalBtn}>
-                <Text style={{ color: "#007AFF" }}>Yes</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-      {/* FULLSCREEN VIDEO */}
-      <Modal visible={!!fullscreenVideo} transparent animationType="fade">
-        <View style={styles.fullscreenOverlay}>
-          <TouchableOpacity style={styles.closeButton} onPress={() => setFullscreenVideo(null)}>
-            <Feather name="x" size={28} color="#fff" />
+
+      {/* fullscreen player */}
+      <Modal visible={!!fullscreen} transparent animationType="fade">
+        <View style={styles.fullOverlay}>
+          <TouchableOpacity style={styles.closeBtn} onPress={() => setFullscreen(null)}>
+            <Text style={{ color: "#fff", fontSize: 30 }}>×</Text>
           </TouchableOpacity>
-          {fullscreenVideo && (
+          {fullscreen && (
             <Video
-              source={{ uri: fullscreenVideo }}
-              style={styles.fullscreenVideo}
+              source={{ uri: fullscreen }}
+              style={styles.fullVideo}
+              shouldPlay
               useNativeControls
               resizeMode="contain"
-              shouldPlay
             />
           )}
         </View>
       </Modal>
-
     </SafeAreaView>
   );
 }
 
-// Helper: menu item
-const MenuItem = ({ label, icon, onPress }: { label: string; icon: any; onPress: () => void }) => (
-  <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-    <Feather name={icon} size={16} color="#11152A" />
-    <Text style={{ marginLeft: 8 }}>{label}</Text>
-  </TouchableOpacity>
-);
-
-// Helper: divider
-const Divider = () => (
-  <View style={{ height: 1, backgroundColor: "#eee", marginVertical: 8 }} />
-);
-
+/* ─── styles ─────────────────────────────────────────────── */
 const styles = StyleSheet.create({
-  loader: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#000" },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16 },
-  title: { color: "#fff", fontSize: 20, fontFamily: "Alice-Regular" },
-  menuDots: { color: "#fff", fontSize: 28 },
-  menuBox: {
-    position: "absolute", top: 90, right: 16, backgroundColor: "#fff", borderRadius: 8, padding: 8, zIndex: 10,
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#000" },
+  header: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 16,
   },
-  menuItem: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
+  title: { color: "#fff", fontSize: 20, fontFamily: "Alice-Regular" },
+
   grid: { paddingTop: 68, paddingBottom: 180 },
   thumb: { width: 109, height: 109, borderRadius: 8, marginBottom: 16 },
+  check: {
+    position: "absolute", top: 6, right: 12, width: 18, height: 18,
+    borderRadius: 9, borderWidth: 2, borderColor: "#fff",
+  },
+  checkActive: { backgroundColor: "#FEEDB6" },
+
   empty: { flex: 1, justifyContent: "center", alignItems: "center", minHeight: 400 },
-  emptyText: { marginTop: 16, color: "#fff", fontFamily: "Alice-Regular", textAlign: "center", lineHeight: 20 },
-  footer: {
-    position: "absolute", bottom: 80, left: 0, right: 0, backgroundColor: "#11152A",
-    padding: 26, zIndex: 99, flexDirection: "row", justifyContent: "center",
+  emptyText: { marginTop: 16, color: "#fff", fontFamily: "Alice-Regular", textAlign: "center" },
+
+  bar: {
+    position: "absolute", bottom: 80, left: 0, right: 0,
+    backgroundColor: "#11152A", padding: 22, alignItems: "center",
   },
-  footerText: { color: "#fff", fontFamily: "Alice-Regular", fontSize: 16 },
-  plus: { position: "absolute", bottom: 100, width: "100%", alignItems: "center" },
-  modalOverlay: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" },
-  modalBox: { backgroundColor: "#fff", borderRadius: 16, padding: 20, width: 280 },
-  modalRow: { flexDirection: "row", borderTopWidth: 1, borderColor: "#ccc", marginTop: 20 },
-  modalBtn: { flex: 1, alignItems: "center", paddingVertical: 12 },
-  divider: { width: 1, backgroundColor: "#ccc" },
-  fullscreenOverlay: {
-    flex: 1,
-    backgroundColor: "black",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  fullscreenVideo: {
-    width: "100%",
-    height: "80%",
-  },
-  closeButton: {
-    position: "absolute",
-    top: 60,
-    right: 20,
-    zIndex: 10,
-  },
+  barText: { color: "#fff", fontSize: 16, fontFamily: "Alice-Regular" },
+
+  fullOverlay: { flex: 1, backgroundColor: "black", justifyContent: "center", alignItems: "center" },
+  fullVideo: { width: "100%", height: "80%" },
+  closeBtn: { position: "absolute", top: 60, right: 20 },
 });
