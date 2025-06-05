@@ -8,8 +8,6 @@ type Props = {
   disabled?: boolean;
 };
 
-console.log('✅ Joystick is loading!');
-
 export default function JoystickHandler({
   cameraPosition,
   cameraRotation,

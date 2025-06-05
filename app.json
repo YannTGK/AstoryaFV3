@@ -24,6 +24,10 @@
         "RECORD_AUDIO",
         "READ_EXTERNAL_STORAGE",
         "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "RECORD_AUDIO",
+        "READ_EXTERNAL_STORAGE",
+        "RECORD_AUDIO",
         "READ_EXTERNAL_STORAGE"
       ]
     },
@@ -48,19 +52,19 @@
     "experiments": {
       "typedRoutes": true
     },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "a2dd0731-78d2-4f27-81ec-ba1a37816ff4"
-      }
-    },
     "runtimeVersion": {
       "policy": "sdkVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/a2dd0731-78d2-4f27-81ec-ba1a37816ff4",
+      "url": "https://u.expo.dev/bfff67fe-5008-44d8-a095-3ebb8bada173",
       "fallbackToCacheTimeout": 0
     },
-    "owner": "dyangoo"
+    "owner": "dyangoo",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "bfff67fe-5008-44d8-a095-3ebb8bada173"
+      }
+    }
   }
 }

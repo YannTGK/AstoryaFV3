@@ -141,11 +141,11 @@ export default function PublicStarRoomPage() {
 
   /* ────────── buttons descriptor ────────── */
   const views = [
-    { key:"Foto's",     icon:PhotoIcon,    pos:[12, 9,-2], target:[0,3,0] },
-    { key:"Video's",    icon:VideoIcon,    pos:[14,10,-2], target:[0,3,0] },
-    { key:"Audio",      icon:AudioIcon,    pos:[10,10, 7], target:[0,3,0] },
-    { key:"Documenten", icon:DocumentIcon, pos:[ 7, 5,-2], target:[0,3,0] },
-    { key:"Messages",   icon:MessageIcon,  pos:[ 1.5,10,0],target:[0,3,0] },
+    { key:"Foto's",     icon:PhotoIcon,    pos:[12, 9, -2], target: [1000, -9, -2] },
+    { key:"Video's",    icon:VideoIcon,    pos:[14, 10, -2], target: [1000, -1000, -2]},
+    { key:"Audio",      icon:AudioIcon,     pos:[10, 10, 7], target: [1000, -1000, 7]  },
+    { key:"Documenten", icon:DocumentIcon,  pos: [7, 5, -2], target: [9, 1, -4.5]},
+    { key:"Messages",   icon:MessageIcon,  pos: [1.5, 10, 0], target: [1.5, -1000, 0] },
   ] as const;
 
   /* ────────────────── RENDER ────────────────── */
