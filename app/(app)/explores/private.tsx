@@ -175,7 +175,7 @@ export default function PrivateScreen() {
   }, [selectedStarId, stars, scene]);
 
   // Three.js setup
-const createScene = async (gl: any) => {
+  const createScene = async (gl: any) => {
   // renderer
   const renderer = new Renderer({ gl, preserveDrawingBuffer: true });
   renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);

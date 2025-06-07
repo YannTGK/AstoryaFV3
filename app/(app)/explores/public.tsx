@@ -188,9 +188,43 @@ export default function PublicScreen() {
     renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
 
     const sc = new THREE.Scene();
-    sc.background = new THREE.Color(0x000000);
+// Gradient achtergrond (shader plane)
+const geometry = new THREE.PlaneGeometry(5000, 5000);
+const material = new THREE.ShaderMaterial({
+  uniforms: {
+    colorCenter: { value: new THREE.Color('#101427') }, // diepe galaxy-blauw
+    colorEdge: { value: new THREE.Color('#000000') }, // zwart
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 colorCenter;
+    uniform vec3 colorEdge;
+    varying vec2 vUv;
+
+    void main() {
+      float distToCenter = distance(vUv, vec2(0.5, 0.5));
+      float verticalBlend = smoothstep(0.2, 0.8, vUv.y);
+      float radial = smoothstep(0.0, 0.8, distToCenter);
+      float blend = mix(verticalBlend, radial, 0.6);
+      vec3 color = mix(colorCenter, colorEdge, blend);
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `,
+  side: THREE.DoubleSide,
+  depthWrite: false,
+});
+const plane = new THREE.Mesh(geometry, material);
+plane.position.set(0, 0, -1000);
+sc.add(plane);
+
     sc.fog = new THREE.Fog(0x000000, 200, 1200);
-    renderer.setClearColor(sc.background);
+    //renderer.setClearColor(sc.background);
 
     // point-cloud
     const count = 1000;
@@ -209,7 +243,34 @@ export default function PublicScreen() {
       transparent: true,
       opacity: 0.8,
     });
-    sc.add(new THREE.Points(geo, mat));
+    //sc.add(new THREE.Points(geo, mat));
+    // sterren als meshes met shimmer
+const starsArray: THREE.Mesh[] = [];
+const starCount = 1000;
+for (let i = 0; i < starCount; i++) {
+  const x = (Math.random() - 0.5) * 2000;
+  const y = (Math.random() - 0.5) * 2000;
+  const z = (Math.random() - 0.5) * 1500;
+  const radius = 0.2 + Math.random() * 0.7;
+
+  const geometry = new THREE.SphereGeometry(radius, 12, 12);
+  const material = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    emissive: 0xffffff,
+    emissiveIntensity: 0.6,
+    transparent: true,
+    opacity: 0.9,
+  });
+
+  const star = new THREE.Mesh(geometry, material);
+  star.position.set(x, y, z);
+  sc.add(star);
+  starsArray.push(star);
+}
+
+// Lichtbron toevoegen
+const ambient = new THREE.AmbientLight(0xffffff, 1);
+sc.add(ambient);
 
     setScene(sc);
 
@@ -233,11 +294,28 @@ export default function PublicScreen() {
       )
     );
 
+    const clock = new THREE.Clock();
+
     const loop = () => {
       requestAnimationFrame(loop);
       cam.position.copy(camPos.current);
       cam.rotation.x = camRot.current.x;
       cam.rotation.y = camRot.current.y;
+      // shimmer animatie
+const t = clock.getElapsedTime();
+for (let i = 0; i < starsArray.length; i++) {
+  const star = starsArray[i];
+  const base = 0.6;
+  const amp = 0.4;
+  const freq = 2;
+  const phase = (i / starsArray.length) * Math.PI * 2;
+
+  const shimmer = base + amp * Math.sin(freq * t + phase);
+  (star.material as THREE.MeshStandardMaterial).emissiveIntensity = shimmer;
+
+  const scale = 1 + 0.2 * Math.sin(freq * t + phase);
+  star.scale.setScalar(scale);
+}
       composer.render();
       gl.endFrameEXP();
     };
