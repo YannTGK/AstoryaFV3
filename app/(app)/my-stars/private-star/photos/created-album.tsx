@@ -102,9 +102,7 @@ export default function AlbumPage() {
         type: a.mimeType ?? "image/jpeg",
       } as any);
 
-      await api.post(`/stars/${id}/photo-albums/${albumId}/photos/upload`, fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await api.post(`/stars/${id}/photo-albums/${albumId}/photos/upload`, fd);
       fetchPhotos();
     } catch (err: any) {
       console.error(err.response?.data);
