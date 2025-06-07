@@ -85,47 +85,42 @@ export default function AlbumPage() {
   const uploadPhoto = async () => {
     console.log("📤 uploadPhoto gestart");
   
-    // 1) Open DocumentPicker voor afbeeldingen
-    console.log("🗂️ Open DocumentPicker voor images…");
+    // 1) Open de native bestandskiezer (Expo Go & Android OK)
+    console.log("🗂️ Open DocumentPicker…");
     const res = await DocumentPicker.getDocumentAsync({
       type: "image/*",
       copyToCacheDirectory: false,
     });
     console.log("🗂️ DocumentPicker result:", res);
   
-    // DocumentPicker geeft terug: { type: 'cancel' } of { type: 'success', uri, name, size }
     if (res.type === "cancel") {
-      console.log("🗂️ Picker geannuleerd door gebruiker");
+      console.log("🗂️ Gebruiker annuleerde picker");
       return;
     }
-    // vanaf hier is res.type === 'success'
+  
+    // 2) Haal succes-resultaat op
     const { uri, name } = res;
     console.log("📌 Gekozen bestand:", name, uri);
   
     try {
-      // 2) Fetch de file-URI als blob
-      console.log("🔄 Fetching URI als blob:", uri);
-      const fetchResp = await fetch(uri);
-      const blob = await fetchResp.blob();
-      console.log("📦 Blob size/type:", blob.size, blob.type);
+      // 3) Fetch URI als Blob
+      console.log("🔄 Fetching blob vanaf URI…");
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      console.log("📦 Blob:", blob.size, blob.type);
   
-      // 3) Bouw FormData
+      // 4) Zet in FormData
       const fd = new FormData();
       fd.append("photo", blob, name);
-      console.log("🗂️ FormData entries:");
-      // @ts-ignore: enkel voor debug
-      for (const pair of fd) {
-        console.log("   •", pair[0], pair[1]);
-      }
+      console.log("🗂️ FormData ready");
   
-      // 4) Upload naar API (laat Axios boundary zelf bepalen)
-      const url = `/stars/${id}/photo-albums/${albumId}/photos/upload`;
-      console.log(`🚀 POST naar ${url}`);
-      const response = await api.post(url, fd);
-      console.log("✅ Upload response:", response.status, response.data);
+      // 5) POST naar server
+      const endpoint = `/stars/${id}/photo-albums/${albumId}/photos/upload`;
+      console.log(`🚀 POST naar ${endpoint}`);
+      const apiRes = await api.post(endpoint, fd);
+      console.log("✅ Server response:", apiRes.status, apiRes.data);
   
-      // 5) Refresh grid
-      console.log("🔄 Vernieuwen foto-grid…");
+      // 6) Vernieuw grid
       fetchPhotos();
     } catch (err: any) {
       console.error("❌ Upload error:", err);
