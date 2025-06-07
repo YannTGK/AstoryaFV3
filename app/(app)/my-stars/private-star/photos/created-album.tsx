@@ -22,6 +22,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
 import NoPictureIcon from "@/assets/images/svg-icons/no-picture.svg";
 import api from "@/services/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Photo = { _id: string; url: string };
 
@@ -104,16 +105,30 @@ export default function AlbumPage() {
     fd.append("photo", blob, asset.fileName ?? "photo.jpg");
   
     try {
-      // 5) POST zónder handmatige Content-Type
-      await api.post(
-        `/stars/${id}/photo-albums/${albumId}/photos/upload`,
-        fd
-      );
-      // 6) Vernieuw
+      // haal je token
+      const token = await AsyncStorage.getItem("authToken");
+      const url = `https://astorya-api.onrender.com/api/stars/${id}/photo-albums/${albumId}/photos/upload`;
+  
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          // Content-Type *niet* zetten, dat doet fetch zelf
+        },
+        body: fd,
+      });
+  
+      if (!resp.ok) {
+        // lees JSON foutmelding
+        const err = await resp.json().catch(() => null);
+        throw new Error(err?.message || resp.statusText);
+      }
+  
+      console.log("✅ Upload OK:", await resp.json());
       fetchPhotos();
-    } catch (err: any) {
-      console.error("Upload failed:", err);
-      Alert.alert("Upload failed", err.response?.data?.message ?? err.message);
+    } catch (e: any) {
+      console.error("Upload failed (fetch):", e);
+      Alert.alert("Upload failed", e.message);
     }
   };
 
