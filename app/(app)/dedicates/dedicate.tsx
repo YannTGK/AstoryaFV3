@@ -32,7 +32,7 @@ export default function DedicateScreen() {
       const res = await api.get("/stars/dedicate");
       setDedicatedStars(res.data.stars || res.data);
     } catch (err) {
-      console.error("❌ Kon sterren niet laden:", err);
+      console.error("❌ Kon sterren niet laden:", err);
       setDedicatedStars([]);
     } finally {
       setLoading(false);
@@ -70,10 +70,9 @@ export default function DedicateScreen() {
       {loading ? (
         <ActivityIndicator size="large" color="#fff" style={{ marginTop: 60 }} />
       ) : dedicatedStars.length === 0 ? (
-        /*  ⬇︎ oude lege‑staat Moet aangepast worden ⬇︎  */
+        /*  ⬇︎ aangepaste lege-staat ⬇︎  */
         <View style={styles.oldEmptyWrapper}>
-          <StarIcon width={160} height={160} />
-          <Text style={styles.oldEmptyText}>No dedicated stars yet</Text>
+          <Text style={styles.oldEmptyText}>No dedicated stars yet.</Text>
         </View>
       ) : (
         <ScrollView
@@ -131,7 +130,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  /* oude lege‑staat */
+  /* lege-staat */
   oldEmptyWrapper: { flex: 1, justifyContent: "center", alignItems: "center" },
   oldEmptyText: {
     marginTop: 18,
