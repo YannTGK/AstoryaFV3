@@ -391,7 +391,7 @@ for (let i = 0; i < starsArray.length; i++) {
         console.log("→ three-d-rooms error:", status, err.response?.data);
         if (status === 404) {
           // no public rooms endpoint or not public at all
-          showToast("Star is not public");
+          showToast("This star is a dedicated star");
         } else if (status === 403) {
           showToast("Star is not for you");
         } else {
