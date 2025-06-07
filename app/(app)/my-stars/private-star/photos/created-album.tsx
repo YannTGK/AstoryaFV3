@@ -14,12 +14,14 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
-import * as ImagePicker from "expo-image-picker";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { Feather } from "@expo/vector-icons";
 import { Platform } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import * as mime from "mime";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -84,35 +86,40 @@ export default function AlbumPage() {
     fetchPhotos();
   }, [id, albumId]);
 
-  /* upload */
-  /* upload — werkt nu op zowel iOS als Android */
+/* ------------------------------------------------------------------
+ * Foto kiezen + uploaden
+ * ------------------------------------------------------------------ */
 const uploadPhoto = async () => {
-  /* 1️⃣  permissies */
+  /* 1️⃣  Permissie voor fotobibliotheek */
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) {
-    Alert.alert("Permission required", "Enable photo access to upload.");
+    Alert.alert(
+      "Permission required",
+      "Enable photo access to upload a picture."
+    );
     return;
   }
 
-  /* 2️⃣  picker openen */
-  const res = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    quality: 0.9,
+  /* 2️⃣  Foto kiezen  (let op: nieuwe API) */
+  const pick = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: [ImagePicker.MediaType.Image],   // <- de nieuwe enum
+    quality: 0.85,
+    selectionLimit: 1,
   });
-  if (res.canceled || !res.assets?.length) return;
+  if (pick.canceled || !pick.assets?.length) return;
 
-  /* 3️⃣  asset-data ophalen */
-  let { uri, mimeType, fileName } = res.assets[0];
+  /* 3️⃣  Basis-info uit de picker */
+  let { uri, mimeType, fileName } = pick.assets[0];
 
-  /* 4️⃣  ANDROID-fix: content:// → file:// */
+  /* 4️⃣  ANDROID-fix: content:// → file://  */
   if (Platform.OS === "android" && uri.startsWith("content://")) {
-    const ext   = mime.getExtension(mimeType ?? "image/jpeg") || "jpg";
-    const dest  = `${FileSystem.cacheDirectory}${Date.now()}.${ext}`;
-    await FileSystem.copyAsync({ from: uri, to: dest });
-    uri = dest;                              // nu file://… in cache
+    const ext  = mime.getExtension(mimeType ?? "image/jpeg") || "jpg";
+    const dst  = `${FileSystem.cacheDirectory}${Date.now()}.${ext}`;
+    await FileSystem.copyAsync({ from: uri, to: dst });
+    uri = dst;                                   // nu file://… in cache
   }
 
-  /* 5️⃣  FormData bouwen */
+  /* 5️⃣  FormData opbouwen */
   const form = new FormData();
   form.append("photo", {
     uri,
@@ -120,21 +127,35 @@ const uploadPhoto = async () => {
     type: mimeType ?? mime.getType(uri) ?? "image/jpeg",
   } as any);
 
-  /* 6️⃣  uploaden (geen extra headers!) */
+  /* Auth-token handmatig toevoegen (axios-interceptor werkt niet bij fetch) */
+  const token = await AsyncStorage.getItem("authToken");
+
+  /* 6️⃣  Uploaden met fetch  (minder buggy dan Axios op Android) */
   try {
-    await api.post(
-      `/stars/${id}/photo-albums/${albumId}/photos/upload`,
-      form
+    const response = await fetch(
+      `https://astorya-api.onrender.com/api/stars/${id}/photo-albums/${albumId}/photos/upload`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+          // GEEN handmatige Content-Type, RN voegt boundary zelf toe
+        },
+        body: form,
+      }
     );
-    fetchPhotos();                           // grid verversen
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${response.status}`);
+    }
+
+    fetchPhotos();                // ⬅️  grid updaten
   } catch (err: any) {
-    console.error("Upload error:", err.response?.data || err.message);
-    Alert.alert(
-      "Upload failed",
-      err.response?.data?.message ?? "Try again."
-    );
+    console.error("Upload error:", err.message);
+    Alert.alert("Upload failed", err.message);
   }
 };
+
 
 
   /* delete */
