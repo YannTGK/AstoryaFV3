@@ -1,9 +1,7 @@
-// visibility pagina: Pagina waar je kan kiezen wat anderen zien van je naam
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
   TouchableOpacity,
   Switch,
@@ -11,11 +9,50 @@ import {
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
+import api from "@/services/api";
+import useAuthStore from "@/lib/store/useAuthStore";
 
 export default function VisibilityScreen() {
   const router = useRouter();
   const [selectedOption, setSelectedOption] = useState<"full" | "initials">("full");
   const [showVisitStatus, setShowVisitStatus] = useState(false);
+  const [myStars, setMyStars] = useState<any[]>([]);
+  const { user } = useAuthStore();
+
+  useEffect(() => {
+    fetchMyStars();
+  }, []);
+
+  const fetchMyStars = async () => {
+    try {
+      const res = await api.get("/stars");
+      const stars = res.data.filter(
+        (s: any) => user && s.userId === user._id && s.starFor !== "dedicate"
+      );
+      setMyStars(stars);
+    } catch (err) {
+      console.error("Fout bij ophalen van sterren:", err);
+    }
+  };
+
+  const handleConfirm = async () => {
+    try {
+      const fullName = user ? `${user.firstName} ${user.lastName}` : '';
+      const initials = user ? getInitials(user.firstName, user.lastName) : '';
+
+      await Promise.all(
+        myStars.map((star) =>
+          api.put(`/stars/${star._id}`, {
+            publicName: selectedOption === "full" ? fullName : initials,
+          })
+        )
+      );
+
+      router.back();
+    } catch (err) {
+      console.error("Fout bij opslaan van naam:", err);
+    }
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -26,7 +63,6 @@ export default function VisibilityScreen() {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Terugknop zoals in MyProfileScreen */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
           <Path
@@ -39,7 +75,6 @@ export default function VisibilityScreen() {
         </Svg>
       </TouchableOpacity>
 
-      {/* Titel */}
       <Text style={styles.title}>Visibility</Text>
 
       <View style={styles.form}>
@@ -47,23 +82,20 @@ export default function VisibilityScreen() {
           Select what others will see on your public star:
         </Text>
 
-        {/* Full name */}
         <RadioInput
           label="Full name:"
-          value="Marie De Sadeleer"
+          value={`${user ? `${user.firstName} ${user.lastName}` : ''}`}
           selected={selectedOption === "full"}
           onSelect={() => setSelectedOption("full")}
         />
 
-        {/* Initials */}
         <RadioInput
           label="Initials:"
-          value="Marie D.S."
+          value={user ? getInitials(user.firstName, user.lastName) : ""}
           selected={selectedOption === "initials"}
           onSelect={() => setSelectedOption("initials")}
         />
 
-        {/* Extra */}
         <Text style={[styles.label, { marginTop: 16 }]}>Extra:</Text>
         <View style={styles.extraRow}>
           <Switch
@@ -78,8 +110,7 @@ export default function VisibilityScreen() {
         </View>
       </View>
 
-      {/* Confirm button */}
-      <TouchableOpacity style={styles.confirmBtn}>
+      <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm}>
         <Text style={styles.confirmText}>Confirm</Text>
       </TouchableOpacity>
     </View>
@@ -87,27 +118,37 @@ export default function VisibilityScreen() {
 }
 
 function RadioInput({
-    label,
-    value,
-    selected,
-    onSelect,
-  }: {
-    label: string;
-    value: string;
-    selected: boolean;
-    onSelect: () => void;
-  }) {
-    return (
-      <View style={{ marginBottom: 16 }}>
-        <Text style={styles.label}>{label}</Text>
-        <TouchableOpacity style={styles.inputWrapper} onPress={onSelect} activeOpacity={0.8}>
-          <Text style={styles.inputText}>{value}</Text>
-          <View style={[styles.circle, selected && styles.circleSelected]} />
-        </TouchableOpacity>
-      </View>
-    );
-  }
-  
+  label,
+  value,
+  selected,
+  onSelect,
+}: {
+  label: string;
+  value: string;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <View style={{ marginBottom: 16 }}>
+      <Text style={styles.label}>{label}</Text>
+      <TouchableOpacity style={styles.inputWrapper} onPress={onSelect} activeOpacity={0.8}>
+        <Text style={styles.inputText}>{value}</Text>
+        <View style={[styles.circle, selected && styles.circleSelected]} />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function getInitials(first: string, last: string): string {
+  const lastInitials = (last ?? "")
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0]?.toUpperCase())
+    .filter(Boolean)
+    .join(".");
+
+  return `${first} ${lastInitials}.`;
+}
 
 const styles = StyleSheet.create({
   wrapper: {
@@ -143,23 +184,8 @@ const styles = StyleSheet.create({
     fontFamily: "Alice-Regular",
     marginBottom: 4,
   },
-  radioRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  input: {
-    backgroundColor: "#c4c4c4aa", // zacht grijs met transparantie
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: "#000",
-    fontFamily: "Alice-Regular",
-    flex: 1,
-    marginRight: 10,
-  },
   inputWrapper: {
-    backgroundColor: "rgba(196, 196, 196, 0.3)", // semi-transparant grijs-blauw
+    backgroundColor: "rgba(196, 196, 196, 0.3)",
     borderRadius: 8,
     paddingVertical: 16,
     paddingHorizontal: 16,
@@ -171,7 +197,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontFamily: "Alice-Regular",
-  },  
+  },
   circle: {
     width: 20,
     height: 20,
