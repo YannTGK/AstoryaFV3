@@ -384,14 +384,14 @@ for (let i = 0; i < starsArray.length; i++) {
           });
         } else {
           // public star, but no rooms
-          showToast("Star is not public");
+          showToast("Public star with no public room");
         }
       } catch (err: any) {
         const status = err.response?.status;
         console.log("→ three-d-rooms error:", status, err.response?.data);
         if (status === 404) {
           // no public rooms endpoint or not public at all
-          showToast("This star is a dedicated star");
+          showToast("Dedicated star");
         } else if (status === 403) {
           showToast("Star is not for you");
         } else {
