@@ -14,15 +14,9 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
+import * as ImagePicker from "expo-image-picker";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { Feather } from "@expo/vector-icons";
-import { Platform } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system";
-import * as mime from "mime";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
-
 import { useFocusEffect } from "@react-navigation/native";
 
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
@@ -86,77 +80,37 @@ export default function AlbumPage() {
     fetchPhotos();
   }, [id, albumId]);
 
-/* ------------------------------------------------------------------
- * Foto kiezen + uploaden
- * ------------------------------------------------------------------ */
-const uploadPhoto = async () => {
-  /* 1️⃣  Permissie voor fotobibliotheek */
-  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!perm.granted) {
-    Alert.alert(
-      "Permission required",
-      "Enable photo access to upload a picture."
-    );
-    return;
-  }
-
-  /* 2️⃣  Foto kiezen  (let op: nieuwe API) */
-  const pick = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: [ImagePicker.MediaType.Image],   // <- de nieuwe enum
-    quality: 0.85,
-    selectionLimit: 1,
-  });
-  if (pick.canceled || !pick.assets?.length) return;
-
-  /* 3️⃣  Basis-info uit de picker */
-  let { uri, mimeType, fileName } = pick.assets[0];
-
-  /* 4️⃣  ANDROID-fix: content:// → file://  */
-  if (Platform.OS === "android" && uri.startsWith("content://")) {
-    const ext  = mime.getExtension(mimeType ?? "image/jpeg") || "jpg";
-    const dst  = `${FileSystem.cacheDirectory}${Date.now()}.${ext}`;
-    await FileSystem.copyAsync({ from: uri, to: dst });
-    uri = dst;                                   // nu file://… in cache
-  }
-
-  /* 5️⃣  FormData opbouwen */
-  const form = new FormData();
-  form.append("photo", {
-    uri,
-    name: fileName ?? `photo-${Date.now()}.jpg`,
-    type: mimeType ?? mime.getType(uri) ?? "image/jpeg",
-  } as any);
-
-  /* Auth-token handmatig toevoegen (axios-interceptor werkt niet bij fetch) */
-  const token = await AsyncStorage.getItem("authToken");
-
-  /* 6️⃣  Uploaden met fetch  (minder buggy dan Axios op Android) */
-  try {
-    const response = await fetch(
-      `https://astorya-api.onrender.com/api/stars/${id}/photo-albums/${albumId}/photos/upload`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: token ? `Bearer ${token}` : "",
-          // GEEN handmatige Content-Type, RN voegt boundary zelf toe
-        },
-        body: form,
-      }
-    );
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.message || `HTTP ${response.status}`);
+  /* upload */
+  const uploadPhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permission required", "Enable photo access to upload.");
+      return;
     }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.9,
+    });
+    if (res.canceled) return;
 
-    fetchPhotos();                // ⬅️  grid updaten
-  } catch (err: any) {
-    console.error("Upload error:", err.message);
-    Alert.alert("Upload failed", err.message);
-  }
-};
+    try {
+      const a = res.assets[0];
+      const fd = new FormData();
+      fd.append("photo", {
+        uri: a.uri,
+        name: a.fileName ?? "photo.jpg",
+        type: a.mimeType ?? "image/jpeg",
+      } as any);
 
-
+      await api.post(`/stars/${id}/photo-albums/${albumId}/photos/upload`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      fetchPhotos();
+    } catch (err: any) {
+      console.error(err.response?.data);
+      Alert.alert("Upload failed", err.response?.data?.message ?? "Try again.");
+    }
+  };
 
   /* delete */
   const deleteSelected = async () => {
