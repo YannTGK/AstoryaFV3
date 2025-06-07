@@ -82,11 +82,14 @@ export default function AlbumPage() {
 
   /* upload */
   const uploadPhoto = async () => {
+    // vraag permissies
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
       Alert.alert("Permission required", "Enable photo access to upload.");
       return;
     }
+
+    // kies foto
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.9,
@@ -94,19 +97,29 @@ export default function AlbumPage() {
     if (res.canceled) return;
 
     try {
-      const a = res.assets[0];
-      const fd = new FormData();
-      fd.append("photo", {
-        uri: a.uri,
-        name: a.fileName ?? "photo.jpg",
-        type: a.mimeType ?? "image/jpeg",
-      } as any);
+      const asset = res.assets[0];
+      // 1) haal de data op als blob, zodat content:// URIs werken
+      const fetchResp = await fetch(asset.uri);
+      const blob = await fetchResp.blob();
 
-      await api.post(`/stars/${id}/photo-albums/${albumId}/photos/upload`, fd);
+      // 2) bouw FormData zonder handmatige header
+      const fd = new FormData();
+      fd.append("photo", blob, asset.fileName ?? "photo.jpg");
+
+      // 3) verstuur, zonder headers override
+      await api.post(
+        `/stars/${id}/photo-albums/${albumId}/photos/upload`,
+        fd
+      );
+
+      // refresh grid
       fetchPhotos();
     } catch (err: any) {
       console.error(err.response?.data);
-      Alert.alert("Upload failed", err.response?.data?.message ?? "Try again.");
+      Alert.alert(
+        "Upload failed",
+        err.response?.data?.message ?? "Try again."
+      );
     }
   };
 
