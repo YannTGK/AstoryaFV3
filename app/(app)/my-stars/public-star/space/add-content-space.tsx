@@ -230,7 +230,13 @@ export default function AddContentSpace() {
           {messages.map(m=><View key={m._id} style={styles.cardContainer}><TouchableOpacity style={styles.messageCard} onPress={()=>router.push({pathname:'/(app)/my-stars/public-star/space/add-message/write-message-space',params:{starId,roomId,msgId:m._id}})}><Text style={styles.messageSender} numberOfLines={1}>{m.sender.name}</Text><Text style={styles.messageBody} numberOfLines={4}>{m.message}</Text><Text style={styles.messageDate} numberOfLines={1}>{new Date(m.addedAt).toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'})}</Text></TouchableOpacity><TouchableOpacity style={styles.deleteBtn} onPress={()=>handleDelete('messages',m._id)}><Text style={styles.deleteTxt}>×</Text></TouchableOpacity></View>)}
           {messages.length<5&&<TouchableOpacity style={styles.addMessageBtn} onPress={()=>router.push({pathname:'/(app)/my-stars/public-star/space/add-message/write-message-space',params:{starId,roomId}})}><PlusLetter width={60} height={60}/></TouchableOpacity>}
         </View></View>
+        
       </ScrollView>
+      <View>
+          <TouchableOpacity style={styles.save} onPress={()=>router.push({pathname:'/(app)/my-stars/public-star/space/save-space',params:{starId,roomId}})}>
+           <Text style={styles.saveText}>Save</Text>
+          </TouchableOpacity>
+        </View>
       {/* Overlay Modal */}
       <Modal visible={modalVisible} transparent onRequestClose={closeModal}>
         <View style={styles.overlay}>
@@ -282,6 +288,21 @@ const styles = StyleSheet.create({
   documentWrapper:{width:width-40,height:height-120,backgroundColor:"#fff",borderRadius:8,overflow:"hidden"},
   audioWrapper:{width:width-80,height:120,backgroundColor:"#1a1a1a",justifyContent:"center",alignItems:"center",borderRadius:8},
   audioText:{color:"#fff"},
+  save: {
+    position: "absolute",
+    bottom: 100,
+    left: 18,
+    right: 20,
+    backgroundColor: "#FEEDB6",
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  saveText: {
+    color: "#11152A", 
+    fontFamily: "Alice-Regular",
+    fontSize: 18
+  },
   uploadOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.5)',
