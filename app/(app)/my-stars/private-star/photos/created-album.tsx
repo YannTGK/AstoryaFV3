@@ -18,8 +18,6 @@ import * as ImagePicker from "expo-image-picker";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { Feather } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
-import * as DocumentPicker from "expo-document-picker";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
 import NoPictureIcon from "@/assets/images/svg-icons/no-picture.svg";
@@ -83,66 +81,42 @@ export default function AlbumPage() {
   }, [id, albumId]);
 
   /* upload */
-  
   const uploadPhoto = async () => {
-    console.log("📤 uploadPhoto gestart");
-  
-    // 1) DocumentPicker + cache
-    const res = await DocumentPicker.getDocumentAsync({
-      type: "image/*",
-      copyToCacheDirectory: true,
-    });
-    if (res.type === "cancel") {
-      console.log("🗂️ Picker geannuleerd");
-      return;
+    // 1) Permissions
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      return Alert.alert("Permission required", "Enable photo access to upload.");
     }
-    const { uri, name } = (() => {
-      if ("uri" in res) return { uri: res.uri, name: res.name };
-      // fallback
-      const asset = (res as any).assets[0];
-      return { uri: asset.uri, name: asset.name ?? asset.uri.split("/").pop()! };
-    })();
-    console.log("📌 Gekozen bestand:", name, uri);
+  
+    // 2) Picker
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.9,
+    });
+    if (res.canceled) return;
+  
+    // 3) Pak asset en fetch blob (werkt wél op Android content://)
+    const asset = res.assets[0];
+    const blob = await fetch(asset.uri).then(r => r.blob());
+  
+    // 4) Bouw FormData
+    const fd = new FormData();
+    fd.append("photo", blob, asset.fileName ?? "photo.jpg");
   
     try {
-      // 2) Fetch blob
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      console.log("📦 Blob size/type:", blob.size, blob.type);
-  
-      // 3) FormData
-      const fd = new FormData();
-      fd.append("photo", blob, name);
-  
-      // 4) Haal token op
-      const token = await AsyncStorage.getItem("authToken");
-  
-      // 5) Native fetch naar je API
-      const uploadUrl = `https://astorya-api.onrender.com/api/stars/${id}/photo-albums/${albumId}/photos/upload`;
-      console.log("🚀 fetch POST naar:", uploadUrl);
-      const uploadRes = await fetch(uploadUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-        body: fd,
-      });
-  
-      if (!uploadRes.ok) {
-        const errorJson = await uploadRes.json().catch(() => null);
-        throw new Error(errorJson?.message || uploadRes.statusText);
-      }
-      console.log("✅ Upload OK:", await uploadRes.json());
-  
-      // 6) Vernieuw grid
+      // 5) POST zónder handmatige Content-Type
+      await api.post(
+        `/stars/${id}/photo-albums/${albumId}/photos/upload`,
+        fd
+      );
+      // 6) Vernieuw
       fetchPhotos();
     } catch (err: any) {
-      console.error("❌ Upload error:", err);
-      Alert.alert("Upload failed", err.message ?? "Try again.");
+      console.error("Upload failed:", err);
+      Alert.alert("Upload failed", err.response?.data?.message ?? err.message);
     }
   };
-  
+
   /* delete */
   const deleteSelected = async () => {
     setConfirmDel(false);
