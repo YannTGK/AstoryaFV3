@@ -175,80 +175,104 @@ export default function PrivateScreen() {
   }, [selectedStarId, stars, scene]);
 
   // Three.js setup
-  const createScene = async (gl: any) => {
-    const renderer = new Renderer({ gl, preserveDrawingBuffer: true });
-    renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
+const createScene = async (gl: any) => {
+  // renderer
+  const renderer = new Renderer({ gl, preserveDrawingBuffer: true });
+  renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
 
-    // Scene met écht zwarte achtergrond en fog
-    const sc = new THREE.Scene();
-    sc.background = new THREE.Color(0x000000);
-    sc.fog = new THREE.Fog(0x000000, 200, 1200);
-    renderer.setClearColor(sc.background);
+  // scene en camera
+  const sc = new THREE.Scene();
+  sc.background = new THREE.Color(0x000000);
+  sc.fog = new THREE.Fog(0x000000, 200, 1200);
 
-    // Point-cloud sterren
-    const starCount = 1000;
-    const positions = new Float32Array(starCount * 3);
- // NIEUW (losse bollen met random grootte)
-for (let i = 0; i < starCount; i++) {
-  const x = (Math.random() - 0.5) * 2000;
-  const y = (Math.random() - 0.5) * 2000;
-  const z = (Math.random() - 0.5) * 1500;
-  const radius = 0.2 + Math.random() * 0.7; // willekeurige grootte tussen 1.2 en 4.2
+  const cam = new THREE.PerspectiveCamera(
+    75,
+    gl.drawingBufferWidth / gl.drawingBufferHeight,
+    0.1,
+    10000
+  );
+  cam.position.set(camPos.current.x, camPos.current.y, camPos.current.z);
+  camRef.current = cam;
 
-  const geometry = new THREE.SphereGeometry(radius, 20, 20);
-  const material = new THREE.MeshStandardMaterial({
-    color: 0xffffff,
-    emissive: 0xffffff, // zachte glow
-    emissiveIntensity: 0.7,
-    transparent: true,
-    opacity: 0.92,
-  });
+  // bloom post-processing
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(sc, cam));
+  composer.addPass(
+    new UnrealBloomPass(
+      new THREE.Vector2(gl.drawingBufferWidth, gl.drawingBufferHeight),
+      3, // strength
+      1, // radius
+      0  // threshold
+    )
+  );
 
-  const star = new THREE.Mesh(geometry, material);
-  star.position.set(x, y, z);
-  sc.add(star);
+  // maak én verzamel je sterren
+  const starsArray: THREE.Mesh[] = [];
+  const starCount = 1000;
+  for (let i = 0; i < starCount; i++) {
+    const x = (Math.random() - 0.5) * 2000;
+    const y = (Math.random() - 0.5) * 2000;
+    const z = (Math.random() - 0.5) * 1500;
+    const radius = 0.2 + Math.random() * 0.7;
+
+    const geometry = new THREE.SphereGeometry(radius, 12, 12);
+    const material = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xffffff,
+      emissiveIntensity: 0.6,
+      transparent: true,
+      opacity: 0.9,
+    });
+
+    const star = new THREE.Mesh(geometry, material);
+    star.position.set(x, y, z);
+    sc.add(star);
+    starsArray.push(star);
+  }
+
+  setScene(sc); // bewaar zodat je StarsManager e.d. het kan gebruiken
+
+  // voeg vast een lichtbron toe zodat emissive zichtbaar wordt
+  const ambient = new THREE.AmbientLight(0xffffff, 1);
+  sc.add(ambient);
+
+  // klok voor de animatie
+  const clock = new THREE.Clock();
+
+  // de render + shimmer loop
+const loop = () => {
+  
+  requestAnimationFrame(loop);
+
+  // bereken hoeveelheid tijd sinds start
+  const t = clock.getElapsedTime();
+
+for (let i = 0; i < starsArray.length; i++) {
+  const star = starsArray[i];
+  const base = 0.6;
+  const amp = 0.4;
+  const freq = 2;
+  const phase = (i / starsArray.length) * Math.PI * 2;
+
+  // Bereken shimmer (lichtintensiteit)
+  const shimmer = base + amp * Math.sin(freq * t + phase);
+  (star.material as THREE.MeshStandardMaterial).emissiveIntensity = shimmer;
+
+  // Bereken schaalpulsatie
+  const scale = 1 + 0.2 * Math.sin(freq * t + phase); // 0.2 = max puls
+  star.scale.setScalar(scale);
 }
 
-    setScene(sc);
+  // renderen
+  cam.position.set(camPos.current.x, camPos.current.y, camPos.current.z);
+  cam.rotation.x = camRot.current.x;
+  cam.rotation.y = camRot.current.y;
+  composer.render();
+  gl.endFrameEXP();
+};
 
-    const cam = new THREE.PerspectiveCamera(
-      75,
-      gl.drawingBufferWidth / gl.drawingBufferHeight,
-      0.1,
-      10000
-    );
-    cam.position.set(
-      camPos.current.x,
-      camPos.current.y,
-      camPos.current.z
-    );
-    camRef.current = cam;
-
-    const composer = new EffectComposer(renderer);
-    composer.addPass(new RenderPass(sc, cam));
-    composer.addPass(
-      new UnrealBloomPass(
-        new THREE.Vector2(gl.drawingBufferWidth, gl.drawingBufferHeight),
-        3,
-        1,
-        0
-      )
-    );
-
-    const loop = () => {
-      requestAnimationFrame(loop);
-      cam.position.set(
-        camPos.current.x,
-        camPos.current.y,
-        camPos.current.z
-      );
-      cam.rotation.x = camRot.current.x;
-      cam.rotation.y = camRot.current.y;
-      composer.render();
-      gl.endFrameEXP();
-    };
-    loop();
-  };
+loop();
+};
 
   // Overlay state
   const lastHighlight = useRef<{ obj: THREE.Object3D | null; scale: THREE.Vector3 | null }>({
