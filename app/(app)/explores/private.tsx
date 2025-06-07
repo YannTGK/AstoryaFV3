@@ -440,7 +440,7 @@ loop();
               bottom: height / 2 - 120,
               paddingHorizontal: 8,
               paddingVertical: 4,
-              backgroundColor: "rgba(0,0,0,0.75)",
+              //backgroundColor: "rgba(0,0,0,0.75)",
               borderRadius: 6,
               zIndex: 20,
               opacity: fadeAnim,

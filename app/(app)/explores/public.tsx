@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
     left: width / 2 - 100,
     width: 200,
     padding: 8,
-    backgroundColor: "rgba(0,0,0,0.75)",
+    //backgroundColor: "rgba(0,0,0,0.75)",
     borderRadius: 6,
     alignItems: "center",
     zIndex: 20,
