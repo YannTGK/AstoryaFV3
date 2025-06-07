@@ -18,6 +18,7 @@ import * as ImagePicker from "expo-image-picker";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { Feather } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
+import * as DocumentPicker from "expo-document-picker";
 
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
 import NoPictureIcon from "@/assets/images/svg-icons/no-picture.svg";
@@ -84,54 +85,39 @@ export default function AlbumPage() {
   const uploadPhoto = async () => {
     console.log("📤 uploadPhoto gestart");
   
-    // 1) Vraag permissies
-    console.log("🔐 Requesting media library permissions…");
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    console.log("🔐 Permission granted:", perm.granted);
-    if (!perm.granted) {
-      Alert.alert("Permission required", "Enable photo access to upload.");
-      return;
-    }
-  
-    // 2) Kies foto
-    console.log("🖼️ Launching image picker…");
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: [ImagePicker.MediaType.Images],
-      quality: 0.9,
-    });
-    console.log("🖼️ Picker result:", res);
-    if (res.canceled) {
-      console.log("🖼️ Upload geannuleerd door gebruiker");
+    // 1) DocumentPicker in plaats van ImagePicker
+    console.log("🗂️ Open DocumentPicker voor images…");
+    const res = await DocumentPicker.getDocumentAsync({ type: "image/*" });
+    console.log("🗂️ DocumentPicker result:", res);
+    if (res.type !== "success") {
+      console.log("🗂️ Picker geannuleerd of fout");
       return;
     }
   
     try {
-      const asset = res.assets[0];
-      console.log("📌 Gekozen asset:", asset);
-  
-      // 3) Fetch URI als Blob (voor Android content://)
-      console.log("🔄 Fetching URI als blob:", asset.uri);
-      const fetchResp = await fetch(asset.uri);
+      // 2) Haal blob van de uri
+      console.log("🔄 Fetching URI als blob:", res.uri);
+      const fetchResp = await fetch(res.uri);
       const blob = await fetchResp.blob();
       console.log("📦 Blob size/type:", blob.size, blob.type);
   
-      // 4) Bouw FormData
+      // 3) Bouw FormData
       const fd = new FormData();
-      fd.append("photo", blob, asset.fileName ?? "photo.jpg");
+      fd.append("photo", blob, res.name);
+  
       console.log("🗂️ FormData entries:");
-      // @ts-ignore — for debugging
+      // @ts-ignore
       for (const pair of fd) {
         console.log("   •", pair[0], pair[1]);
       }
   
-      // 5) Verstuur met Axios
+      // 4) Upload
       const url = `/stars/${id}/photo-albums/${albumId}/photos/upload`;
-      console.log(`🚀 POST naar ${url} met FormData`);
+      console.log(`🚀 POST naar ${url}`);
       const response = await api.post(url, fd);
       console.log("✅ Upload response:", response.status, response.data);
   
-      // 6) Vernieuw grid
-      console.log("🔄 Vernieuwen foto-grid…");
+      // 5) Vernieuw grid
       fetchPhotos();
     } catch (err: any) {
       console.error("❌ Upload error:", err);
@@ -139,7 +125,7 @@ export default function AlbumPage() {
       Alert.alert("Upload failed", msg);
     }
   };
-
+  
   /* delete */
   const deleteSelected = async () => {
     setConfirmDel(false);
