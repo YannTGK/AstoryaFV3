@@ -182,7 +182,44 @@ const createScene = async (gl: any) => {
 
   // scene en camera
   const sc = new THREE.Scene();
-  sc.background = new THREE.Color(0x000000);
+// Gradient plane maken achter de sterren
+const geometry = new THREE.PlaneGeometry(5000, 5000);
+const material = new THREE.ShaderMaterial({
+  uniforms: {
+    colorTop:    { value: new THREE.Color('#05050f') }, // bijna zwart
+    colorMiddle: { value: new THREE.Color('#0b0e1c') }, // donkerblauw
+    colorBottom: { value: new THREE.Color('#000000') }, // echt zwart
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 colorTop;
+    uniform vec3 colorMiddle;
+    uniform vec3 colorBottom;
+    varying vec2 vUv;
+
+    void main() {
+      vec3 color;
+      if (vUv.y < 0.5) {
+        color = mix(colorBottom, colorMiddle, vUv.y * 2.0);
+      } else {
+        color = mix(colorMiddle, colorTop, (vUv.y - 0.5) * 2.0);
+      }
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `,
+  side: THREE.DoubleSide,
+  depthWrite: false,
+});
+const plane = new THREE.Mesh(geometry, material);
+plane.position.set(0, 0, -1000); // ver achter sterren
+sc.add(plane);
+
   sc.fog = new THREE.Fog(0x000000, 200, 1200);
 
   const cam = new THREE.PerspectiveCamera(
