@@ -82,50 +82,60 @@ export default function AlbumPage() {
   }, [id, albumId]);
 
   /* upload */
-  const uploadPhoto = async () => {
-    console.log("📤 uploadPhoto gestart");
-  
-    // 1) DocumentPicker in plaats van ImagePicker
-    console.log("🗂️ Open DocumentPicker voor images…");
-    const res = await DocumentPicker.getDocumentAsync({ type: "image/*" });
-    console.log("🗂️ DocumentPicker result:", res);
-    if (res.type !== "success") {
-      console.log("🗂️ Picker geannuleerd of fout");
-      return;
+  import * as DocumentPicker from "expo-document-picker";
+
+const uploadPhoto = async () => {
+  console.log("📤 uploadPhoto gestart");
+
+  // 1) Open DocumentPicker voor afbeeldingen
+  console.log("🗂️ Open DocumentPicker voor images…");
+  const res = await DocumentPicker.getDocumentAsync({
+    type: "image/*",
+    copyToCacheDirectory: false,
+  });
+  console.log("🗂️ DocumentPicker result:", res);
+
+  // DocumentPicker geeft terug: { type: 'cancel' } of { type: 'success', uri, name, size }
+  if (res.type === "cancel") {
+    console.log("🗂️ Picker geannuleerd door gebruiker");
+    return;
+  }
+  // vanaf hier is res.type === 'success'
+  const { uri, name } = res;
+  console.log("📌 Gekozen bestand:", name, uri);
+
+  try {
+    // 2) Fetch de file-URI als blob
+    console.log("🔄 Fetching URI als blob:", uri);
+    const fetchResp = await fetch(uri);
+    const blob = await fetchResp.blob();
+    console.log("📦 Blob size/type:", blob.size, blob.type);
+
+    // 3) Bouw FormData
+    const fd = new FormData();
+    fd.append("photo", blob, name);
+    console.log("🗂️ FormData entries:");
+    // @ts-ignore: enkel voor debug
+    for (const pair of fd) {
+      console.log("   •", pair[0], pair[1]);
     }
-  
-    try {
-      // 2) Haal blob van de uri
-      console.log("🔄 Fetching URI als blob:", res.uri);
-      const fetchResp = await fetch(res.uri);
-      const blob = await fetchResp.blob();
-      console.log("📦 Blob size/type:", blob.size, blob.type);
-  
-      // 3) Bouw FormData
-      const fd = new FormData();
-      fd.append("photo", blob, res.name);
-  
-      console.log("🗂️ FormData entries:");
-      // @ts-ignore
-      for (const pair of fd) {
-        console.log("   •", pair[0], pair[1]);
-      }
-  
-      // 4) Upload
-      const url = `/stars/${id}/photo-albums/${albumId}/photos/upload`;
-      console.log(`🚀 POST naar ${url}`);
-      const response = await api.post(url, fd);
-      console.log("✅ Upload response:", response.status, response.data);
-  
-      // 5) Vernieuw grid
-      fetchPhotos();
-    } catch (err: any) {
-      console.error("❌ Upload error:", err);
-      const msg = err.response?.data?.message ?? err.message ?? "Try again.";
-      Alert.alert("Upload failed", msg);
-    }
-  };
-  
+
+    // 4) Upload naar API (laat Axios boundary zelf bepalen)
+    const url = `/stars/${id}/photo-albums/${albumId}/photos/upload`;
+    console.log(`🚀 POST naar ${url}`);
+    const response = await api.post(url, fd);
+    console.log("✅ Upload response:", response.status, response.data);
+
+    // 5) Refresh grid
+    console.log("🔄 Vernieuwen foto-grid…");
+    fetchPhotos();
+  } catch (err: any) {
+    console.error("❌ Upload error:", err);
+    const msg = err.response?.data?.message ?? err.message ?? "Try again.";
+    Alert.alert("Upload failed", msg);
+  }
+};
+
   /* delete */
   const deleteSelected = async () => {
     setConfirmDel(false);
