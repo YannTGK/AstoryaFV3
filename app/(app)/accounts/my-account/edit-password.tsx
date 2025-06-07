@@ -9,11 +9,12 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   Modal,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
-
+import api from "@/services/api";
 import EyeVisibleIcon from "@/assets/images/svg-icons/eye-visible.svg";
 import EyeNotVisibleIcon from "@/assets/images/svg-icons/not-visible.svg";
 
@@ -45,14 +46,24 @@ export default function EditPasswordScreen() {
     newPassword !== oldPassword &&
     newPassword === confirmPassword;
 
-const handleSave = () => {
-  setShowSuccessModal(true);
-  setTimeout(() => {
-    setShowSuccessModal(false);
-    router.replace("/(app)/explores/public"); // navigeer naar Explore
-  }, 5000);
-};
+  const handleSave = async () => {
+    try {
+      await api.put("/users/me/password", {
+        oldPassword,
+        newPassword,
+      });
 
+      setShowSuccessModal(true);
+      setTimeout(() => {
+        setShowSuccessModal(false);
+        router.replace("/(app)/explores/public");
+      }, 4000);
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message || "Something went wrong. Please try again.";
+      Alert.alert("Error", msg);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -66,7 +77,6 @@ const handleSave = () => {
         end={{ x: 0.5, y: 1 }}
       />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
@@ -88,68 +98,44 @@ const handleSave = () => {
         </Text>
 
         {/* Old password */}
-<View style={styles.inputWrapper}>
-  <Text style={styles.inputLabel}>Old password</Text>
-  <TextInput
-    style={styles.input}
-    placeholder="Old password"
-            placeholderTextColor="#999"
-            secureTextEntry={!showOld}
-            value={oldPassword}
-            onChangeText={setOldPassword}
-          />
-          <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowOld(!showOld)}>
-            {showOld ? <EyeVisibleIcon width={22} height={22} /> : <EyeNotVisibleIcon width={22} height={22} />}
-          </TouchableOpacity>
-        </View>
+        <PasswordInput
+          label="Old password"
+          value={oldPassword}
+          onChange={setOldPassword}
+          visible={showOld}
+          toggleVisibility={() => setShowOld((v) => !v)}
+        />
 
         {/* New password */}
-        <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Old password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#999"
-            secureTextEntry={!showNew}
-            value={newPassword}
-            onChangeText={setNewPassword}
-          />
-          <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowNew(!showNew)}>
-            {showNew ? <EyeVisibleIcon width={22} height={22} /> : <EyeNotVisibleIcon width={22} height={22} />}
-          </TouchableOpacity>
-        </View>
-
+        <PasswordInput
+          label="New password"
+          value={newPassword}
+          onChange={setNewPassword}
+          visible={showNew}
+          toggleVisibility={() => setShowNew((v) => !v)}
+        />
         {newPassword.length > 0 && !isStrongPassword(newPassword) && (
           <Text style={styles.errorText}>
-            Password must be at least 6 characters and include uppercase, lowercase, number and special character.
+            Password must include upper/lowercase, number and special character.
           </Text>
         )}
 
         {/* Confirm password */}
-        <View style={styles.inputWrapper}>
-            <Text style={styles.inputLabel}>Old password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Confirm password"
-            placeholderTextColor="#999"
-            secureTextEntry={!showConfirm}
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-          />
-          <TouchableOpacity style={styles.eyeIcon} onPress={() => setShowConfirm(!showConfirm)}>
-            {showConfirm ? <EyeVisibleIcon width={22} height={22} /> : <EyeNotVisibleIcon width={22} height={22} />}
-          </TouchableOpacity>
-        </View>
-
+        <PasswordInput
+          label="Confirm new password"
+          value={confirmPassword}
+          onChange={setConfirmPassword}
+          visible={showConfirm}
+          toggleVisibility={() => setShowConfirm((v) => !v)}
+        />
         {confirmPassword.length > 0 && confirmPassword !== newPassword && (
-          <Text style={styles.errorText}>Passwords do not match</Text>
+          <Text style={styles.errorText}>Passwords do not match.</Text>
         )}
 
-        {/* Spacing for button */}
         <View style={{ height: 120 }} />
       </ScrollView>
 
-      {/* Fixed Save Button */}
+      {/* Save button */}
       <View style={styles.footer}>
         <TouchableOpacity
           disabled={!isFormValid}
@@ -170,7 +156,7 @@ const handleSave = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Popup Modal */}
+      {/* Success modal */}
       <Modal visible={showSuccessModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.successPopup}>
@@ -182,18 +168,45 @@ const handleSave = () => {
   );
 }
 
+function PasswordInput({
+  label,
+  value,
+  onChange,
+  visible,
+  toggleVisibility,
+}: {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  visible: boolean;
+  toggleVisibility: () => void;
+}) {
+  return (
+    <View style={styles.inputWrapper}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <TextInput
+        style={styles.input}
+        placeholder={label}
+        placeholderTextColor="#999"
+        secureTextEntry={!visible}
+        value={value}
+        onChangeText={onChange}
+      />
+      <TouchableOpacity style={styles.eyeIcon} onPress={toggleVisibility}>
+        {visible ? <EyeVisibleIcon width={22} height={22} /> : <EyeNotVisibleIcon width={22} height={22} />}
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    backgroundColor: "#000",
-  },
+  wrapper: { flex: 1, backgroundColor: "#000" },
   header: {
     position: "absolute",
     top: 50,
     left: 0,
     right: 0,
     alignItems: "center",
-    justifyContent: "center",
     flexDirection: "row",
     height: 44,
     zIndex: 10,
@@ -202,6 +215,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: "Alice-Regular",
     color: "#fff",
+    flex: 1,
     textAlign: "center",
   },
   backBtn: {
@@ -218,15 +232,15 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     fontFamily: "Alice-Regular",
   },
-  inputLabel: {
-  fontSize: 18,
-  color: "#fff",
-  marginBottom: 4,
-  fontFamily: "Alice-Regular",
-},
   inputWrapper: {
     position: "relative",
     marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 18,
+    color: "#fff",
+    marginBottom: 4,
+    fontFamily: "Alice-Regular",
   },
   input: {
     backgroundColor: "#fff",
@@ -262,11 +276,6 @@ const styles = StyleSheet.create({
   },
   saveButtonEnabled: {
     backgroundColor: "#FEEDB6",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
   },
   saveButtonDisabled: {
     backgroundColor: "#d8ccb0",
@@ -293,11 +302,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     width: "80%",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
   },
   successText: {
     fontSize: 16,
