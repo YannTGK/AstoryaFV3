@@ -23,8 +23,6 @@ import PlusIcon from "@/assets/images/svg-icons/plus.svg";
 import NoPictureIcon from "@/assets/images/svg-icons/no-picture.svg";
 import api from "@/services/api";
 
-import * as FileSystem from "expo-file-system";
-
 type Photo = { _id: string; url: string };
 
 export default function AlbumPage() {
@@ -83,47 +81,36 @@ export default function AlbumPage() {
   }, [id, albumId]);
 
   /* upload */
-const uploadPhoto = async () => {
-  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!perm.granted) {
-    Alert.alert("Permission required", "Enable photo access to upload.");
-    return;
-  }
-
-  const res = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images, // deze mag blijven
-    quality: 0.9,
-  });
-
-  if (res.canceled) return;
-
-  try {
-    const a = res.assets[0];
-
-    let uri = a.uri;
-    if (uri.startsWith("content://")) {
-      const newPath = `${FileSystem.cacheDirectory}upload.jpg`;
-      await FileSystem.copyAsync({ from: uri, to: newPath });
-      uri = newPath;
+  const uploadPhoto = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permission required", "Enable photo access to upload.");
+      return;
     }
-
-    const fd = new FormData();
-    fd.append("photo", {
-      uri,
-      name: a.fileName ?? "photo.jpg",
-      type: a.mimeType ?? "image/jpeg",
-    } as any);
-
-    await api.post(`/stars/${id}/photo-albums/${albumId}/photos/upload`, fd, {
-      headers: { "Content-Type": "multipart/form-data" },
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.9,
     });
+    if (res.canceled) return;
 
-    fetchPhotos();
-  } catch (err: any) {
-    console.error("Upload error:", err);
-    Alert.alert("Upload failed", err?.response?.data?.message ?? "Try again.");
-  }
-};
+    try {
+      const a = res.assets[0];
+      const fd = new FormData();
+      fd.append("photo", {
+        uri: a.uri,
+        name: a.fileName ?? "photo.jpg",
+        type: a.mimeType ?? "image/jpeg",
+      } as any);
+
+      await api.post(`/stars/${id}/photo-albums/${albumId}/photos/upload`, fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      fetchPhotos();
+    } catch (err: any) {
+      console.error(err.response?.data);
+      Alert.alert("Upload failed", err.response?.data?.message ?? "Try again.");
+    }
+  };
 
   /* delete */
   const deleteSelected = async () => {
