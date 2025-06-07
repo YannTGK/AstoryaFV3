@@ -67,7 +67,7 @@ export async function uploadPhoto(
   try {
     // POST naar het juiste endpoint
     // Let op: hier /photos/upload — pas aan als jouw mount point anders is
-    const url = `/v2/stars/${starId}/albums/${albumId}/photos/upload`;
+    const url = `/stars/${starId}/photo-albums/${albumId}/photos/upload`;
     const response = await api.post(url, formData);
     console.log("✅ Upload geslaagd:", response.data);
     return response;
