@@ -82,44 +82,61 @@ export default function AlbumPage() {
 
   /* upload */
   const uploadPhoto = async () => {
-    // vraag permissies
+    console.log("📤 uploadPhoto gestart");
+  
+    // 1) Vraag permissies
+    console.log("🔐 Requesting media library permissions…");
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    console.log("🔐 Permission granted:", perm.granted);
     if (!perm.granted) {
       Alert.alert("Permission required", "Enable photo access to upload.");
       return;
     }
-
-    // kies foto
+  
+    // 2) Kies foto
+    console.log("🖼️ Launching image picker…");
     const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: [ImagePicker.MediaType.Images],
       quality: 0.9,
     });
-    if (res.canceled) return;
-
+    console.log("🖼️ Picker result:", res);
+    if (res.canceled) {
+      console.log("🖼️ Upload geannuleerd door gebruiker");
+      return;
+    }
+  
     try {
       const asset = res.assets[0];
-      // 1) haal de data op als blob, zodat content:// URIs werken
+      console.log("📌 Gekozen asset:", asset);
+  
+      // 3) Fetch URI als Blob (voor Android content://)
+      console.log("🔄 Fetching URI als blob:", asset.uri);
       const fetchResp = await fetch(asset.uri);
       const blob = await fetchResp.blob();
-
-      // 2) bouw FormData zonder handmatige header
+      console.log("📦 Blob size/type:", blob.size, blob.type);
+  
+      // 4) Bouw FormData
       const fd = new FormData();
       fd.append("photo", blob, asset.fileName ?? "photo.jpg");
-
-      // 3) verstuur, zonder headers override
-      await api.post(
-        `/stars/${id}/photo-albums/${albumId}/photos/upload`,
-        fd
-      );
-
-      // refresh grid
+      console.log("🗂️ FormData entries:");
+      // @ts-ignore — for debugging
+      for (const pair of fd) {
+        console.log("   •", pair[0], pair[1]);
+      }
+  
+      // 5) Verstuur met Axios
+      const url = `/stars/${id}/photo-albums/${albumId}/photos/upload`;
+      console.log(`🚀 POST naar ${url} met FormData`);
+      const response = await api.post(url, fd);
+      console.log("✅ Upload response:", response.status, response.data);
+  
+      // 6) Vernieuw grid
+      console.log("🔄 Vernieuwen foto-grid…");
       fetchPhotos();
     } catch (err: any) {
-      console.error(err.response?.data);
-      Alert.alert(
-        "Upload failed",
-        err.response?.data?.message ?? "Try again."
-      );
+      console.error("❌ Upload error:", err);
+      const msg = err.response?.data?.message ?? err.message ?? "Try again.";
+      Alert.alert("Upload failed", msg);
     }
   };
 
