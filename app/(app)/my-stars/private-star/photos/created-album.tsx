@@ -17,12 +17,15 @@ import Svg, { Path } from "react-native-svg";
 import * as ImagePicker from "expo-image-picker";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { Feather } from "@expo/vector-icons";
+import { Platform } from "react-native";
+import * as FileSystem from "expo-file-system";
+import * as mime from "mime";
+
 import { useFocusEffect } from "@react-navigation/native";
 
 import PlusIcon from "@/assets/images/svg-icons/plus.svg";
 import NoPictureIcon from "@/assets/images/svg-icons/no-picture.svg";
 import api from "@/services/api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Photo = { _id: string; url: string };
 
@@ -82,55 +85,57 @@ export default function AlbumPage() {
   }, [id, albumId]);
 
   /* upload */
-  const uploadPhoto = async () => {
-    // 1) Permissions
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      return Alert.alert("Permission required", "Enable photo access to upload.");
-    }
-  
-    // 2) Picker
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.9,
-    });
-    if (res.canceled) return;
-  
-    // 3) Pak asset en fetch blob (werkt wél op Android content://)
-    const asset = res.assets[0];
-    const blob = await fetch(asset.uri).then(r => r.blob());
-  
-    // 4) Bouw FormData
-    const fd = new FormData();
-    fd.append("photo", blob, asset.fileName ?? "photo.jpg");
-  
-    try {
-      // haal je token
-      const token = await AsyncStorage.getItem("authToken");
-      const url = `https://astorya-api.onrender.com/api/stars/${id}/photo-albums/${albumId}/photos/upload`;
-  
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // Content-Type *niet* zetten, dat doet fetch zelf
-        },
-        body: fd,
-      });
-  
-      if (!resp.ok) {
-        // lees JSON foutmelding
-        const err = await resp.json().catch(() => null);
-        throw new Error(err?.message || resp.statusText);
-      }
-  
-      console.log("✅ Upload OK:", await resp.json());
-      fetchPhotos();
-    } catch (e: any) {
-      console.error("Upload failed (fetch):", e);
-      Alert.alert("Upload failed", e.message);
-    }
-  };
+  /* upload — werkt nu op zowel iOS als Android */
+const uploadPhoto = async () => {
+  /* 1️⃣  permissies */
+  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!perm.granted) {
+    Alert.alert("Permission required", "Enable photo access to upload.");
+    return;
+  }
+
+  /* 2️⃣  picker openen */
+  const res = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    quality: 0.9,
+  });
+  if (res.canceled || !res.assets?.length) return;
+
+  /* 3️⃣  asset-data ophalen */
+  let { uri, mimeType, fileName } = res.assets[0];
+
+  /* 4️⃣  ANDROID-fix: content:// → file:// */
+  if (Platform.OS === "android" && uri.startsWith("content://")) {
+    const ext   = mime.getExtension(mimeType ?? "image/jpeg") || "jpg";
+    const dest  = `${FileSystem.cacheDirectory}${Date.now()}.${ext}`;
+    await FileSystem.copyAsync({ from: uri, to: dest });
+    uri = dest;                              // nu file://… in cache
+  }
+
+  /* 5️⃣  FormData bouwen */
+  const form = new FormData();
+  form.append("photo", {
+    uri,
+    name: fileName ?? `photo-${Date.now()}.jpg`,
+    type: mimeType ?? mime.getType(uri) ?? "image/jpeg",
+  } as any);
+
+  /* 6️⃣  uploaden (geen extra headers!) */
+  try {
+    await api.post(
+      `/stars/${id}/photo-albums/${albumId}/photos/upload`,
+      form
+    );
+    fetchPhotos();                           // grid verversen
+  } catch (err: any) {
+    console.error("Upload error:", err.response?.data || err.message);
+    Alert.alert(
+      "Upload failed",
+      err.response?.data?.message ?? "Try again."
+    );
+  }
+};
+
 
   /* delete */
   const deleteSelected = async () => {
