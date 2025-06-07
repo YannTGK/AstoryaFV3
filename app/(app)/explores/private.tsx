@@ -186,9 +186,8 @@ const createScene = async (gl: any) => {
 const geometry = new THREE.PlaneGeometry(5000, 5000);
 const material = new THREE.ShaderMaterial({
   uniforms: {
-    colorTop:    { value: new THREE.Color('#05050f') }, // bijna zwart
-    colorMiddle: { value: new THREE.Color('#0b0e1c') }, // donkerblauw
-    colorBottom: { value: new THREE.Color('#000000') }, // echt zwart
+    colorCenter: { value: new THREE.Color('#101427') }, // diepe galaxy-blauw
+    colorEdge:   { value: new THREE.Color('#000000') }, // zwart
   },
   vertexShader: `
     varying vec2 vUv;
@@ -198,18 +197,17 @@ const material = new THREE.ShaderMaterial({
     }
   `,
   fragmentShader: `
-    uniform vec3 colorTop;
-    uniform vec3 colorMiddle;
-    uniform vec3 colorBottom;
+    uniform vec3 colorCenter;
+    uniform vec3 colorEdge;
     varying vec2 vUv;
 
     void main() {
-      vec3 color;
-      if (vUv.y < 0.5) {
-        color = mix(colorBottom, colorMiddle, vUv.y * 2.0);
-      } else {
-        color = mix(colorMiddle, colorTop, (vUv.y - 0.5) * 2.0);
-      }
+      float distToCenter = distance(vUv, vec2(0.5, 0.5));
+      float verticalBlend = smoothstep(0.2, 0.8, vUv.y);
+      float radial = smoothstep(0.0, 0.8, distToCenter);
+      float blend = mix(verticalBlend, radial, 0.6); // combineer beide
+
+      vec3 color = mix(colorCenter, colorEdge, blend);
       gl_FragColor = vec4(color, 1.0);
     }
   `,
@@ -217,7 +215,7 @@ const material = new THREE.ShaderMaterial({
   depthWrite: false,
 });
 const plane = new THREE.Mesh(geometry, material);
-plane.position.set(0, 0, -1000); // ver achter sterren
+plane.position.set(0, 0, -1000);
 sc.add(plane);
 
   sc.fog = new THREE.Fog(0x000000, 200, 1200);
