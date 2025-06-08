@@ -184,7 +184,7 @@ export default function PrivateScreen() {
   // scene en camera
   const sc = new THREE.Scene();
 // Gradient plane maken achter de sterren
-const geometry = new THREE.PlaneGeometry(5000, 5000);
+const geometry = new THREE.SphereGeometry(5000, 5000);
 const material = new THREE.ShaderMaterial({
   uniforms: {
     colorCenter: { value: new THREE.Color('#101427') }, // diepe galaxy-blauw
@@ -212,7 +212,7 @@ const material = new THREE.ShaderMaterial({
       gl_FragColor = vec4(color, 1.0);
     }
   `,
-  side: THREE.DoubleSide,
+  side: THREE.BackSide,
   depthWrite: false,
 });
 const plane = new THREE.Mesh(geometry, material);
