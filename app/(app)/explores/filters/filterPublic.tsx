@@ -222,12 +222,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  countryText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: "#000",
-    fontFamily: "Alice-Regular",
-  },
   coordRow: {
     flexDirection: "row",
     justifyContent: "space-between",

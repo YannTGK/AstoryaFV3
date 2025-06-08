@@ -127,7 +127,6 @@ export default function PrivateFilter() {
           }}
           containerButtonStyle={styles.countryButton}
         />
-        <Text style={styles.countryText}>{countryName}</Text>
       </View>
 
       {/* Coordinates */}
@@ -185,7 +184,6 @@ const styles = StyleSheet.create({
   input:{ backgroundColor:"#fff", borderRadius:8, paddingVertical:10, paddingHorizontal:14, fontSize:14 },
   pickerWrapper:{ flexDirection:"row", alignItems:"center", backgroundColor:"#fff", borderRadius:8, height:44, paddingHorizontal:10 },
   countryButton:{ flexDirection:"row", alignItems:"center" },
-  countryText:{ marginLeft:8, fontSize:14, color:"#000", fontFamily:"Alice-Regular" },
   coordRow:{ flexDirection:"row", justifyContent:"space-between" },
   coordInput:{ flex:1, marginRight:8 },
   buttonWrapper:{ marginTop:25, marginBottom:20 },
