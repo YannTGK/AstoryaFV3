@@ -1,4 +1,3 @@
-// screens/final-my-star-public.tsx
 import React, { useState, useCallback } from "react";
 import {
   View,
@@ -12,6 +11,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
+import * as Clipboard from "expo-clipboard"; // ✅ Toegevoegd
 import StarView from "@/components/stars/StarView";
 import api from "@/services/api";
 
@@ -24,6 +24,14 @@ export default function FinalMyStarPublic() {
   const [roomId, setRoomId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPrivate, setIsPrivate] = useState(false);
+  const [copied, setCopied] = useState(false); // ✅ Toegevoegd
+
+  const copyCode = async () => {
+    const code = star?.activationCode ?? "456789";
+    await Clipboard.setStringAsync(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -38,7 +46,6 @@ export default function FinalMyStarPublic() {
       setHasRoom(null);
       setRoomId(null);
 
-      // 1) load your star
       api
         .get("/stars")
         .then((res) => {
@@ -56,7 +63,6 @@ export default function FinalMyStarPublic() {
           Alert.alert("Error", "Could not load your star");
         });
 
-      // 2) load 3D rooms and grab first room’s ID
       api
         .get(`/stars/${starId}/three-d-rooms`)
         .then((res) => {
@@ -99,7 +105,7 @@ export default function FinalMyStarPublic() {
 
     router.push({
       pathname: route,
-      params: { starId, roomId }, // ← pass both
+      params: { starId, roomId },
     });
   };
 
@@ -111,7 +117,6 @@ export default function FinalMyStarPublic() {
     );
   }
 
-  // derive display props
   const displayName = star.publicName || star.word || "";
   const colorHex = star.color?.startsWith("#") ? star.color : "#ffffff";
   const emissive = parseInt(colorHex.slice(1), 16);
@@ -125,7 +130,7 @@ export default function FinalMyStarPublic() {
 
       <Text style={styles.title}>My personal star</Text>
 
-      {/* Private/Public toggle */}
+      {/* Toggle */}
       <View style={styles.toggleContainer}>
         <TouchableOpacity
           onPress={goPrivate}
@@ -163,7 +168,32 @@ export default function FinalMyStarPublic() {
         </TouchableOpacity>
       </View>
 
-      {/* Star preview */}
+      {/* ✅ Activation code onder toggle */}
+      <View style={styles.activationCodeBox}>
+        <Text style={styles.activationCodeText}>
+          {star?.activationCode ?? "456789"}
+        </Text>
+        <TouchableOpacity onPress={copyCode} style={styles.copyIcon}>
+          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M16 4H8a2 2 0 00-2 2v12"
+              stroke="#fff"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <Path
+              d="M16 8h2a2 2 0 012 2v8a2 2 0 01-2 2h-8a2 2 0 01-2-2v-2"
+              stroke="#fff"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
+        </TouchableOpacity>
+      </View>
+
+      {/* Ster */}
       <View style={styles.canvasWrapper}>
         <StarView emissive={emissive} rotate={false} />
         <View style={styles.nameOverlay}>
@@ -171,7 +201,7 @@ export default function FinalMyStarPublic() {
         </View>
       </View>
 
-      {/* Add/Edit 3D/VR */}
+      {/* CTA */}
       <View style={styles.ctaWrapper}>
         <TouchableOpacity style={styles.button} onPress={goAdd3D}>
           <Text style={styles.buttonTxt}>
@@ -216,6 +246,29 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 12,
     borderBottomRightRadius: 12,
   },
+
+  // ✅ Nieuw toegevoegd
+  activationCodeBox: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "center",
+    marginTop: 16,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  activationCodeText: {
+    color: "#fff",
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+    marginRight: 8,
+  },
+  copyIcon: {
+    padding: 4,
+  },
+
   canvasWrapper: {
     alignSelf: "center",
     marginTop: 30,

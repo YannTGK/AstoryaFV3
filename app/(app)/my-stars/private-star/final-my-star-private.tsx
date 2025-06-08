@@ -1,8 +1,17 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, Pressable, StyleSheet, Dimensions, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Pressable,
+  StyleSheet,
+  Dimensions,
+  ScrollView,
+} from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
+import * as Clipboard from "expo-clipboard"; // ✅ TOEGEVOEGD
 import useAuthStore from "@/lib/store/useAuthStore";
 import StarView from "@/components/stars/StarView";
 
@@ -26,6 +35,15 @@ export default function FinalMyStarPrivate() {
 
   const { user } = useAuthStore();
   const [isPrivate, setIsPrivate] = useState(true);
+  const [copied, setCopied] = useState(false); // ✅ TOEGEVOEGD
+
+  // ✅ COPY FUNCTION TOEGEVOEGD
+  const copyActivationCode = async () => {
+    const code = user?.activationCode ?? "456789";
+    await Clipboard.setStringAsync(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   /* ───────── navigatie helpers ───────── */
   const handleToggleToPublic = () => {
@@ -35,17 +53,37 @@ export default function FinalMyStarPrivate() {
       params: {
         name: user?.firstName + " " + user?.lastName,
         emissive,
-        id,                           // meegeven!
+        id,
       },
     });
   };
 
   const icons = [
-    { label: "Photo's",    route: "/(app)/my-stars/private-star/photos/photo-album",              icon: <PhotosIcon    width={60} height={60} /> },
-    { label: "Video’s",    route: "/(app)/my-stars/private-star/videos/video-album",  icon: <VideosIcon    width={60} height={60} /> },
-    { label: "Audio’s",    route: "/(app)/my-stars/private-star/audios/audios",    icon: <AudiosIcon    width={60} height={60} /> },
-    { label: "Messages",   route: "/(app)/my-stars/private-star/messages/add-message",icon: <MessagesIcon  width={60} height={60} /> },
-    { label: "Documents",  route: "/(app)/my-stars/private-star/documents/documents", icon: <DocumentsIcon width={60} height={60} /> },
+    {
+      label: "Photo's",
+      route: "/(app)/my-stars/private-star/photos/photo-album",
+      icon: <PhotosIcon width={60} height={60} />,
+    },
+    {
+      label: "Video’s",
+      route: "/(app)/my-stars/private-star/videos/video-album",
+      icon: <VideosIcon width={60} height={60} />,
+    },
+    {
+      label: "Audio’s",
+      route: "/(app)/my-stars/private-star/audios/audios",
+      icon: <AudiosIcon width={60} height={60} />,
+    },
+    {
+      label: "Messages",
+      route: "/(app)/my-stars/private-star/messages/add-message",
+      icon: <MessagesIcon width={60} height={60} />,
+    },
+    {
+      label: "Documents",
+      route: "/(app)/my-stars/private-star/documents/documents",
+      icon: <DocumentsIcon width={60} height={60} />,
+    },
   ];
 
   const handlePress = (route: string) => {
@@ -67,7 +105,13 @@ export default function FinalMyStarPrivate() {
 
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
         <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
-          <Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+          <Path
+            d="M15 18l-6-6 6-6"
+            stroke="#FEEDB6"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </Svg>
       </TouchableOpacity>
 
@@ -77,7 +121,11 @@ export default function FinalMyStarPrivate() {
         <Pressable
           style={[
             styles.toggleButton,
-            { backgroundColor: isPrivate ? "#FEEDB6" : "#11152A", borderTopLeftRadius: 12, borderBottomLeftRadius: 12 },
+            {
+              backgroundColor: isPrivate ? "#FEEDB6" : "#11152A",
+              borderTopLeftRadius: 12,
+              borderBottomLeftRadius: 12,
+            },
           ]}
         >
           <Text style={[styles.toggleText, { color: isPrivate ? "#11152A" : "#fff" }]}>Private</Text>
@@ -86,21 +134,57 @@ export default function FinalMyStarPrivate() {
           onPress={handleToggleToPublic}
           style={[
             styles.toggleButton,
-            { backgroundColor: !isPrivate ? "#FEEDB6" : "#11152A", borderTopRightRadius: 12, borderBottomRightRadius: 12 },
+            {
+              backgroundColor: !isPrivate ? "#FEEDB6" : "#11152A",
+              borderTopRightRadius: 12,
+              borderBottomRightRadius: 12,
+            },
           ]}
         >
           <Text style={[styles.toggleText, { color: !isPrivate ? "#11152A" : "#fff" }]}>Public</Text>
         </Pressable>
       </View>
 
+      {/* ✅ ACTIVATION CODE BOX ONDER TOGGLE */}
+      <View style={styles.activationCodeBox}>
+        <Text style={styles.activationCodeText}>
+          {user?.activationCode ?? "456789"}
+        </Text>
+        <TouchableOpacity onPress={copyActivationCode} style={styles.copyIcon}>
+          <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+            <Path
+              d="M16 4H8a2 2 0 00-2 2v12"
+              stroke="#fff"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <Path
+              d="M16 8h2a2 2 0 012 2v8a2 2 0 01-2 2h-8a2 2 0 01-2-2v-2"
+              stroke="#fff"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.canvasWrapper}>
         <StarView emissive={parseInt(emissive as string)} rotate={false} />
         <View style={styles.nameOverlay}>
-          <Text style={styles.nameText}>{user?.firstName} {user?.lastName}</Text>
+          <Text style={styles.nameText}>
+            {user?.firstName} {user?.lastName}
+          </Text>
         </View>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scrollRow} contentContainerStyle={{ paddingHorizontal: 20 }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.scrollRow}
+        contentContainerStyle={{ paddingHorizontal: 20 }}
+      >
         {icons.map((item) => (
           <View key={item.label} style={styles.iconItem}>
             <TouchableOpacity onPress={() => handlePress(item.route)}>
@@ -141,6 +225,29 @@ const styles = StyleSheet.create({
     fontFamily: "Alice-Regular",
     fontSize: 16,
   },
+
+  // ✅ STIJL VOOR ACTIVATION BOX
+  activationCodeBox: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "center",
+    marginTop: 16,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+  activationCodeText: {
+    color: "#fff",
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+    marginRight: 8,
+  },
+  copyIcon: {
+    padding: 4,
+  },
+
   canvasWrapper: {
     alignSelf: "center",
     marginTop: 30,
