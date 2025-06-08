@@ -110,17 +110,20 @@ export default function CreatedSpace() {
             style={styles.row}
             onPress={() => handleSpaces(room._id)}
           >
-            <View style={styles.spaceContainer}>
-              <View style={styles.frame}>
-                <BasicRoomSvg width={width - 80} height={(width - 80) * 0.5} />
-              </View>
-              <Text style={styles.label}>{room.name}</Text>
-            </View>
-            {editMode && (
-              <TouchableOpacity onPress={() => confirmDelete(room._id)}>
-                <TrashIcon width={24} height={24} />
-              </TouchableOpacity>
-            )}
+<View style={styles.spaceContainer}>
+  <View style={styles.frame}>
+    <BasicRoomSvg width="100%" height="100%" />
+  </View>
+  {editMode && (
+    <TouchableOpacity
+      style={styles.trashOverlay}
+      onPress={() => confirmDelete(room._id)}
+    >
+      <TrashIcon width={24} height={24} />
+    </TouchableOpacity>
+  )}
+  <Text style={styles.label}>{room.name}</Text>
+</View>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -166,20 +169,27 @@ const styles = StyleSheet.create({
     marginTop: 50,
   },
   list: { paddingTop: 100, paddingHorizontal: 20, paddingBottom: 20 },
-  row: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
+  row: {
+  alignItems: "center",
+  justifyContent: "center",
+  marginBottom: 32,
+  position: "relative",
+},
   spaceContainer: { flex: 1, alignItems:"flex-start" },
   frame: {
-    width: width - 80,
-    height: (width - 80) * 0.5,
-    borderRadius: 12,
-    overflow: "hidden",
-    marginBottom: 8,
+  width: width - 40,
+  height: 180,
+  borderRadius: 12,
+  overflow: "hidden",
+  marginTop: -35,
+  alignSelf: "center",
+
   },
   label: {
     fontFamily: "Alice-Regular",
     color: "#fff",
     fontSize: 16,
-    width: width - 80,
+    width: width - 50,
     textAlign: "center",
   },
   btn: {
@@ -231,4 +241,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#0A84FF",
   },
+  trashOverlay: {
+  position: "absolute",
+  top: 30,
+  alignSelf: "center",
+  backgroundColor: "#11152A",
+  padding: 12,
+  borderRadius: 12,
+  borderWidth: 2,
+  borderColor: "#11152A", 
+  zIndex: 10,
+},
 });
