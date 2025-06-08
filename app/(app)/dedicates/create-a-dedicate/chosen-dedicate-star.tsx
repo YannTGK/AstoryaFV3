@@ -42,7 +42,8 @@ export default function ChosenDedicateStar() {
         <Svg width={24} height={24}><Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} /></Svg>
       </TouchableOpacity>
 
-      <Text style={styles.title}>Confirm star</Text>
+      <Text style={styles.title}>Dedicate star</Text>
+      <Text style={styles.subtitle}>Chosen star</Text>
 
       <View style={styles.canvasWrapper}>
         <StarView emissive={parseInt(emissive, 10)} rotate={false} />
@@ -53,7 +54,7 @@ export default function ChosenDedicateStar() {
 
       <View style={styles.fixedButtonWrapper}>
         <TouchableOpacity style={[styles.button, saving && { opacity: 0.5 }]} onPress={handleCreate} disabled={saving}>
-          <Text style={styles.buttonText}>{saving ? "Saving…" : "Create star"}</Text>
+          <Text style={styles.buttonText}>{saving ? "Saving…" : "Add content"}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FEEDB6",
     paddingVertical: 14,
     borderRadius: 12,
-    shadowColor: "#FEEDB6",
+    // shadowColor: "#FEEDB6",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.8,
     shadowRadius: 12,

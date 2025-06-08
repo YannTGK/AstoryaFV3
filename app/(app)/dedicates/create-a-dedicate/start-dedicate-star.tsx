@@ -29,7 +29,7 @@ export default function StartDedicateStar() {
 
       <Text style={styles.title}>Dedicate star</Text>
       <Text style={styles.subtitle}>
-        Create a private star to honour someone that passed away.
+        Create a star for your loved one, a private and timeless tribute. Keep their memory alive and share it with those who matter by adding trusted accounts.
       </Text>
 
       <View style={styles.canvasWrapper}>
@@ -50,7 +50,7 @@ export default function StartDedicateStar() {
           onPress={handleNext}
           disabled={!publicName.trim()}
         >
-          <Text style={styles.buttonText}>Next</Text>
+          <Text style={styles.buttonText}>Customize star</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     fontFamily: "Alice-Regular",
     fontSize: 14,
     color: "#fff",
-    textAlign: "center",
+    textAlign: "left",
     marginTop: 16,
     paddingHorizontal: 30,
     lineHeight: 20,
