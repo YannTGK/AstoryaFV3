@@ -48,7 +48,7 @@ export default function CreatedSpace() {
   // Navigeer naar add-content-space met de juiste roomId
   const handleSpaces = (roomId: string) => {
     router.push({
-      pathname: "/(app)/my-stars/public-star/space/add-content-space",
+      pathname: "/(app)/my-stars/public-star/space/save-space",
       params: { starId, roomId },
     });
   };
@@ -97,7 +97,7 @@ export default function CreatedSpace() {
         )}
       </TouchableOpacity>
 
-      <Text style={styles.title}>My Spaces</Text>
+      <Text style={styles.title}>3D/ VR - space</Text>
 
       <ScrollView contentContainerStyle={styles.list}>
         {rooms.map((room) => (
