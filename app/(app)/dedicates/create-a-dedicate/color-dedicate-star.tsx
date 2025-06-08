@@ -46,8 +46,8 @@ export default function ColorDedicateStar() {
       <TouchableOpacity style={{ position: "absolute", top: 50, left: 20 }} onPress={() => router.back()}>
         <Svg width={24} height={24}><Path d="M15 18l-6-6 6-6" stroke="#FEEDB6" strokeWidth={2} /></Svg>
       </TouchableOpacity>
-
-      <Text style={styles.title}>Choose a word & colour</Text>
+      <Text style={styles.title}>Dedicate star</Text>
+      <Text style={styles.subtitle}>Choose the color of the star you buy in memory of a loved one, a color that reflects who they were.</Text>
 
       <View style={styles.canvasWrapper}>
         <StarView emissive={option.emissive} rotate />
@@ -61,7 +61,7 @@ export default function ColorDedicateStar() {
 
       <View style={styles.fixedButtonWrapper}>
         <TouchableOpacity style={styles.button} onPress={handleSelect}>
-          <Text style={styles.buttonText}>Select</Text>
+          <Text style={styles.buttonText}>Select star</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -80,9 +80,10 @@ const styles = StyleSheet.create({
     fontFamily: "Alice-Regular",
     fontSize: 14,
     color: "#fff",
-    textAlign: "center",
+    textAlign: "left",
+    marginTop: 16,
     paddingHorizontal: 30,
-    marginTop: 20,
+    lineHeight: 20,
   },
   canvasWrapper: {
     alignSelf: "center",
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FEEDB6",
     paddingVertical: 14,
     borderRadius: 12,
-    shadowColor: "#FEEDB6",
+    // shadowColor: "#FEEDB6",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.8,
     shadowRadius: 12,

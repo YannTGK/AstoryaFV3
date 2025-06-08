@@ -157,7 +157,7 @@ export default function PublicFilter() {
       {/* Filter button */}
       <View style={styles.buttonWrapper}>
         <TouchableOpacity style={styles.button} onPress={handleApplyFilter}>
-          <Text style={styles.buttonText}>Apply filter</Text>
+          <Text style={styles.buttonText}>Filter</Text>
         </TouchableOpacity>
       </View>
 
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FEEDB6",
     paddingVertical: 14,
     borderRadius: 12,
-    shadowColor: "#FEEDB6",
+    // shadowColor: "#FEEDB6",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.8,
     shadowRadius: 12,
