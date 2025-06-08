@@ -25,7 +25,7 @@ type Room = { _id: string; name: string };
 
 export default function CreatedSpace() {
   const router = useRouter();
-  const { starId } = useLocalSearchParams<{ starId: string }>();
+  const { starId, name } = useLocalSearchParams<{ starId: string; name: string }>();
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +63,11 @@ export default function CreatedSpace() {
         `/stars/${starId}/three-d-rooms/detail/${confirmModal.roomId}`
       );
       setRooms((prev) => prev.filter((r) => r._id !== confirmModal.roomId));
-      router.push("/(app)/explores/public");
+      router.push({
+      pathname: "/(app)/my-stars/public-star/final-my-star-public",
+      params: { starId, name },
+    });
+
     } catch (err: any) {
       Alert.alert("Verwijderen mislukt", err.response?.data?.message || err.message);
     } finally {

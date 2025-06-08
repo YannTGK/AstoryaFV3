@@ -157,9 +157,6 @@ const styles = StyleSheet.create({
   preview: {
     height: 180,
     width: width - 40,
-    borderWidth: 1,
-    borderColor: "#fff",
-    borderRadius: 12,
     overflow: "hidden",
     alignSelf: "center",
     marginTop: 30,
