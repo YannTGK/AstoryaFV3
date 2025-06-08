@@ -27,6 +27,7 @@ import { setupControls } from "@/components/three/setupControls";
 import StarsManager from "@/components/stars/StarManager";
 import api from "@/services/api";
 import { useFilterStore } from "@/lib/store/filterStore";
+import Svg, { Path } from "react-native-svg";
 
 import PhotosIcon from "@/assets/images/svg-icons/photos.svg";
 import VideosIcon from "@/assets/images/svg-icons/videos.svg";
@@ -418,6 +419,44 @@ loop();
         <Text style={styles.plus}>+</Text>
       </View>
 
+{overlayStar && (
+  <TouchableOpacity
+    style={{
+      position: "absolute",
+      top: 80,
+      left: 20,
+      zIndex: 20,
+    }}
+    onPress={() => {
+      camPos.current = { ...prevCamPos.current };
+      camRot.current = { ...prevCamRot.current };
+      if (camRef.current) {
+        camRef.current.position.set(
+          prevCamPos.current.x,
+          prevCamPos.current.y,
+          prevCamPos.current.z
+        );
+        camRef.current.rotation.x = prevCamRot.current.x;
+        camRef.current.rotation.y = prevCamRot.current.y;
+      }
+      setOverlayStar(null);
+      setIsStarSelected(false);
+      setOverlayIcons([]);
+      setOverlayPos([]);
+    }}
+  >
+    <Svg width={24} height={24} viewBox="0 0 24 24">
+      <Path
+        d="M15 18l-6-6 6-6"
+        stroke="#FEEDB6"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  </TouchableOpacity>
+)}
+
       {!overlayStar && <JoystickHandler key={0} cameraPosition={camPos} cameraRotation={camRot} />}
 
 
@@ -497,5 +536,11 @@ const styles = StyleSheet.create({
     left: "50%",
     marginLeft: -15,
     marginTop: -15,
+  },
+    backIcon: {
+    position: "absolute",
+    top: 80,
+    left: 20,
+    zIndex: 20,
   },
 });
