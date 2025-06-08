@@ -243,7 +243,7 @@ sc.add(plane);
 
   // maak én verzamel je sterren
   const starsArray: THREE.Mesh[] = [];
-  const starCount = 1000;
+  const starCount = 500;
   for (let i = 0; i < starCount; i++) {
     const x = (Math.random() - 0.5) * 2000;
     const y = (Math.random() - 0.5) * 2000;
@@ -275,31 +275,28 @@ sc.add(plane);
   const clock = new THREE.Clock();
 
   // de render + shimmer loop
+let frame = 0;
 const loop = () => {
-  
   requestAnimationFrame(loop);
-
-  // bereken hoeveelheid tijd sinds start
+  frame++;
   const t = clock.getElapsedTime();
 
-for (let i = 0; i < starsArray.length; i++) {
-  const star = starsArray[i];
-  const base = 0.6;
-  const amp = 0.4;
-  const freq = 2;
-  const phase = (i / starsArray.length) * Math.PI * 2;
+  if (frame % 2 === 0) {
+    for (let i = 0; i < starsArray.length; i++) {
+      const star = starsArray[i];
+      const base = 0.6;
+      const amp = 0.4;
+      const freq = 2;
+      const phase = (i / starsArray.length) * Math.PI * 2;
+      const shimmer = base + amp * Math.sin(freq * t + phase);
+      const scale = 1 + 0.2 * Math.sin(freq * t + phase);
 
-  // Bereken shimmer (lichtintensiteit)
-  const shimmer = base + amp * Math.sin(freq * t + phase);
-  (star.material as THREE.MeshStandardMaterial).emissiveIntensity = shimmer;
+      (star.material as THREE.MeshStandardMaterial).emissiveIntensity = shimmer;
+      star.scale.setScalar(scale);
+    }
+  }
 
-  // Bereken schaalpulsatie
-  const scale = 1 + 0.2 * Math.sin(freq * t + phase); // 0.2 = max puls
-  star.scale.setScalar(scale);
-}
-
-  // renderen
-  cam.position.set(camPos.current.x, camPos.current.y, camPos.current.z);
+  cam.position.copy(camPos.current);
   cam.rotation.x = camRot.current.x;
   cam.rotation.y = camRot.current.y;
   composer.render();

@@ -23,6 +23,7 @@ import StarsManager from "@/components/stars/StarManager";
 import api from "@/services/api";
 import { useLayoutStore } from "@/lib/store/layoutStore";
 import { useFilterStore } from "@/lib/store/filterStore";
+import Svg, { Path } from "react-native-svg";
 
 const { width, height } = Dimensions.get("window");
 const CLUSTER_FACTOR = 0.15;
@@ -246,7 +247,7 @@ sc.add(plane);
     //sc.add(new THREE.Points(geo, mat));
     // sterren als meshes met shimmer
 const starsArray: THREE.Mesh[] = [];
-const starCount = 1000;
+const starCount = 500;
 for (let i = 0; i < starCount; i++) {
   const x = (Math.random() - 0.5) * 2000;
   const y = (Math.random() - 0.5) * 2000;
@@ -296,29 +297,34 @@ sc.add(ambient);
 
     const clock = new THREE.Clock();
 
-    const loop = () => {
-      requestAnimationFrame(loop);
-      cam.position.copy(camPos.current);
-      cam.rotation.x = camRot.current.x;
-      cam.rotation.y = camRot.current.y;
-      // shimmer animatie
-const t = clock.getElapsedTime();
-for (let i = 0; i < starsArray.length; i++) {
-  const star = starsArray[i];
-  const base = 0.6;
-  const amp = 0.4;
-  const freq = 2;
-  const phase = (i / starsArray.length) * Math.PI * 2;
+let frame = 0;
+const loop = () => {
+  requestAnimationFrame(loop);
+  frame++;
+  const t = clock.getElapsedTime();
 
-  const shimmer = base + amp * Math.sin(freq * t + phase);
-  (star.material as THREE.MeshStandardMaterial).emissiveIntensity = shimmer;
+  if (frame % 2 === 0) {
+    for (let i = 0; i < starsArray.length; i++) {
+      const star = starsArray[i];
+      const base = 0.6;
+      const amp = 0.4;
+      const freq = 2;
+      const phase = (i / starsArray.length) * Math.PI * 2;
+      const shimmer = base + amp * Math.sin(freq * t + phase);
+      const scale = 1 + 0.2 * Math.sin(freq * t + phase);
 
-  const scale = 1 + 0.2 * Math.sin(freq * t + phase);
-  star.scale.setScalar(scale);
-}
-      composer.render();
-      gl.endFrameEXP();
-    };
+      (star.material as THREE.MeshStandardMaterial).emissiveIntensity = shimmer;
+      star.scale.setScalar(scale);
+    }
+  }
+
+  cam.position.copy(camPos.current);
+  cam.rotation.x = camRot.current.x;
+  cam.rotation.y = camRot.current.y;
+  composer.render();
+  gl.endFrameEXP();
+};
+
     loop();
   };
 
@@ -416,21 +422,29 @@ for (let i = 0; i < starsArray.length; i++) {
 
       {/* Back-icon linkboven als overlay open */}
       {overlayStar && (
-        <TouchableOpacity
-          style={styles.backIcon}
-          onPress={() => {
-            camPos.current.copy(prevCamPos.current);
-            camRot.current = { ...prevCamRot.current };
-            if (camRef.current) {
-              camRef.current.position.copy(prevCamPos.current);
-              camRef.current.rotation.x = prevCamRot.current.x;
-              camRef.current.rotation.y = prevCamRot.current.y;
-            }
-            setOverlayStar(null);
-          }}
-        >
-          <Text style={styles.backIconText}>←</Text>
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.backIcon}
+        onPress={() => {
+          camPos.current.copy(prevCamPos.current);
+          camRot.current = { ...prevCamRot.current };
+          if (camRef.current) {
+            camRef.current.position.copy(prevCamPos.current);
+            camRef.current.rotation.x = prevCamRot.current.x;
+            camRef.current.rotation.y = prevCamRot.current.y;
+          }
+          setOverlayStar(null);
+        }}
+      >
+        <Svg width={24} height={24} viewBox="0 0 24 24">
+          <Path
+            d="M15 18l-6-6 6-6"
+            stroke="#FEEDB6"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </Svg>
+      </TouchableOpacity>
       )}
 
       {/* Overlay met publicName */}
