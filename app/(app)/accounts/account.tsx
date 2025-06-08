@@ -66,9 +66,7 @@ export default function AccountScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.avatar} />
-          <Text style={styles.name}>
-            {user?.firstName?.toUpperCase()} {user?.lastName?.toUpperCase()}
-          </Text>
+        <Text style={styles.name}>{user?.firstName} {user?.lastName}</Text>
         </View>
 
         <View style={styles.separator} />
@@ -191,7 +189,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FEEDB6",
     marginRight: 16,
   },
-  name: { fontSize: 18, color: "#fff", fontFamily: "sunroll"},
+  name: { fontSize: 18, color: "#fff", fontFamily: "SUNROLL"},
   separator: {
     height: 1,
     backgroundColor: "#fff",
