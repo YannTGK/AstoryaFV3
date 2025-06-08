@@ -62,27 +62,27 @@ export default function FinalMyStarPrivate() {
     {
       label: "Photo's",
       route: "/(app)/my-stars/private-star/photos/photo-album",
-      icon: <PhotosIcon width={60} height={60} />,
+      icon: <PhotosIcon width={55} height={55} />,
     },
     {
       label: "Video’s",
       route: "/(app)/my-stars/private-star/videos/video-album",
-      icon: <VideosIcon width={60} height={60} />,
+      icon: <VideosIcon width={55} height={55} />,
     },
     {
       label: "Audio’s",
       route: "/(app)/my-stars/private-star/audios/audios",
-      icon: <AudiosIcon width={60} height={60} />,
+      icon: <AudiosIcon width={55} height={55} />,
     },
     {
       label: "Messages",
       route: "/(app)/my-stars/private-star/messages/add-message",
-      icon: <MessagesIcon width={60} height={60} />,
+      icon: <MessagesIcon width={55} height={55} />,
     },
     {
       label: "Documents",
       route: "/(app)/my-stars/private-star/documents/documents",
-      icon: <DocumentsIcon width={60} height={60} />,
+      icon: <DocumentsIcon width={55} height={55} />,
     },
   ];
 
@@ -145,7 +145,6 @@ export default function FinalMyStarPrivate() {
         </Pressable>
       </View>
 
-      {/* ✅ ACTIVATION CODE BOX ONDER TOGGLE */}
       <View style={styles.activationCodeBox}>
         <Text style={styles.activationCodeText}>
           {user?.activationCode ?? "456789"}
@@ -226,7 +225,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  // ✅ STIJL VOOR ACTIVATION BOX
   activationCodeBox: {
     flexDirection: "row",
     justifyContent: "center",
@@ -247,7 +245,6 @@ const styles = StyleSheet.create({
   copyIcon: {
     padding: 4,
   },
-
   canvasWrapper: {
     alignSelf: "center",
     marginTop: 30,
@@ -275,13 +272,13 @@ const styles = StyleSheet.create({
   },
   iconItem: {
     alignItems: "center",
-    marginRight: 20,
+    marginRight: 25,
   },
   iconLabel: {
     color: "#fff",
     fontFamily: "Alice-Regular",
     fontSize: 12,
     textAlign: "center",
-    marginTop: 4,
+    marginTop: 8,
   },
 });
