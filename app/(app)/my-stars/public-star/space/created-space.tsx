@@ -1,5 +1,5 @@
 // screens/CreatedSpace.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -23,35 +23,47 @@ const { width } = Dimensions.get("window");
 
 type Room = { _id: string; name: string };
 
-type Params = { starId?: string };
-
 export default function CreatedSpace() {
   const router = useRouter();
-  const { starId } = useLocalSearchParams<Params>();
+  const { starId } = useLocalSearchParams<{ starId: string }>();
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
-  const [confirmModal, setConfirmModal] = useState<{ visible: boolean; roomId?: string }>(
-    { visible: false }
-  );
+  const [confirmModal, setConfirmModal] = useState<{ visible: boolean; roomId?: string }>({
+    visible: false,
+  });
 
+  // bij terugkeer altijd opnieuw laden
   useEffect(() => {
     if (!starId) return;
+    setLoading(true);
     api
       .get<Room[]>(`/stars/${starId}/three-d-rooms`)
       .then((res) => setRooms(res.data))
-      .catch((err) => Alert.alert("Error", "Kon ruimtes niet laden"))
+      .catch(() => Alert.alert("Error", "Kon ruimtes niet laden"))
       .finally(() => setLoading(false));
   }, [starId]);
 
-  const confirmDelete = (id: string) => setConfirmModal({ visible: true, roomId: id });
+  // Navigeer naar add-content-space met de juiste roomId
+  const handleSpaces = (roomId: string) => {
+    router.push({
+      pathname: "/(app)/my-stars/public-star/space/add-content-space",
+      params: { starId, roomId },
+    });
+  };
+
+  const confirmDelete = (roomId: string) =>
+    setConfirmModal({ visible: true, roomId });
+
   const handleDelete = async () => {
     if (!starId || !confirmModal.roomId) return;
     try {
-      await api.delete(`/stars/${starId}/three-d-rooms/detail/${confirmModal.roomId}`);
+      await api.delete(
+        `/stars/${starId}/three-d-rooms/detail/${confirmModal.roomId}`
+      );
       setRooms((prev) => prev.filter((r) => r._id !== confirmModal.roomId));
-      router.push("/(app)/explores/public")
+      router.push("/(app)/explores/public");
     } catch (err: any) {
       Alert.alert("Verwijderen mislukt", err.response?.data?.message || err.message);
     } finally {
@@ -69,10 +81,7 @@ export default function CreatedSpace() {
 
   return (
     <View style={{ flex: 1 }}>
-      <LinearGradient
-        colors={["#000000", "#273166"]}
-        style={StyleSheet.absoluteFill}
-      />
+      <LinearGradient colors={["#000000", "#273166"]} style={StyleSheet.absoluteFill} />
 
       {/* Header controls */}
       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
@@ -81,14 +90,22 @@ export default function CreatedSpace() {
         </Svg>
       </TouchableOpacity>
       <TouchableOpacity style={styles.editBtn} onPress={() => setEditMode((m) => !m)}>
-        {editMode ? <Text style={styles.cancelText}>Cancel</Text> : <EditIcon width={28} height={28} />}
+        {editMode ? (
+          <Text style={styles.cancelText}>Cancel</Text>
+        ) : (
+          <EditIcon width={28} height={28} />
+        )}
       </TouchableOpacity>
 
-      <Text style={styles.title}>Mijn Spaces</Text>
+      <Text style={styles.title}>My Spaces</Text>
 
       <ScrollView contentContainerStyle={styles.list}>
         {rooms.map((room) => (
-          <View key={room._id} style={styles.row}>
+          <TouchableOpacity
+            key={room._id}
+            style={styles.row}
+            onPress={() => handleSpaces(room._id)}
+          >
             <View style={styles.spaceContainer}>
               <View style={styles.frame}>
                 <BasicRoomSvg width={width - 80} height={(width - 80) * 0.5} />
@@ -100,16 +117,25 @@ export default function CreatedSpace() {
                 <TrashIcon width={24} height={24} />
               </TouchableOpacity>
             )}
-          </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
+
+      <TouchableOpacity style={styles.btn} onPress={() => {/* evt andere actie */}}>
+        <Text style={styles.btnTxt}>Change VR Space</Text>
+      </TouchableOpacity>
 
       <Modal transparent visible={confirmModal.visible} animationType="fade">
         <View style={styles.popupOverlay}>
           <View style={styles.popupBox}>
-            <Text style={styles.popupText}>Weet je zeker dat je deze space wilt verwijderen?</Text>
+            <Text style={styles.popupText}>
+              Weet je zeker dat je deze space wilt verwijderen?
+            </Text>
             <View style={styles.popupButtons}>
-              <TouchableOpacity style={[styles.popupButton, styles.rightBorder]} onPress={() => setConfirmModal({ visible: false })}>
+              <TouchableOpacity
+                style={[styles.popupButton, styles.rightBorder]}
+                onPress={() => setConfirmModal({ visible: false })}
+              >
                 <Text style={styles.popupButtonTextNo}>Nee</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.popupButton} onPress={handleDelete}>
@@ -128,7 +154,13 @@ const styles = StyleSheet.create({
   backBtn: { position: "absolute", top: 50, left: 20, zIndex: 10 },
   editBtn: { position: "absolute", top: 52, right: 20, zIndex: 10 },
   cancelText: { fontFamily: "Alice-Regular", color: "#fff", fontSize: 16 },
-  title: { fontFamily: "Alice-Regular", fontSize: 20, color: "#fff", textAlign: "center", marginTop: 50 },
+  title: {
+    fontFamily: "Alice-Regular",
+    fontSize: 20,
+    color: "#fff",
+    textAlign: "center",
+    marginTop: 50,
+  },
   list: { paddingTop: 100, paddingHorizontal: 20, paddingBottom: 20 },
   row: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
   spaceContainer: { flex: 1, alignItems: "center" },
@@ -139,13 +171,60 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginBottom: 8,
   },
-  label: { fontFamily: "Alice-Regular", color: "#fff", fontSize: 16, width: width - 80 },
-  popupOverlay: { flex: 1, backgroundColor: "#00000088", justifyContent: "center", alignItems: "center" },
-  popupBox: { width: 280, backgroundColor: "#fff", borderRadius: 16, padding: 24, alignItems: "center" },
-  popupText: { fontFamily: "Alice-Regular", fontSize: 16, color: "#11152A", textAlign: "center", marginBottom: 24 },
-  popupButtons: { flexDirection: "row", borderTopWidth: 1, borderTopColor: "#eee", width: "100%" },
+  label: {
+    fontFamily: "Alice-Regular",
+    color: "#fff",
+    fontSize: 16,
+    width: width - 80,
+    textAlign: "center",
+  },
+  btn: {
+    position: "absolute",
+    backgroundColor: "#FEEDB6",
+    bottom: 110,
+    width: width - 40,
+    marginHorizontal: 20,
+    alignItems: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  btnTxt: { fontFamily: "Alice-Regular" },
+  popupOverlay: {
+    flex: 1,
+    backgroundColor: "#00000088",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  popupBox: {
+    width: 280,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 24,
+    alignItems: "center",
+  },
+  popupText: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+    color: "#11152A",
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  popupButtons: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    width: "100%",
+  },
   popupButton: { flex: 1, paddingVertical: 12, alignItems: "center" },
   rightBorder: { borderRightWidth: 1, borderRightColor: "#eee" },
-  popupButtonTextNo: { fontFamily: "Alice-Regular", fontSize: 16, color: "#0A84FF" },
-  popupButtonTextYes: { fontFamily: "Alice-Regular", fontSize: 16, color: "#0A84FF" },
+  popupButtonTextNo: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+    color: "#0A84FF",
+  },
+  popupButtonTextYes: {
+    fontFamily: "Alice-Regular",
+    fontSize: 16,
+    color: "#0A84FF",
+  },
 });
