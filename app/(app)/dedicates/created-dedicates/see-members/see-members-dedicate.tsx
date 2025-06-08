@@ -101,7 +101,7 @@ export default function SeeMembersDedicate() {
 const styles = StyleSheet.create({
   backBtn: {position:"absolute",top:50,left:20,zIndex:10},
   plusBtn: {position:"absolute",top:85,right:24,zIndex:10},
-  title:   {fontSize:20,color:"#fff",textAlign:"center",marginTop:50},
+  title:   {fontSize:20,color:"#fff",textAlign:"center",marginTop:50, fontFamily:"Alice-Regular"},
   list:    {marginTop:60,paddingHorizontal:16},
   item:    {flexDirection:"row",alignItems:"center",backgroundColor:"#ffffff22",borderRadius:10,padding:12,marginBottom:12},
   avatar:  {width:36,height:36,borderRadius:18,backgroundColor:"#fff",marginRight:12,borderWidth:0.5,borderColor:"#999"},
