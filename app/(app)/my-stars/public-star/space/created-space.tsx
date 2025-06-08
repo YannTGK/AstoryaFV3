@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   },
   list: { paddingTop: 100, paddingHorizontal: 20, paddingBottom: 20 },
   row: { flexDirection: "row", alignItems: "center", marginBottom: 20 },
-  spaceContainer: { flex: 1, alignItems: "center" },
+  spaceContainer: { flex: 1, alignItems:"flex-start" },
   frame: {
     width: width - 80,
     height: (width - 80) * 0.5,
