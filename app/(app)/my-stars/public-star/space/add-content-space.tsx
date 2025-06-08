@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
   messageSender:{color:"#FEEDB6",fontWeight:"bold",fontSize:12},
   messageBody:{color:"#fff",fontSize:10},
   messageDate:{color:"#888",fontSize:10,textAlign:"right"},
-  addMessageBtn:{width:CARD_SIZE,height:CARD_SIZE,justifyContent:"center",alignItems:"center",backgroundColor:"#273166",borderRadius:6},
+  addMessageBtn:{width:60,height:60,justifyContent:"center",alignItems:"center",borderRadius:6},
   overlay:{flex:1,backgroundColor:"#000000dd",justifyContent:"center",alignItems:"center"},
   fullscreenMedia:{width:width-40,height:height-120},
   closeBtn:{position:"absolute",top:60,right:20,zIndex:10},
